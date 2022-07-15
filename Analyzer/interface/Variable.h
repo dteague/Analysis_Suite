@@ -99,7 +99,30 @@ private:
     TTreeReaderArray<T>* array = nullptr;
 };
 
+template <class T>
+class NTupleArray {
+public:
+    void setup(TTreeReader& fReader, std::string particle, std::string branch) {
+        for (size_t i = 0; ; i++) {
+            std::string name = particle + std::to_string(i) + branch;
+            if (!fReader.GetTree()->GetBranchStatus(name.c_str()))
+                break;
+            vec.push_back(TRVariable<T>(fReader, name));
+        }
+    }
+    T at(size_t idx) const {
+        return *vec->at(idx);
+    }
+    size_t size() const {
+        return vec.size();
+    }
+    auto begin() {return vec->begin();}
+    auto end() { return vec->end(); }
 
+
+private:
+    std::vector<TRVariable<T>> vec;
+};
 
 
 #endif // VARIABLE_H_

@@ -26,7 +26,7 @@ private:
     TRVariable<float> m_phi;
     std::unordered_map<MET_Type, std::string> met_name = {
         {MET_Type::PUPPI, "PuppiMET"},
-        {MET_Type::PF, "MET"},
+        {MET_Type::PF, "type1_pfMET"},
     };
 
     float *corr_pt, *corr_phi;

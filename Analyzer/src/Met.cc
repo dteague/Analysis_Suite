@@ -4,8 +4,8 @@
 void Met::setup(MET_Type type, TTreeReader& fReader)
 {
     name = met_name[type];
-    m_pt.setup(fReader, (name+"_pt").c_str());
-    m_phi.setup(fReader, (name+"_phi").c_str());
+    m_pt.setup(fReader, (name+"Et").c_str());
+    m_phi.setup(fReader, (name+"Phi").c_str());
 
     auto corr_set = getScaleFile("USER", "met_xy");
 

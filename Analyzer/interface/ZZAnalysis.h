@@ -10,7 +10,6 @@ public:
     bool getCutFlow() override;
     void FillValues(const std::vector<bool>& passVec) override;
     void ApplyScaleFactors() override;
-    void clearParticles() override;
     void clearOutputs() override;
     void SetupOutTreeBranches(TTree* tree) override;
     ClassDefOverride(ZZAnalysis, 0);

@@ -23,7 +23,7 @@ void ZZAnalysis::Init(TTree* tree)
     createTree("Signal", Channel::Signal);
 
     if (isMC_) {
-        Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
+        Pileup_nTrueInt.setup(fReader, "nTruePU");
     }
 
     // setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",

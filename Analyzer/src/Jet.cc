@@ -2,65 +2,69 @@
 
 void Jet::setup(TTreeReader& fReader, bool isMC)
 {
-    GenericParticle::setup("Jet", fReader);
+    m_pt.setup(fReader, "jetPt");
+    m_eta.setup(fReader, "jetEta");
+    m_phi.setup(fReader, "jetPhi");
+
+
     isMC_ = isMC;
-    jetId.setup(fReader, "Jet_jetId");
-    btag.setup(fReader, "Jet_btagDeepFlavB");
-    puId.setup(fReader, "Jet_puId");
+    // jetId.setup(fReader, "Jet_jetId");
+    btag.setup(fReader, "jetDeepCSV");
+    puId.setup(fReader, "jetPUID");
     if (isMC) {
-        hadronFlavour.setup(fReader, "Jet_hadronFlavour");
-        genJetIdx.setup(fReader, "Jet_genJetIdx");
-        rawFactor.setup(fReader, "Jet_rawFactor");
-        rho.setup(fReader, "fixedGridRhoFastjetAll");
+        hadronFlavour.setup(fReader, "jetHadronFlavor");
+        // genJetIdx.setup(fReader, "Jet_genJetIdx");
+        // rawFactor.setup(fReader, "Jet_rawFactor");
+        rho.setup(fReader, "pvRho");
     }
 
-    setup_map(Level::Loose);
-    setup_map(Level::Bottom);
+    // setup_map(Level::Loose);
+    // setup_map(Level::Bottom);
     setup_map(Level::Tight);
 
-    if (year_ == Year::yr2016pre) {
-        loose_bjet_cut =  0.0508;
-        medium_bjet_cut = 0.2598;
-        tight_bjet_cut =  0.6502;
-    } else if (year_ == Year::yr2016post) {
-        loose_bjet_cut =  0.0480;
-        medium_bjet_cut = 0.2489;
-        tight_bjet_cut =  0.6377;
-    } else if (year_ == Year::yr2017) {
-        loose_bjet_cut =  0.0532;
-        medium_bjet_cut = 0.3040;
-        tight_bjet_cut =  0.7476;
-    } else if (year_ == Year::yr2018) {
-        loose_bjet_cut =  0.0490;
-        medium_bjet_cut = 0.2783;
-        tight_bjet_cut =  0.7100;
-    }
+    // if (year_ == Year::yr2016pre) {
+    //     loose_bjet_cut =  0.0508;
+    //     medium_bjet_cut = 0.2598;
+    //     tight_bjet_cut =  0.6502;
+    // } else if (year_ == Year::yr2016post) {
+    //     loose_bjet_cut =  0.0480;
+    //     medium_bjet_cut = 0.2489;
+    //     tight_bjet_cut =  0.6377;
+    // } else if (year_ == Year::yr2017) {
+    //     loose_bjet_cut =  0.0532;
+    //     medium_bjet_cut = 0.3040;
+    //     tight_bjet_cut =  0.7476;
+    // } else if (year_ == Year::yr2018) {
+    //     loose_bjet_cut =  0.0490;
+    //     medium_bjet_cut = 0.2783;
+    //     tight_bjet_cut =  0.7100;
+    // }
 
     // use_shape_btag = true;
     if (isMC) {
-        // JEC Weights
-        auto corr_set = getScaleFile("JME", "jet_jerc");
-        jec_scale = WeightHolder(corr_set->at(jec_source[year_]+"_Total_AK4PFchs"));
-        jet_resolution = WeightHolder(corr_set->at(jer_source[year_]+"_PtResolution_AK4PFchs"));
-        jer_scale = WeightHolder(corr_set->at(jer_source[year_]+"_ScaleFactor_AK4PFchs"),
-                                 Systematic::Jet_JER, {"nom","up","down"});
+    //     // JEC Weights
+    //     auto corr_set = getScaleFile("JME", "jet_jerc");
+    //     jec_scale = WeightHolder(corr_set->at(jec_source[year_]+"_Total_AK4PFchs"));
+    //     jet_resolution = WeightHolder(corr_set->at(jer_source[year_]+"_PtResolution_AK4PFchs"));
+    //     jer_scale = WeightHolder(corr_set->at(jer_source[year_]+"_ScaleFactor_AK4PFchs"),
+    //                              Systematic::Jet_JER, {"nom","up","down"});
 
         // Pileup Weights
         auto jmar_set = getScaleFile("JME", "jmar");
         puid_scale = WeightHolder(jmar_set->at("PUJetID_eff"),
                                   Systematic::Jet_PUID, {"nom","up","down"});
 
-        // BTagging Weights
-        auto btag_set = getScaleFile("BTV", "btagging");
-        btag_bc_scale = WeightHolder(btag_set->at("deepJet_comb"),
-                                     Systematic::Jet_PUID, {"central","up","down"});
-        btag_udsg_scale = WeightHolder(btag_set->at("deepJet_incl"),
-                                       Systematic::Jet_PUID, {"central","up","down"});
+        //     // BTagging Weights
+    //     auto btag_set = getScaleFile("BTV", "btagging");
+    //     btag_bc_scale = WeightHolder(btag_set->at("deepJet_comb"),
+    //                                  Systematic::Jet_PUID, {"central","up","down"});
+    //     btag_udsg_scale = WeightHolder(btag_set->at("deepJet_incl"),
+    //                                    Systematic::Jet_PUID, {"central","up","down"});
 
-        // // BTagging Efficiencies
-        // auto beff_set = getScaleFile("BTV", "tagging_eff");
-        // btag_eff = WeightHolder(btag_set->at("SS"),
-        //                         Systematic::Jet_PUID, {"central","up","down"});
+    //     // // BTagging Efficiencies
+    //     // auto beff_set = getScaleFile("BTV", "tagging_eff");
+    //     // btag_eff = WeightHolder(btag_set->at("SS"),
+    //     //                         Systematic::Jet_PUID, {"central","up","down"});
 
     }
 
@@ -73,33 +77,10 @@ void Jet::setup(TTreeReader& fReader, bool isMC)
     }
 }
 
-void Jet::createLooseList()
-{
-    for (size_t i = 0; i < size(); i++) {
-        if (pt(i) > 25
-            && fabs(eta(i)) < 2.4
-            && (jetId.at(i) & looseId) != 0
-            && (pt(i) > 50 || (puId.at(i) >> PU_Medium) & 1)
-            && (closeJetDr_by_index.find(i) == closeJetDr_by_index.end() || closeJetDr_by_index.at(i) >= pow(0.4, 2)))
-            m_partList[Level::Loose]->push_back(i);
-    }
-}
-
-void Jet::createBJetList()
-{
-    for (auto i : list(Level::Loose)) {
-        if (btag.at(i) > medium_bjet_cut)
-            m_partList[Level::Bottom]->push_back(i);
-        n_loose_bjet.back() += (btag.at(i) > loose_bjet_cut) ? 1 : 0;
-        n_medium_bjet.back() += (btag.at(i) > medium_bjet_cut) ? 1 : 0;
-        n_tight_bjet.back() += (btag.at(i) > tight_bjet_cut) ? 1 : 0;
-    }
-}
-
 void Jet::createTightList()
 {
-    for (auto i : list(Level::Loose)) {
-        if (pt(i) > 40)
+    for (size_t i = 0; i < size(); i++) {
+        if (pt(i) > 25)
             m_partList[Level::Tight]->push_back(i);
     }
 }
@@ -116,11 +97,11 @@ float Jet::getHT(const std::vector<size_t>& jet_list)
 float Jet::getScaleFactor()
 {
     float weight = 1.;
-    std::string syst = systName(puid_scale);
-    for (auto idx : list(Level::Loose)) {
-        if (pt(idx) < 50)
-            weight *= puid_scale.evaluate({eta(idx), pt(idx), syst, "M"});
-    }
+    // std::string syst = systName(puid_scale);
+    // for (auto idx : list(Level::Tight)) {
+    //     if (pt(idx) < 50)
+    //         weight *= puid_scale.evaluate({eta(idx), pt(idx), syst, "M"});
+    // }
     return weight;
 }
 
@@ -138,11 +119,10 @@ void Jet::setupJEC(GenericParticle& genJet) {
         m_jec = &m_jet_scales[currentSyst][currentVar];
         m_jec->assign(size(), 1);
         if (!isMC_) return;
-
-        for(size_t i = 0; i < size(); ++i) {
-            (*m_jec)[i] *= get_jec(i);
-            (*m_jec)[i] *= get_jer(i, genJet);
-        }
+        // for(size_t i = 0; i < size(); ++i) {
+        //     (*m_jec)[i] *= get_jec(i);
+        //     (*m_jec)[i] *= get_jer(i, genJet);
+        // }
     } else {
         m_jec = &m_jet_scales[Systematic::Nominal][eVar::Nominal];
     }

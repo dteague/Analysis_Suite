@@ -20,19 +20,20 @@ public:
     GenericParticle() {};
     virtual ~GenericParticle() {};
 
-    void setup(std::string name, TTreeReader& fReader);
+    virtual void setup(std::string name, TTreeReader& fReader);
 
-    size_t size() const { return m_pt.size(); }
-    size_t size(Level level) const { return list(level).size(); }
+    virtual size_t size() const;
+    virtual Float_t pt(size_t idx) const;
+    virtual Float_t eta(size_t idx) const;
+    virtual Float_t phi(size_t idx) const;
+    virtual Float_t mass(size_t idx) const;
+
     size_t idx(Level level, size_t i) const;
 
-    Float_t pt(size_t idx) const { return m_pt.at(idx); }
+    size_t size(Level level) const { return list(level).size(); }
     Float_t pt(Level level, size_t i) const { return pt(idx(level, i)); }
-    Float_t eta(size_t idx) const { return m_eta.at(idx); }
     Float_t eta(Level level, size_t i) const { return eta(idx(level, i)); }
-    Float_t phi(size_t idx) const { return m_phi.at(idx); }
     Float_t phi(Level level, size_t i) const { return phi(idx(level, i)); }
-    Float_t mass(size_t idx) const { return m_mass.at(idx); }
     Float_t mass(Level level, size_t i) const { return mass(idx(level, i)); }
 
     LorentzVector p4(size_t idx) const {return LorentzVector(pt(idx), eta(idx), phi(idx), mass(idx));}
@@ -44,11 +45,6 @@ public:
     virtual void clear();
 
 protected:
-    TRArray<Float_t> m_pt;
-    TRArray<Float_t> m_eta;
-    TRArray<Float_t> m_phi;
-    TRArray<Float_t> m_mass;
-
     std::unordered_map<Level, std::vector<size_t>*> m_partList;
 
     virtual void setup_map(Level level);

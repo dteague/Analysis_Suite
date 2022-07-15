@@ -1,13 +1,5 @@
 #include "analysis_suite/Analyzer/interface/Particle.h"
 
-void GenericParticle::setup(std::string name, TTreeReader& fReader)
-{
-    m_pt.setup(fReader, (name + "_pt").c_str());
-    m_eta.setup(fReader, (name + "_eta").c_str());
-    m_phi.setup(fReader, (name + "_phi").c_str());
-    m_mass.setup(fReader, (name + "_mass").c_str());
-}
-
 void GenericParticle::clear() {
     for (auto& [key, plist] : m_partList) {
         plist->clear();

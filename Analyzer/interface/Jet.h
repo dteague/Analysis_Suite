@@ -26,13 +26,14 @@ public:
 
     virtual float getScaleFactor() override;
 
-    float pt(size_t idx) const {
-        return m_pt.at(idx)*m_jec->at(idx);
-    }
-    float nompt(size_t idx) const {
-        return m_pt.at(idx);
-    }
+    float nompt(size_t idx) const { return m_pt.at(idx); }
     float rawPt(size_t idx) const { return (1-rawFactor.at(idx))*pt(idx); }
+
+    size_t size() const override { return m_pt.size(); }
+    float pt(size_t idx) const override { return m_pt.at(idx)*m_jec->at(idx); }
+    float eta(size_t idx) const override { return m_eta.at(idx); }
+    float phi(size_t idx) const override { return m_phi.at(idx); }
+    float mass(size_t idx) const override { return -1; }
 
     float getHT(Level level, size_t syst) { return getHT(list(level, syst)); };
     float getHT(Level level) { return getHT(list(level)); };
@@ -44,12 +45,6 @@ public:
 
     virtual void setupGoodLists() override
     {
-        n_loose_bjet.push_back(0);
-        n_medium_bjet.push_back(0);
-        n_tight_bjet.push_back(0);
-
-        createLooseList();
-        createBJetList();
         createTightList();
     }
 
@@ -95,14 +90,14 @@ public:
 
 
 private:
+    TRArray<Float_t> m_pt, m_eta, m_phi;
+
     int looseId = 0b11;
     float jet_dr = 0.4;
     std::unordered_map<Systematic, std::unordered_map<eVar, std::vector<float>>> m_jet_scales;
     std::vector<float>* m_jec;
     bool isMC_;
 
-    void createLooseList();
-    void createBJetList();
     void createTightList();
 
     float getHT(const std::vector<size_t>& jet_list);

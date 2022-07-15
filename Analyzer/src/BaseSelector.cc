@@ -65,12 +65,18 @@ void BaseSelector::Init(TTree* tree)
     }
 
     run.setup(fReader, "run");
-    lumiblock.setup(fReader, "luminosityBlock");
-    event.setup(fReader, "event");
-    PV_npvs.setup(fReader, "PV_npvs");
+    lumiblock.setup(fReader, "lumi");
+    event.setup(fReader, "evt");
+    PV_npvs.setup(fReader, "nvtx"); // need to check
 
-    metfilters.setup(fReader, {"Flag_goodVertices", "Flag_globalSuperTightHalo2016Filter", "Flag_HBHENoiseFilter", "Flag_HBHENoiseIsoFilter",
-                               "Flag_EcalDeadCellTriggerPrimitiveFilter", "Flag_BadPFMuonFilter","Flag_ecalBadCalibFilter"});
+    metfilters.setup(fReader, {"Flag_goodVerticesPass",
+                               "Flag_globalSuperTightHalo2016FilterPass",
+                               "Flag_HBHENoiseFilterPass",
+                               "Flag_HBHENoiseIsoFilterPass",
+                               "Flag_EcalDeadCellTriggerPrimitiveFilterPass",
+                               "Flag_BadPFMuonFilterPass",
+                               // "Flag_ecalBadCalibFilter"
+        });
 
     o_weight.resize(numSystematics());
     o_channels.resize(numSystematics());

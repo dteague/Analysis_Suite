@@ -49,7 +49,6 @@ private:
     };
 
     WeightHolder pu_scale;
-    WeightHolder charge_misId, nonprompt_elec, nonprompt_muon;
 
     std::unordered_map<size_t, Prescale_Info> prescale_info;
 };

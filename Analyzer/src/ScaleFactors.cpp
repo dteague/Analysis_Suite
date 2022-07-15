@@ -9,9 +9,9 @@ void ScaleFactors::init(bool isMC_, TTreeReader& fReader)
     isMC = isMC_;
     if (isMC) {
         // Generator Weights
-        LHEScaleWeight.setup(fReader, "LHEScaleWeight");
-        LHEPdfWeight.setup(fReader, "LHEPdfWeight");
-        PSWeight.setup(fReader, "PSWeight");
+        LHEScaleWeight.setup(fReader, "scaleWeights");
+        // LHEPdfWeight.setup(fReader, "pdfWeights");
+        // PSWeight.setup(fReader, "PSWeight");
 
         // Pileup Weights
         auto corr_set = getScaleFile("LUM", "puWeights");
@@ -21,15 +21,6 @@ void ScaleFactors::init(bool isMC_, TTreeReader& fReader)
         // Golden Json
         std::ifstream golden_json_file(scaleDir_ + "/golden_json/golden_json_" + yearMap.at(year_).substr(0,4) + ".json");
         golden_json_file >> golden_json;
-
-        // Fake Rates
-        auto corr_set = getScaleFile("USER", "fake_rate");
-        charge_misId = WeightHolder(corr_set->at("Charge_MisId"), Systematic::ChargeMisId_stat,
-                                    {"nom", "up", "down"});
-        nonprompt_muon = WeightHolder(corr_set->at("Nonprompt_muon"), Systematic::Nonprompt_Mu_stat,
-                                      {"nom", "up", "down"});
-        nonprompt_elec = WeightHolder(corr_set->at("Nonprompt_elec"), Systematic::Nonprompt_El_stat,
-                                      {"nom", "up", "down"});
     }
 }
 
@@ -92,13 +83,13 @@ float ScaleFactors::getPartonShower()
 {
     // [0] is ISR=2 FSR=1; [1] is ISR=1 FSR=2
     // [2] is ISR=0.5 FSR=1; [3] is ISR=1 FSR=0.5;
-    if (!isMC || PSWeight.size() != 4) return 1.;
+    // if (!isMC || PSWeight.size() != 4) return 1.;
 
-    if (currentSyst == Systematic::PS_ISR) {
-        return (currentVar == eVar::Up) ? PSWeight.at(0) : PSWeight.at(2);
-    } else if (currentSyst == Systematic::PS_FSR) {
-        return (currentVar == eVar::Up) ? PSWeight.at(1) : PSWeight.at(3);
-    }
+    // if (currentSyst == Systematic::PS_ISR) {
+    //     return (currentVar == eVar::Up) ? PSWeight.at(0) : PSWeight.at(2);
+    // } else if (currentSyst == Systematic::PS_FSR) {
+    //     return (currentVar == eVar::Up) ? PSWeight.at(1) : PSWeight.at(3);
+    // }
     return 1.;
 }
 
@@ -108,26 +99,27 @@ float ScaleFactors::getLHEPdf()
     // [1-100] PDF replica variations
     // [101] alphaZ down ; [102] alphaZ up
     // http://nnpdf.mi.infn.it/wp-content/uploads/2019/03/NNPDFfits_Positivity_PhysicalCrossSections_v2.pdf
-    if (currentSyst == Systematic::PDF_unc) {
-        if (LHEPdfWeight.size() < 101) {
-            return 1.;
-        }
-        std::sort(LHEPdfWeight.begin()+1, LHEPdfWeight.begin()+100);
-        float err = (LHEPdfWeight.at(17) - LHEPdfWeight.at(84))/2;
-        return LHEPdfWeight.at(0) + ((currentVar == eVar::Up) ? err : -err);
-    } else if (currentSyst == Systematic::PDF_alphaZ) {
-        if (LHEPdfWeight.size() != 103) {
-            return 1.;
-        } else  {
-            return (currentVar == eVar::Up) ? LHEPdfWeight.at(102) : LHEPdfWeight.at(101);
-        }
-    } else {
-        if (LHEPdfWeight.size() > 1) {
-            return LHEPdfWeight.at(0);
-        } else {
-            return 1.;
-        }
-    }
+    // if (currentSyst == Systematic::PDF_unc) {
+    //     if (LHEPdfWeight.size() < 101) {
+    //         return 1.;
+    //     }
+    //     std::sort(LHEPdfWeight.begin()+1, LHEPdfWeight.begin()+100);
+    //     float err = (LHEPdfWeight.at(17) - LHEPdfWeight.at(84))/2;
+    //     return LHEPdfWeight.at(0) + ((currentVar == eVar::Up) ? err : -err);
+    // } else if (currentSyst == Systematic::PDF_alphaZ) {
+    //     if (LHEPdfWeight.size() != 103) {
+    //         return 1.;
+    //     } else  {
+    //         return (currentVar == eVar::Up) ? LHEPdfWeight.at(102) : LHEPdfWeight.at(101);
+    //     }
+    // } else {
+    //     if (LHEPdfWeight.size() > 1) {
+    //         return LHEPdfWeight.at(0);
+    //     } else {
+    //         return 1.;
+    //     }
+    // }
+    return 1.;
 }
 
 

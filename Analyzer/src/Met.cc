@@ -1,11 +1,10 @@
 #include "analysis_suite/Analyzer/interface/Met.h"
 #include "analysis_suite/Analyzer/interface/Jet.h"
 
-void Met::setup(MET_Type type, TTreeReader& fReader)
+void Met::setup(TTreeReader& fReader)
 {
-    name = met_name[type];
-    m_pt.setup(fReader, (name+"Et").c_str());
-    m_phi.setup(fReader, (name+"Phi").c_str());
+    m_pt.setup(fReader, "type1_pfMETEt");
+    m_phi.setup(fReader, "type1_pfMETPhi");
 
     auto corr_set = getScaleFile("USER", "met_xy");
 
@@ -38,8 +37,8 @@ void Met::setupJEC(Jet& jet)
 
 void Met::fix_xy(UInt_t run, int nVertices)
 {
-    float corr_metx = *m_pt*cos(*m_phi)+xcorr.evaluate({name, (float)run, (float)nVertices});
-    float corr_mety = *m_pt*sin(*m_phi)+ycorr.evaluate({name, (float)run, (float)nVertices});
+    float corr_metx = *m_pt*cos(*m_phi)+xcorr.evaluate({"MET", (float)run, (float)nVertices});
+    float corr_mety = *m_pt*sin(*m_phi)+ycorr.evaluate({"MET", (float)run, (float)nVertices});
 
     (*corr_pt) = sqrt(pow(corr_metx, 2) + pow(corr_mety, 2));
     (*corr_phi) = atan2(corr_mety, corr_metx);

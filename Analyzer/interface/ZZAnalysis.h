@@ -22,12 +22,9 @@ private:
 
     ParticleOut* o_looseMuons;
     ParticleOut* o_looseElectrons;
-    LeptonOut* o_tightMuons;
-    LeptonOut* o_tightElectrons;
     ParticleOut* o_tightLeptons;
     JetOut* o_jets;
     JetOut* o_bJets;
-    TopOut* o_resolvedTop;
 
     TRVariable<Float_t> Pileup_nTrueInt;
 };

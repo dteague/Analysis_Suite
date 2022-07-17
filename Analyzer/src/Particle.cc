@@ -1,16 +1,6 @@
 #include "analysis_suite/Analyzer/interface/Particle.h"
 
-void GenericParticle::clear() {
-    for (auto& [key, plist] : m_partList) {
-        plist->clear();
-    }
-}
-
-void GenericParticle::setup_map(Level level) {
-    m_partList[level] = new std::vector<size_t>(); // maybe try for virtual soon?
-}
-
-size_t GenericParticle::idx(Level level, size_t i) const
+size_t Particle::idx(Level level, size_t i) const
 {
     if (i >= size(level)) {
         throw std::out_of_range("Particle of level {} has size ("

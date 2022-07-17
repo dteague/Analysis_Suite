@@ -3,26 +3,28 @@
 
 #include <limits>
 
-bool Lepton::useFakePt = false;
-
 void Lepton::setup(std::string name, TTreeReader& fReader, bool isMC)
 {
-    m_charge.setup(fReader, name + "_charge");
-    dz.setup(fReader, name + "_dz");
-    dxy.setup(fReader, name + "_dxy");
-    if (isMC) {
-        genPartIdx.setup(fReader, name+"_genPartIdx");
-    }
+    m_pt.setup(fReader, name, "Pt");
+    m_eta.setup(fReader, name, "Eta");
+    m_phi.setup(fReader, name, "Phi");
+    m_mass.setup(fReader, name, "Mass");
 
-    // Isolation variables
-    ptRel.setup(fReader, name + "_jetPtRelv2");
-    ptRatio.setup(fReader, name + "_jetRelIso");
-    iso.setup(fReader, name + "_miniPFRelIso_all");
+    m_charge.setup(fReader, name, "Charge");
+    dz.setup(fReader, name, "PVDZ");
+    dxy.setup(fReader, name, "PVDXY");
+    // if (isMC) {
+    //     genPartIdx.setup(fReader, name+"_genPartIdx");
+    // }
+
+    // // Isolation variables
+    // ptRel.setup(fReader, name + "_jetPtRelv2");
+    // ptRatio.setup(fReader, name + "_jetRelIso");
+    // iso.setup(fReader, name + "_miniPFRelIso_all");
 
 
-    GenericParticle::setup(name, fReader);
-    setup_map(Level::Loose);
-    setup_map(Level::Fake);
+    // setup_map(Level::Loose);
+    // setup_map(Level::Fake);
     setup_map(Level::Tight);
 }
 
@@ -81,25 +83,4 @@ bool Lepton::passJetIsolation(size_t idx, const Particle& jets)
     // if (closeJet_by_lepton.find(idx) == closeJet_by_lepton.end())
     //     return true; /// no close jet (probably no jets)
     return iso.at(idx) < isoCut && ( 1/(1+ptRatio.at(idx)) > ptRatioCut || ptRel.at(idx) > ptRelCut );
-}
-
-float Lepton::fillFakePt(size_t idx, const Particle& jets) const
-{
-    if (ptRel.at(idx) > ptRelCut) {
-        if (iso.at(idx) > isoCut)
-            return (1 + iso.at(idx)-isoCut);
-    } else if (1/(1+ptRatio.at(idx)) <= ptRatioCut) {
-        return (1+ptRatio.at(idx))*ptRatioCut;
-    }
-    return 1.;
-}
-
-void Lepton::fillFlippedCharge(GenParticle& gen)
-{
-    for (size_t i = 0; i < size(); i++) {
-        int pdg = gen.pdgId.at(genPartIdx.at(i));
-        // remember, pdg is postive for electron, negative for positron
-
-        flips.push_back(abs(pdg) == static_cast<int>(id) && pdg*charge(i) > 0);
-    }
 }

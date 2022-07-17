@@ -114,7 +114,7 @@ float Jet::getCentrality(const std::vector<size_t>& jet_list)
     return getHT(jet_list) / etot;
 }
 
-void Jet::setupJEC(GenericParticle& genJet) {
+void Jet::setupJEC() {
     if (currentSyst == Systematic::Nominal || isJECSyst()) {
         m_jec = &m_jet_scales[currentSyst][currentVar];
         m_jec->assign(size(), 1);
@@ -157,7 +157,7 @@ float Jet::get_jec(size_t i) {
     }
 }
 
-float Jet::get_jer(size_t i, GenericParticle& genJets) {
+float Jet::get_jer(size_t i, Particle& genJets) {
     using namespace ROOT::Math::VectorUtil;
     float resolution = jet_resolution.evaluate({eta(i), pt(i), *rho});
     float scale = jer_scale.evaluate({eta(i), systName(jer_scale)});

@@ -29,11 +29,11 @@ public:
     float nompt(size_t idx) const { return m_pt.at(idx); }
     float rawPt(size_t idx) const { return (1-rawFactor.at(idx))*pt(idx); }
 
-    size_t size() const override { return m_pt.size(); }
-    float pt(size_t idx) const override { return m_pt.at(idx)*m_jec->at(idx); }
-    float eta(size_t idx) const override { return m_eta.at(idx); }
-    float phi(size_t idx) const override { return m_phi.at(idx); }
-    float mass(size_t idx) const override { return -1; }
+    size_t _size() const override { return m_pt.size(); }
+    float _pt(size_t idx) const override { return m_pt.at(idx)*m_jec->at(idx); }
+    float _eta(size_t idx) const override { return m_eta.at(idx); }
+    float _phi(size_t idx) const override { return m_phi.at(idx); }
+    float _mass(size_t idx) const override { return -1; }
 
     float getHT(Level level, size_t syst) { return getHT(list(level, syst)); };
     float getHT(Level level) { return getHT(list(level)); };
@@ -75,7 +75,7 @@ public:
     TRVariable<Float_t> rho;
 
 
-    void setupJEC(GenericParticle& genJet);
+    void setupJEC();
     bool isJECSyst() {return std::find(jec_systs.begin(), jec_systs.end(), currentSyst) != jec_systs.end(); }
     std::pair<Float_t, Float_t> get_JEC_pair(Systematic syst, size_t idx) const
     {
@@ -127,7 +127,7 @@ private:
     std::random_device rd{};
     std::mt19937 gen{rd()};
 
-    float get_jer(size_t i, GenericParticle& genJet);
+    float get_jer(size_t i, Particle& genJet);
     float get_jec(size_t i);
 };
 

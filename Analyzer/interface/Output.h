@@ -4,7 +4,6 @@
 #include "analysis_suite/Analyzer/interface/Jet.h"
 #include "analysis_suite/Analyzer/interface/Lepton.h"
 #include "analysis_suite/Analyzer/interface/Particle.h"
-#include "analysis_suite/Analyzer/interface/ResolvedTop.h"
 
 struct ParticleOut {
     std::vector<Float_t> pt;
@@ -40,42 +39,6 @@ struct JetOut {
         jer.clear();
         jes.clear();
         discriminator.clear();
-    }
-};
-
-struct TopOut {
-    std::vector<Float_t> pt;
-    std::vector<Float_t> eta;
-    std::vector<Float_t> phi;
-    std::vector<Float_t> mass;
-    std::vector<Int_t> syst_bitMap;
-    std::vector<Float_t> discriminator;
-    void clear()
-    {
-        pt.clear();
-        eta.clear();
-        phi.clear();
-        mass.clear();
-        syst_bitMap.clear();
-        discriminator.clear();
-    }
-};
-
-struct LeptonOut {
-    std::vector<Float_t> pt;
-    std::vector<Float_t> eta;
-    std::vector<Float_t> phi;
-    std::vector<Float_t> mass;
-    std::vector<Bool_t> flip;
-    std::vector<Int_t> syst_bitMap;
-    void clear()
-    {
-        pt.clear();
-        eta.clear();
-        phi.clear();
-        mass.clear();
-        flip.clear();
-        syst_bitMap.clear();
     }
 };
 
@@ -129,8 +92,6 @@ void fillParticle(const Particle& particle, Level level, T& fillObject, size_t p
 void fillJet(const Jet& jet, Level level, JetOut& fillObject, size_t pass_bitmap);
 
 void fillAllLeptons(const Lepton& muon, const Lepton& elec, ParticleOut& fillObject, size_t pass_bitmap);
-
-void fillLepton(const Lepton& lep, Level level, LeptonOut& fillObject, size_t pass_bitmap, bool useFakept = false);
 
 void fillLepton_Fake(const Lepton& lep, Level level, LeptonOut_Fake& fillObject, size_t pass_bitmap);
 

@@ -35,23 +35,6 @@ void fillAllLeptons(const Lepton& muon, const Lepton& elec, ParticleOut& fillObj
     LOG_FUNC << "End of fillLeptons";
 }
 
-void fillLepton(const Lepton& lep, Level level, LeptonOut& fillObject, size_t pass_bitmap, bool useFakept)
-{
-    LOG_FUNC << "Start fillLepton";
-    fillObject.clear();
-
-    for (size_t idx = 0; idx < lep.size(); ++idx) {
-        size_t final_bitmap = fillParticle(lep, level, fillObject, idx, pass_bitmap);
-        if (final_bitmap != 0) {
-            if (lep.useFakePt) {
-                fillObject.pt.back() = lep.fakePt(idx);
-            }
-            fillObject.flip.push_back(lep.flips.at(idx));
-        }
-    }
-    LOG_FUNC << "End of fillLepon";
-}
-
 void fillLepton_Fake(const Lepton& lep, Level level, LeptonOut_Fake& fillObject, size_t pass_bitmap)
 {
     LOG_FUNC << "Start fillLepton";

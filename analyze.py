@@ -43,12 +43,7 @@ def getSumW(infiles):
 # Use for file in hdfs area
 def get_info_local(filename):
     sampleName = filename.split('/')
-    analysisName = sampleName[sampleName.index("user")+2]
-
-    analysis, year, selection = analysisName.split("_")
-    isUL = 'UL' in analysis
-    return {"analysis": analysis, "year": year, "selection": selection,
-            "sampleName": sampleName, "isUL": isUL}
+    return {"year": "2017", "sampleName": sampleName}
 
 def get_info_general(filename):
     sampleName = filename.split('/')
@@ -67,9 +62,8 @@ def get_info_general(filename):
             year = yearDict[yearName]
             break
 
-    isUL = "UL"  in filename
     return {"year": year, "selection": "From_DAS",
-            "sampleName": sampleName, "isUL": isUL}
+            "sampleName": sampleName}
 
 
 if __name__ == "__main__":
@@ -78,6 +72,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--outfile", default="output.root")
     parser.add_argument("--test", action='store_true')
     parser.add_argument("-v", "--verbose", default=-1)
+    parser.add_argument('-a', '--analysis', default='')
     args = parser.parse_args()
 
     inputfile = args.infile if (env := os.getenv("INPUT")) is None else env
@@ -96,10 +91,14 @@ if __name__ == "__main__":
     else:
         details = get_info_local(testfile)
     info = FileInfo(**details)
-    groupName = info.get_group(details["sampleName"])
+    # groupName = info.get_group(details["sampleName"])
+    groupName = "Test"
     datadir = Path(os.getenv("CMSSW_BASE"))/"src"/"analysis_suite"/"data"
-    with open(datadir /".analyze_info") as f:
-        analysis = f.readline().strip()
+    if args.analysis:
+        analysis = args.analysis
+    else:
+        with open(datadir /".analyze_info") as f:
+            analysis = f.readline().strip()
     print(groupName)
 
     # Setup inputs
@@ -108,7 +107,7 @@ if __name__ == "__main__":
         "DAS_Name": '/'.join(details["sampleName"]),
         "Group": groupName,
         'Analysis': analysis,
-        'Selection': details["selection"],
+        # 'Selection': details["selection"],
         'Year': details["year"],
     }
     if args.test:
@@ -123,7 +122,7 @@ if __name__ == "__main__":
     # Run Selection
     fChain = ROOT.TChain()
     for fname in files:
-        fChain.Add(f"{fname}/Events")
+        fChain.Add(f"{fname}/eemm/ntuple")
 
     selector = getattr(ROOT, analysis)()
 

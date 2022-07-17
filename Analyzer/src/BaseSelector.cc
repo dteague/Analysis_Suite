@@ -74,8 +74,8 @@ void BaseSelector::Init(TTree* tree)
                                "Flag_HBHENoiseFilterPass",
                                "Flag_HBHENoiseIsoFilterPass",
                                "Flag_EcalDeadCellTriggerPrimitiveFilterPass",
-                               "Flag_BadPFMuonFilterPass",
-                               // "Flag_ecalBadCalibFilter"
+                               // "Flag_BadPFMuonFilterPass", // is float for some reason??
+
         });
 
     o_weight.resize(numSystematics());
@@ -83,14 +83,10 @@ void BaseSelector::Init(TTree* tree)
     o_pass_event.resize(numSystematics());
 
     sfMaker.init(isMC_, fReader);
-    met.setup(MET_Type::PF, fReader);
+    met.setup( fReader);
     muon.setup(fReader, isMC_);
     elec.setup(fReader, isMC_);
     jet.setup(fReader, isMC_);
-    if (isMC_) {
-        rGen.setup(fReader);
-        rGenJet.setup(fReader);
-    }
 
     if (loguru::g_stderr_verbosity > 0) {
         bar.set_total(tree->GetEntries());
@@ -176,16 +172,16 @@ void BaseSelector::SetupEvent(Systematic syst, eVar var, size_t systNum)
 
     (*weight) = isMC_ ? *genWeight : 1.0;
 
-    jet.setupJEC(rGenJet);
+    jet.setupJEC();
     met.setupJEC(jet);
     met.fix_xy(*run, *PV_npvs);
     // Setup good particle lists
-    muon.setGoodParticles(systNum, jet, rGen);
-    elec.setGoodParticles(systNum, jet, rGen);
+    muon.setGoodParticles(systNum, jet);
+    elec.setGoodParticles(systNum, jet);
     jet.setGoodParticles(systNum);
+
     // Class dependent setting up
     setOtherGoodParticles(systNum);
-
     setupChannel();
 
     if (isMC_) {
@@ -201,8 +197,6 @@ void BaseSelector::clearParticles()
     muon.clear();
     elec.clear();
     jet.clear();
-    rGen.clear();
-    rGenJet.clear();
 
     std::fill(o_weight.begin(), o_weight.end(), 1.);
     LOG_FUNC << "End of clearParticles";

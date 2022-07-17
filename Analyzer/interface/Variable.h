@@ -111,13 +111,13 @@ public:
         }
     }
     T at(size_t idx) const {
-        return *vec->at(idx);
+        return *vec.at(idx);
     }
     size_t size() const {
         return vec.size();
     }
-    auto begin() {return vec->begin();}
-    auto end() { return vec->end(); }
+    auto begin() {return vec.begin();}
+    auto end() { return vec.end(); }
 
 
 private:

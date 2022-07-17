@@ -46,6 +46,8 @@ enum class Level {
     Top,
     Bottom,
     Jet,
+    Electron,
+    Muon,
 };
 
 enum class Systematic {

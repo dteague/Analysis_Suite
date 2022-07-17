@@ -10,11 +10,11 @@
 #include <vector>
 
 #include "analysis_suite/Analyzer/interface/CommonEnums.h"
+#include "analysis_suite/Analyzer/interface/Particle.h"
 #include "analysis_suite/Analyzer/interface/Electron.h"
 #include "analysis_suite/Analyzer/interface/Jet.h"
 #include "analysis_suite/Analyzer/interface/Muon.h"
 #include "analysis_suite/Analyzer/interface/Met.h"
-#include "analysis_suite/Analyzer/interface/GenParticle.h"
 #include "analysis_suite/Analyzer/interface/ScaleFactors.h"
 #include "analysis_suite/Analyzer/interface/Variable.h"
 #include "analysis_suite/Analyzer/interface/CommonStructs.h"
@@ -83,7 +83,7 @@ protected:
     std::map<Channel, TreeInfo> trees;
 
     TRVariable<Float_t> genWeight;
-    TRVariable<Int_t> PV_npvs;
+    TRVariable<UInt_t> PV_npvs;
 
     Year year_;
     bool isMC_ = true;
@@ -108,9 +108,8 @@ protected:
     Muon muon;
     Electron elec;
     Jet jet;
-    GenParticle rGen;
-    GenJet rGenJet;
     Met met;
+    Particle rGenJet;
 
     TriggerInfo trig_cuts;
 

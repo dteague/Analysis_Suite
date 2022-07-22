@@ -37,10 +37,10 @@ void ZZAnalysis::SetupOutTreeBranches(TTree* tree)
 {
     LOG_FUNC << "Start of SetupOutTreeBranches";
     BaseSelector::SetupOutTreeBranches(tree);
-    // tree->Branch("LooseMuon", "ParticleOut", &o_looseMuons);
-    // tree->Branch("LooseElectron", "ParticleOut", &o_looseElectrons);
-    // tree->Branch("TightMuon", "LeptonOut", &o_tightMuons);
-    // tree->Branch("TightElectron", "LeptonOut", &o_tightElectrons);
+    tree->Branch("LooseMuon", "ParticleOut", &o_looseMuons);
+    tree->Branch("LooseElectron", "ParticleOut", &o_looseElectrons);
+    tree->Branch("TightMuon", "ParticleOut", &o_tightMuons);
+    tree->Branch("TightElectron", "ParticleOut", &o_tightElectrons);
     // tree->Branch("TightLeptons", "ParticleOut", &o_tightLeptons);
     // tree->Branch("Jets", "JetOut", &o_jets);
     // tree->Branch("BJets", "JetOut", &o_bJets);
@@ -48,8 +48,8 @@ void ZZAnalysis::SetupOutTreeBranches(TTree* tree)
 
     // tree->Branch("HT", &o_ht);
     // tree->Branch("HT_b", &o_htb);
-    // tree->Branch("Met", &o_met);
-    // tree->Branch("Met_phi", &o_metphi);
+    tree->Branch("Met", &o_met);
+    tree->Branch("Met_phi", &o_metphi);
     // tree->Branch("Centrality", &o_centrality);
     // tree->Branch("N_bloose", &o_nb_loose);
     // tree->Branch("N_btight", &o_nb_tight);
@@ -61,8 +61,8 @@ void ZZAnalysis::clearOutputs()
     LOG_FUNC << "Start of clearOutputs";
     // o_ht.clear();
     // o_htb.clear();
-    // o_met.clear();
-    // o_metphi.clear();
+    o_met.clear();
+    o_metphi.clear();
     // o_centrality.clear();
     // o_nb_loose.clear();
     // o_nb_tight.clear();
@@ -87,6 +87,14 @@ void ZZAnalysis::ApplyScaleFactors()
     LOG_FUNC << "End of ApplyScaleFactors";
 }
 
+void ZZAnalysis::setSubChannel()
+{
+    if (nLeps(Level::Iso) == 4)
+        subChannel_ = Subchannel::EEMM;
+    else
+        subChannel_ = Subchannel::None;
+}
+
 bool ZZAnalysis::getCutFlow()
 {
     LOG_FUNC << "Start of passSelection";
@@ -97,6 +105,9 @@ bool ZZAnalysis::getCutFlow()
         (*currentChannel_) = Channel::Signal;
     }
 
+    if (*currentChannel_ == Channel::None) {
+        return false;
+    }
     LOG_FUNC << "End of passSelection";
     return true;
 }
@@ -107,20 +118,42 @@ bool ZZAnalysis::signal_cuts()
     bool passCuts = true;
     CutInfo cuts;
 
-    // passCuts = baseline_cuts(cuts);
-    // passCuts &= cuts.setCut("passZVeto", muon.passZVeto() && elec.passZVeto());
-    // passCuts &= cuts.setCut("pass2Or3Leptons", nLeps(Level::Tight) == 2 || nLeps(Level::Tight) == 3);
-    // passCuts &= cuts.setCut("passSameSign;", isSameSign(Level::Tight));
-
-    // // Fill Cut flow
-    // cuts.setCut("pass2TightLeps", nLeps(Level::Tight) == 2);
-    // fillCutFlow(Channel::SS_Dilepton, cuts);
-    // cuts.cuts.pop_back();
-    // cuts.setCut("pass3TightLeps", nLeps(Level::Tight) == 3);
-    // fillCutFlow(Channel::SS_Multi, cuts);
+    passCuts &= cuts.setCut("passPreselection", true);
+    passCuts &= cuts.setCut("pass4Leptons", nLeps(Level::Iso) == 4);
+    passCuts &= cuts.setCut("passLeadPt", getLeadPt() > 20);
+    passCuts &= cuts.setCut("passSubLeadPt", getSubLeadPt() > 10);
+    fillCutFlow(Channel::Signal, cuts);
 
     LOG_FUNC << "End of signal_cuts";
     return passCuts;
+}
+
+float ZZAnalysis::getLeadPt()
+{
+    if (subChannel_ == Subchannel::EEEE)
+        return elec.pt(Level::Iso, 0);
+    else if (subChannel_ == Subchannel::MMMM)
+        return muon.pt(Level::Iso, 0);
+    else if (subChannel_ == Subchannel::EEMM) {
+        return std::max(muon.pt(Level::Iso, 0), elec.pt(Level::Iso, 0));
+    }
+    return 0.;
+}
+
+float ZZAnalysis::getSubLeadPt()
+{
+    if (subChannel_ == Subchannel::EEEE)
+        return elec.pt(Level::Iso, 1);
+    else if (subChannel_ == Subchannel::MMMM)
+        return muon.pt(Level::Iso, 1);
+    else if (subChannel_ == Subchannel::EEMM) {
+        if (muon.pt(Level::Iso, 0) > elec.pt(Level::Iso, 0))
+            return std::max(muon.pt(Level::Iso, 1), elec.pt(Level::Iso, 0));
+        else
+            return std::max(muon.pt(Level::Iso, 0), elec.pt(Level::Iso, 1));
+    }
+    return 0.;
+
 }
 
 void ZZAnalysis::FillValues(const std::vector<bool>& passVec)
@@ -132,8 +165,10 @@ void ZZAnalysis::FillValues(const std::vector<bool>& passVec)
         pass_bitmap += passVec.at(i) << i;
     }
 
-    // fillParticle(muon, Level::Loose, *o_looseMuons, pass_bitmap);
-    // fillParticle(elec, Level::Loose, *o_looseElectrons, pass_bitmap);
+    fillParticle(muon, Level::Loose, *o_looseMuons, pass_bitmap);
+    fillParticle(elec, Level::Loose, *o_looseElectrons, pass_bitmap);
+    fillParticle(muon, Level::Tight, *o_tightMuons, pass_bitmap);
+    fillParticle(elec, Level::Tight, *o_tightElectrons, pass_bitmap);
     // fillLepton(muon, Level::Tight, *o_tightMuons, pass_bitmap);
     // fillLepton(elec, Level::Tight, *o_tightElectrons, pass_bitmap);
     // fillJet(jet, Level::Tight, *o_jets, pass_bitmap);
@@ -141,15 +176,15 @@ void ZZAnalysis::FillValues(const std::vector<bool>& passVec)
     // fillParticle(rTop, Level::Loose, *o_resolvedTop, pass_bitmap);
     // fillAllLeptons(muon, elec, *o_tightLeptons, pass_bitmap);
 
-    // for (size_t syst = 0; syst < numSystematics(); ++syst) {
-    //     o_ht.push_back(jet.getHT(Level::Tight, syst));
-    //     o_htb.push_back(jet.getHT(Level::Bottom, syst));
-    //     o_met.push_back(met.pt());
-    //     o_metphi.push_back(met.phi());
-    //     o_centrality.push_back(jet.getCentrality(Level::Tight, syst));
-    //     o_nb_loose.push_back(jet.n_loose_bjet.at(syst));
-    //     o_nb_tight.push_back(jet.n_tight_bjet.at(syst));
-    // }
+    for (size_t syst = 0; syst < numSystematics(); ++syst) {
+        //     o_ht.push_back(jet.getHT(Level::Tight, syst));
+        //     o_htb.push_back(jet.getHT(Level::Bottom, syst));
+        o_met.push_back(met.pt());
+        o_metphi.push_back(met.phi());
+        //     o_centrality.push_back(jet.getCentrality(Level::Tight, syst));
+        //     o_nb_loose.push_back(jet.n_loose_bjet.at(syst));
+        //     o_nb_tight.push_back(jet.n_tight_bjet.at(syst));
+    }
     LOG_FUNC << "End of FillValues";
 }
 
@@ -162,7 +197,6 @@ void ZZAnalysis::printStuff()
     std::cout << "njet: " << jet.size(Level::Tight) << std::endl;
     std::cout << "nbjet: " << jet.size(Level::Bottom) << std::endl;
     std::cout << "nlep: " << muon.size(Level::Tight) << " " << elec.size(Level::Tight) << std::endl;
-    std::cout << "nlep loose: " << muon.size(Level::Fake) << " " << elec.size(Level::Fake) << std::endl;
     std::cout << "lepVeto: " << muon.passZVeto() << " " << elec.passZVeto() << std::endl;
     std::cout << std::endl;
     LOG_FUNC << "End of printStuff";

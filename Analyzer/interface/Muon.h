@@ -6,15 +6,15 @@
 class Muon : public Lepton {
 public:
     void setup(TTreeReader& fReader, bool isMC);
-    virtual void createTightList(Particle& jets) override;
-    virtual float getScaleFactor() override;
+    void createLooseList() override;
+    void createTightList() override;
+    void createIsolatedList() override;
+    float getScaleFactor() override;
 
-    TRArray<Bool_t> isGlobal;
-    TRArray<Bool_t> isTracker;
-    TRArray<Bool_t> isPFcand;
-    TRArray<Int_t> tightCharge;
-    TRArray<Bool_t> mediumId;
-    TRArray<Float_t> sip3d;
+private:
+    NTupleArray<Bool_t> isGlobal, isTracker;
+    NTupleArray<UInt_t> nMatches, bestTrackType;
+    NTupleArray<Bool_t> isPF, highPtId;
 
     WeightHolder muon_scale;
 

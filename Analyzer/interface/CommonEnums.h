@@ -40,8 +40,8 @@ enum class PID {
 
 enum class Level {
     Loose,
-    Fake,
     Tight,
+    Iso,
     FakeNotTight,
     Top,
     Bottom,

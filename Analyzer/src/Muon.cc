@@ -11,6 +11,15 @@ void Muon::setup(TTreeReader& fReader, bool isMC)
     // tightCharge.setup(fReader, "Muon_tightCharge");
     // mediumId.setup(fReader, "Muon_mediumId");
     // sip3d.setup(fReader, "Muon_sip3d");
+    isGlobal.setup(fReader, "m", "IsGlobal");
+    isTracker.setup(fReader, "m", "IsTracker");
+    nMatches.setup(fReader, "m", "NoOfMatches");
+    bestTrackType.setup(fReader, "m", "BestTrackType");
+
+    isPF.setup(fReader, "m", "IsPFMuon");
+    highPtId.setup(fReader, "m", "HighPtID");
+
+
     id = PID::Muon;
     isoCut = 0.1;
     ptRatioCut = 0.8;
@@ -32,11 +41,38 @@ void Muon::setup(TTreeReader& fReader, bool isMC)
     // }
 }
 
-void Muon::createTightList(Particle& jets)
+void Muon::createLooseList()
 {
     for (size_t i = 0; i < size(); ++i) {
-        if (pt(i) > 15)
+        if (pt(i) > 5
+            && fabs(eta(i) < 2.4)
+            && fabs(dxy.at(i)) < 0.5
+            && fabs(dz.at(i) < 1)
+            && sips.at(i) < 4
+            && (isGlobal.at(i) || (isTracker.at(i) && nMatches.at(i) > 0))
+            && bestTrackType.at(i) != 2) {
+            m_partList[Level::Loose]->push_back(i);
+        }
+
+    }
+}
+
+void Muon::createTightList()
+{
+    for (auto i : list(Level::Loose)) {
+        if ((year_ == Year::yr2018 && (true)) // 2018 cuts
+            ||
+            (isPF.at(i) || (pt(i) > 200 && highPtId.at(i)))) // 2016/2017 cuts
             m_partList[Level::Tight]->push_back(i);
+    }
+}
+
+void Muon::createIsolatedList()
+{
+    for (auto i : list(Level::Tight)) {
+        if (zzTightId.at(i)
+            && zzIso.at(i))
+            m_partList[Level::Iso]->push_back(i);
     }
 }
 

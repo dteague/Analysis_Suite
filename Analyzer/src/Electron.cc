@@ -34,11 +34,28 @@ void Electron::setup(TTreeReader& fReader, bool isMC)
 
 }
 
-void Electron::createTightList(Particle& jets)
+void Electron::createLooseList()
 {
     for (size_t i = 0; i < size(); ++i) {
-        if (pt(i) > 15)
+        if (pt(i) > 7
+            && fabs(eta(i) < 2.5)
+            && fabs(dxy.at(i)) < 0.5
+            && fabs(dz.at(i) < 1)
+            && sips.at(i) < 4)
+            m_partList[Level::Loose]->push_back(i);
+    }
+}
+
+
+void Electron::createIsolatedList()
+{
+    for (auto i : list(Level::Loose)) {
+        if (zzTightId.at(i)
+            && zzIso.at(i)) {
             m_partList[Level::Tight]->push_back(i);
+            m_partList[Level::Iso]->push_back(i);
+        }
+
     }
 }
 

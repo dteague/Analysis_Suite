@@ -16,15 +16,18 @@ public:
 
 private:
     void printStuff();
-    void setSubChannel() {};
+    void setSubChannel();
 
     bool signal_cuts();
 
+    float getLeadPt();
+    float getSubLeadPt();
+
     ParticleOut* o_looseMuons;
     ParticleOut* o_looseElectrons;
-    ParticleOut* o_tightLeptons;
-    JetOut* o_jets;
-    JetOut* o_bJets;
+    ParticleOut* o_tightMuons;
+    ParticleOut* o_tightElectrons;
+    std::vector<float> o_met, o_metphi;
 
     TRVariable<Float_t> Pileup_nTrueInt;
 };

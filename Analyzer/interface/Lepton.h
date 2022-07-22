@@ -14,9 +14,12 @@ public:
     float _phi(size_t idx) const override { return m_phi.at(idx); }
     float _mass(size_t idx) const override { return m_mass.at(idx); }
 
-    virtual void createTightList(Particle& jets){};
+    virtual void createLooseList(){};
+    virtual void createTightList(){};
+    virtual void createIsolatedList(){};
+
     bool passZVeto();
-    bool passZCut(float low, float high);
+    // bool passZCut(float low, float high);
     void setup(std::string name, TTreeReader& fReader, bool isMC);
     std::pair<size_t, float> getCloseJet(size_t lidx, const Particle& jet);
     bool passJetIsolation(size_t idx, const Particle& jets);
@@ -32,7 +35,9 @@ public:
 
     virtual void setupGoodLists(Particle& jets) override
     {
-        createTightList(jets);
+        createLooseList();
+        createTightList();
+        createIsolatedList();
     }
 
     virtual void clear() override
@@ -54,6 +59,8 @@ protected:
     TRArray<Float_t> iso;
     NTupleArray<Float_t> dz;
     NTupleArray<Float_t> dxy;
+    NTupleArray<Float_t> sips;
+    NTupleArray<Bool_t> zzTightId, zzIso;
     NTupleArray<Int_t> genPartIdx;
 
     const float ZMASS = 91.188;

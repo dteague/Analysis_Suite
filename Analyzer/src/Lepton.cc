@@ -13,6 +13,10 @@ void Lepton::setup(std::string name, TTreeReader& fReader, bool isMC)
     m_charge.setup(fReader, name, "Charge");
     dz.setup(fReader, name, "PVDZ");
     dxy.setup(fReader, name, "PVDXY");
+    sips.setup(fReader, name, "SIP3D");
+
+    zzTightId.setup(fReader, name, "ZZTightIDNoVtx");
+    zzIso.setup(fReader, name, "ZZIsoPass");
     // if (isMC) {
     //     genPartIdx.setup(fReader, name+"_genPartIdx");
     // }
@@ -23,9 +27,9 @@ void Lepton::setup(std::string name, TTreeReader& fReader, bool isMC)
     // iso.setup(fReader, name + "_miniPFRelIso_all");
 
 
-    // setup_map(Level::Loose);
-    // setup_map(Level::Fake);
+    setup_map(Level::Loose);
     setup_map(Level::Tight);
+    setup_map(Level::Iso);
 }
 
 std::pair<size_t, float> Lepton::getCloseJet(size_t lidx, const Particle& jet)
@@ -63,20 +67,20 @@ bool Lepton::passZVeto()
     return true;
 }
 
-bool Lepton::passZCut(float low, float high)
-{
-    for (auto tidx : list(Level::Fake)) { //tightList
-        LorentzVector tlep = p4(tidx);
-        for (auto lidx : list(Level::Fake)) {
-            if (tidx >= lidx || charge(tidx) * charge(lidx) > 0)
-                continue;
-            float mass = (p4(lidx) + tlep).M();
-            if (mass > low && mass < high)
-                return true;
-        }
-    }
-    return false;
-}
+// bool Lepton::passZCut(float low, floa,t high)
+// {
+//     for (auto tidx : list(Level::Fake)) { //tightList
+//         LorentzVector tlep = p4(tidx);
+//         for (auto lidx : list(Level::Fake)) {
+//             if (tidx >= lidx || charge(tidx) * charge(lidx) > 0)
+//                 continue;
+//             float mass = (p4(lidx) + tlep).M();
+//             if (mass > low && mass < high)
+//                 return true;
+//         }
+//     }
+//     return false;
+// }
 
 bool Lepton::passJetIsolation(size_t idx, const Particle& jets)
 {

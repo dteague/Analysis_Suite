@@ -103,7 +103,7 @@ template <class T>
 class NTupleArray {
 public:
     void setup(TTreeReader& fReader, std::string particle, std::string branch) {
-        for (size_t i = 0; ; i++) {
+        for (size_t i = 1; ; i++) {
             std::string name = particle + std::to_string(i) + branch;
             if (!fReader.GetTree()->GetBranchStatus(name.c_str()))
                 break;

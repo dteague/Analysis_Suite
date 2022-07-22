@@ -6,8 +6,9 @@
 class Electron : public Lepton {
 public:
     void setup(TTreeReader& fReader, bool isMC);
-    virtual void createTightList(Particle& jets) override;
-    virtual float getScaleFactor() override;
+    void createLooseList() override;
+    void createIsolatedList() override;
+    float getScaleFactor() override;
 
     // Float_t pt(size_t idx) const { return m_pt.at(idx) / eCorr.at(idx); };
     // Float_t pt(Level level, size_t i) const { return pt(idx(level, i)); }

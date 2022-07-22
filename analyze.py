@@ -32,10 +32,10 @@ def getSumW(infiles):
     runChain = ROOT.TChain()
     sumweight = ROOT.TH1F("sumweight", "sumweight", 1, 0, 1)
     for fname in infiles:
-        runChain.Add(f"{fname}/Runs")
+        runChain.Add(f"{fname}/metaInfo/metaInfo")
 
-    if runChain.GetBranchStatus("genEventSumw"):
-        runChain.Draw("0>>sumweight",  "genEventSumw")
+    if runChain.GetBranchStatus("summedWeights"):
+        runChain.Draw("0>>sumweight",  "summedWeights")
     else:
         pass
     return sumweight

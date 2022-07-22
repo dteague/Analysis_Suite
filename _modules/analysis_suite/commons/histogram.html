@@ -166,6 +166,10 @@
         <span class="n">hist</span><span class="o">.</span><span class="n">hist</span> <span class="o">=</span> <span class="n">right</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">hist</span>
         <span class="k">return</span> <span class="n">hist</span>
 
+    <span class="k">def</span> <span class="fm">__imul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">right</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hist</span> <span class="o">*=</span> <span class="n">right</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
     <span class="k">def</span> <span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">right</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="n">Histogram</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_hist</span><span class="p">(</span><span class="n">right</span><span class="o">.</span><span class="n">hist</span><span class="p">)</span>
@@ -244,6 +248,9 @@
         <span class="n">return_obj</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">variances</span><span class="p">()[:]</span> <span class="o">=</span> <span class="n">error2</span>
         <span class="k">return</span> <span class="n">return_obj</span></div>
 
+<div class="viewcode-block" id="Histogram.move_overflow"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.histogram.Histogram.move_overflow">[docs]</a>    <span class="k">def</span> <span class="nf">move_overflow</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hist</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hist</span><span class="p">[</span><span class="n">bh</span><span class="o">.</span><span class="n">overflow</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hist</span><span class="p">[</span><span class="n">bh</span><span class="o">.</span><span class="n">overflow</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Histogram.set_metadata"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.histogram.Histogram.set_metadata">[docs]</a>    <span class="k">def</span> <span class="nf">set_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">group</span>

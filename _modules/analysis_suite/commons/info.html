@@ -82,7 +82,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../analysis_suite.html">Analysis Suite Documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../analysis_suite.commons.html"><code class="docutils literal notranslate"><span class="pre">commons</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#commons-awkward-commons"><code class="docutils literal notranslate"><span class="pre">commons.awkward_commons</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#commons-configs"><code class="docutils literal notranslate"><span class="pre">commons.configs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.configs"><code class="docutils literal notranslate"><span class="pre">commons.configs</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#commons-histogram"><code class="docutils literal notranslate"><span class="pre">commons.histogram</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.info"><code class="docutils literal notranslate"><span class="pre">commons.info</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.makeSimpleHtml"><code class="docutils literal notranslate"><span class="pre">commons.makeSimpleHtml</span></code></a></li>
@@ -132,85 +132,34 @@
 <span class="kn">import</span> <span class="nn">importlib</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span>  <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
-<div class="viewcode-block" id="BasicInfo"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.BasicInfo">[docs]</a><span class="k">class</span> <span class="nc">BasicInfo</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="n">selection</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="o">=</span> <span class="s2">&quot;analysis_suite.data&quot;</span></div>
+<span class="kn">from</span> <span class="nn">analysis_suite.data.FileInfo</span> <span class="kn">import</span> <span class="n">info</span> <span class="k">as</span> <span class="n">finfo</span>
+<span class="kn">from</span> <span class="nn">analysis_suite.data.PlotGroups</span> <span class="kn">import</span> <span class="n">info</span> <span class="k">as</span> <span class="n">ginfo</span>
 
-<div class="viewcode-block" id="PlotInfo"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.PlotInfo">[docs]</a><span class="k">class</span> <span class="nc">PlotInfo</span><span class="p">(</span><span class="n">BasicInfo</span><span class="p">):</span>
-    <span class="n">lumi</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;2016&quot;</span> <span class="p">:</span> <span class="mf">35.9</span><span class="p">,</span>
-        <span class="s2">&quot;2017&quot;</span> <span class="p">:</span> <span class="mf">41.5</span><span class="p">,</span>
-        <span class="s2">&quot;2018&quot;</span> <span class="p">:</span> <span class="mf">59.6</span><span class="p">,</span>
-        <span class="s2">&quot;all&quot;</span> <span class="p">:</span> <span class="mf">137.0</span><span class="p">,</span>
-    <span class="p">}</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plotInfo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">plot_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_path</span><span class="si">}</span><span class="s1">.plotInfo.</span><span class="si">{</span><span class="n">plotInfo</span><span class="si">}</span><span class="s1">&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">plotSpecs</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">plot_path</span><span class="p">)</span><span class="o">.</span><span class="n">info</span>
-
-<div class="viewcode-block" id="PlotInfo.at"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.PlotInfo.at">[docs]</a>    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">histname</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plotSpecs</span><span class="p">[</span><span class="n">histname</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plotSpecs</span><span class="p">[</span><span class="n">histname</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plotSpecs</span><span class="p">[</span><span class="n">histname</span><span class="p">][</span><span class="n">name</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span></div>
-
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plotSpecs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-
-<div class="viewcode-block" id="PlotInfo.get_hists"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.PlotInfo.get_hists">[docs]</a>    <span class="k">def</span> <span class="nf">get_hists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sublist</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">sublist</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plotSpecs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotSpecs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">sublist</span><span class="p">))</span></div>
-
-<div class="viewcode-block" id="PlotInfo.get_binning"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.PlotInfo.get_binning">[docs]</a>    <span class="k">def</span> <span class="nf">get_binning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">histname</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">boost_histogram</span> <span class="k">as</span> <span class="nn">bh</span>
-        <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">histname</span><span class="p">,</span> <span class="s2">&quot;Binning&quot;</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">histname</span><span class="p">,</span> <span class="s2">&quot;Discrete&quot;</span><span class="p">):</span>
-            <span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="mf">0.5</span>
-        <span class="k">return</span> <span class="n">bh</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">Regular</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">bins</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="o">*</span><span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span></div>
-
-<div class="viewcode-block" id="PlotInfo.get_lumi"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.PlotInfo.get_lumi">[docs]</a>    <span class="k">def</span> <span class="nf">get_lumi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lumi</span><span class="p">[</span><span class="n">year</span><span class="p">]</span></div>
-
-<div class="viewcode-block" id="PlotInfo.get_label"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.PlotInfo.get_label">[docs]</a>    <span class="k">def</span> <span class="nf">get_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">histname</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">histname</span><span class="p">,</span> <span class="s2">&quot;Label&quot;</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="PlotInfo.get_legend_loc"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.PlotInfo.get_legend_loc">[docs]</a>    <span class="k">def</span> <span class="nf">get_legend_loc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">histname</span><span class="p">):</span>
-        <span class="n">loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">histname</span><span class="p">,</span> <span class="s2">&quot;LegendLoc&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">loc</span> <span class="k">if</span> <span class="n">loc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;best&quot;</span></div></div>
-
-<div class="viewcode-block" id="GroupInfo"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.GroupInfo">[docs]</a><span class="k">class</span> <span class="nc">GroupInfo</span><span class="p">(</span><span class="n">BasicInfo</span><span class="p">):</span>
+<div class="viewcode-block" id="GroupInfo"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.GroupInfo">[docs]</a><span class="k">class</span> <span class="nc">GroupInfo</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group2color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">group_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_path</span><span class="si">}</span><span class="s1">.PlotGroups&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">groupInfo</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">group_path</span><span class="p">)</span><span class="o">.</span><span class="n">info</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group2color</span> <span class="o">=</span> <span class="n">group2color</span> <span class="k">if</span> <span class="n">group2color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group2MemberMap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_memberMap</span><span class="p">()</span>
 
 <div class="viewcode-block" id="GroupInfo.get_legend_name"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.GroupInfo.get_legend_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_legend_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupInfo</span><span class="p">[</span><span class="n">group</span><span class="p">][</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="n">ginfo</span><span class="p">[</span><span class="n">group</span><span class="p">][</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="GroupInfo.get_color"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.GroupInfo.get_color">[docs]</a>    <span class="k">def</span> <span class="nf">get_color</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">group2color</span><span class="p">[</span><span class="n">group</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="GroupInfo.get_memberMap"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.GroupInfo.get_memberMap">[docs]</a>    <span class="k">def</span> <span class="nf">get_memberMap</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupInfo</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">group2color</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">group2color</span>
         <span class="n">final</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupInfo</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupInfo</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">ginfo</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">members</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;Members&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="s2">&quot;Composite&quot;</span> <span class="ow">in</span> <span class="n">info</span> <span class="ow">and</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;Composite&quot;</span><span class="p">]:</span>
                 <span class="n">tmpMembers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
                 <span class="k">for</span> <span class="n">mem</span> <span class="ow">in</span> <span class="n">members</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">mem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupInfo</span><span class="p">:</span>
-                        <span class="n">tmpMembers</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupInfo</span><span class="p">[</span><span class="n">mem</span><span class="p">][</span><span class="s2">&quot;Members&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">mem</span> <span class="ow">in</span> <span class="n">ginfo</span><span class="p">:</span>
+                        <span class="n">tmpMembers</span> <span class="o">+=</span> <span class="n">ginfo</span><span class="p">[</span><span class="n">mem</span><span class="p">][</span><span class="s2">&quot;Members&quot;</span><span class="p">]</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">tmpMembers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mem</span><span class="p">)</span>
                 <span class="n">members</span> <span class="o">=</span> <span class="n">tmpMembers</span>
@@ -218,15 +167,23 @@
         <span class="k">return</span> <span class="n">final</span></div>
 
 <div class="viewcode-block" id="GroupInfo.get_members"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.GroupInfo.get_members">[docs]</a>    <span class="k">def</span> <span class="nf">get_members</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_memberMap</span><span class="p">()[</span><span class="n">group</span><span class="p">]</span></div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">group2MemberMap</span><span class="p">[</span><span class="n">group</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="FileInfo"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.FileInfo">[docs]</a><span class="k">class</span> <span class="nc">FileInfo</span><span class="p">(</span><span class="n">BasicInfo</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;UL&quot;</span> <span class="c1"># if isUL else &quot;Legacy&quot;</span>
-        <span class="n">file_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_path</span><span class="si">}</span><span class="s1">.FileInfo.</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s1">&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fileInfo</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">info</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dasNames</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;DAS&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fileInfo</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<div class="viewcode-block" id="GroupInfo.setup_groups"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.GroupInfo.setup_groups">[docs]</a>    <span class="k">def</span> <span class="nf">setup_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">groups</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">group2color</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">group2MemberMap</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span></div>
+
+<div class="viewcode-block" id="GroupInfo.setup_members"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.GroupInfo.setup_members">[docs]</a>    <span class="k">def</span> <span class="nf">setup_members</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_groups</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">return</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span></div></div>
+
+    
+<div class="viewcode-block" id="FileInfo"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.FileInfo">[docs]</a><span class="k">class</span> <span class="nc">FileInfo</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dasNames</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;DAS&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">finfo</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
 <div class="viewcode-block" id="FileInfo.get_group"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.FileInfo.get_group">[docs]</a>    <span class="k">def</span> <span class="nf">get_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">splitname</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">splitname</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">splitname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dasNames</span><span class="p">:</span>
@@ -241,7 +198,7 @@
         <span class="k">return</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="FileInfo.get_info"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.FileInfo.get_info">[docs]</a>    <span class="k">def</span> <span class="nf">get_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alias</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fileInfo</span><span class="p">[</span><span class="n">alias</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="n">finfo</span><span class="p">[</span><span class="n">alias</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="FileInfo.get_xsec"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.FileInfo.get_xsec">[docs]</a>    <span class="k">def</span> <span class="nf">get_xsec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_data</span><span class="p">(</span><span class="n">group</span><span class="p">):</span>
@@ -261,13 +218,38 @@
         <span class="k">return</span> <span class="kc">False</span></div></div>
 
 <span class="n">fileInfo</span> <span class="o">=</span> <span class="n">FileInfo</span><span class="p">()</span>
+
+<div class="viewcode-block" id="NtupleInfo"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">NtupleInfo</span><span class="p">:</span>
+    <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">trees</span><span class="p">:</span> <span class="nb">list</span>
+    <span class="n">region</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cut</span> <span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">object</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">changes</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="NtupleInfo.get_file"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.get_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="NtupleInfo.add_change"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.add_change">[docs]</a>    <span class="k">def</span> <span class="nf">add_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">changes</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">changes</span><span class="p">[</span><span class="n">tree</span><span class="p">]</span> <span class="o">=</span> <span class="n">changes</span></div>
+
+<div class="viewcode-block" id="NtupleInfo.get_change"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.get_change">[docs]</a>    <span class="k">def</span> <span class="nf">get_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">member</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">changes</span> <span class="ow">and</span> <span class="n">member</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">changes</span><span class="p">[</span><span class="n">tree</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">changes</span><span class="p">[</span><span class="n">tree</span><span class="p">][</span><span class="n">member</span><span class="p">]</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="NtupleInfo.apply_cut"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.apply_cut">[docs]</a>    <span class="k">def</span> <span class="nf">apply_cut</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cut</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vg</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">vg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div></div>
 </code></pre></div>
 
     </article>
 
     <footer>
       
-        <div class="mt-20 mb-4 text-sm text-gray-700">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.0.2</a></div>
+        <div class="mt-20 mb-4 text-sm text-gray-700">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.1.1</a></div>
       
     </footer></main>
 

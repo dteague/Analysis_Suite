@@ -1,0 +1,351 @@
+
+  
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    
+      <title>analysis_suite.commons.configs | Analysis Suite  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" href="../../../_static/theme.e6081a2fb60dd7bf7015.css" />
+      <link rel="stylesheet" href="../../../_static/style.css" />
+        <link rel="search" title="Search" href="../../../search.html" />
+        <link rel="index" title="Index" href="../../../genindex.html" />
+  </head>
+
+  <body class="antialiased text-gray scroll-smooth">
+    <div
+      id="page"
+      data-controller="sidebar search"
+      data-action="keydown@window->search#focus"
+      class="h-screen xl:grid xl:grid-layout"
+    >
+      <a class="block text-xl bg-white py-4 z-20 absolute top-0 h-14 inset-x-0 text-center transform -translate-y-full focus:translate-y-0 focus:outline-none transition-transform duration-75" href="#analysis-suite-commons-configs" title="Skip navigation links">Skip to content</a>
+
+      <header class="grid-area-header z-10 h-14">
+        <div class="bg-gray-dark shadow-md flex items-center h-full xl:px-2 relative"><div class="flex items-center">
+      <button
+    data-action="sidebar#open"
+    data-sidebar-target="hamburger"
+    class="xl:hidden h-14 w-14 leading-14 text-gray-100 hover:bg-gray-700 hover:text-brand focus:outline-none focus:bg-gray-700 focus:text-brand">
+  <span class="sr-only">Open navigation menu</span>
+  <svg aria-hidden="true" class="fill-current h-8 w-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+</button><a class="hover:bg-gray-700 focus:bg-gray-700 focus:outline-none tooltipped tooltipped-sw"
+   href="../../../index.html"
+   aria-label="Back to homepage"><span class="hidden lg:inline-block shrink-0 font-medium text-gray-100 mx-5 leading-14 tracking-wider">Analysis Suite  documentation</span>
+</a></div><div class="flex justify-end items-center flex-1"><form
+  id="searchbox"
+  action="../../../search.html"
+  data-action="click->search#focusSearchInput"
+  method="get"
+  class="flex print:hidden justify-between items-center leading-14 md:ml-4 bg-gray-dark text-gray-300 focus-within:bg-gray-50 focus-within:text-gray-800 focus-within:absolute focus-within:inset-x-0 focus-within:top-0 md:focus-within:w-full md:focus-within:static">
+
+  <button
+    class="text-inherit h-14 w-14"
+    aria-label="Get search results"
+    tabindex="-1"
+  >
+    <svg aria-hidden="true" class="fill-current stroke-current h-8 w-8" stroke-width="0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+  </button>
+
+  <input
+    name="q"
+    id="search-input"
+    data-search-target="searchInput"
+    type="search"
+    aria-label="Search the docs"
+    placeholder="Search the docs"
+    class="pr-2 bg-transparent text-inherit focus:outline-none w-0 md:w-auto focus:w-full transition-all duration-100"
+  />
+</form></div>
+</div>
+      </header>
+
+      
+  <aside data-sidebar-target="sidebar" class="grid-area-sidebar h-full fixed xl:relative inset-y-0 left-0 z-20 xl:z-0 print:hidden overflow-y-auto transition-all transform transform-gpu -translate-x-full opacity-0 duration-300 xl:translate-x-0 xl:opacity-100">
+    <nav
+  role="navigation"
+  class="h-full overflow-y-auto bg-white text-gray-600 pt-8 flex flex-col"
+>
+  <div class="nav-toc flex-1 pl-6"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Main Page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../running.html">Basic running</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../running.html#analysis-analyze">Analysis (<code class="docutils literal notranslate"><span class="pre">analyze</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../running.html#bdt-runner-mva">BDT runner (<code class="docutils literal notranslate"><span class="pre">mva</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../running.html#plotting-plot">Plotting (<code class="docutils literal notranslate"><span class="pre">plot</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../running.html#setup-combine-combine">Setup Combine (<code class="docutils literal notranslate"><span class="pre">combine</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis_suite.html">Analysis Suite Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis_suite.commons.html"><code class="docutils literal notranslate"><span class="pre">commons</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#commons-awkward-commons"><code class="docutils literal notranslate"><span class="pre">commons.awkward_commons</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.configs"><code class="docutils literal notranslate"><span class="pre">commons.configs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#commons-histogram"><code class="docutils literal notranslate"><span class="pre">commons.histogram</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.info"><code class="docutils literal notranslate"><span class="pre">commons.info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.makeSimpleHtml"><code class="docutils literal notranslate"><span class="pre">commons.makeSimpleHtml</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis_suite.BDT_utilities.html"><code class="docutils literal notranslate"><span class="pre">BDT_utilities</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.BDT_utilities.html#bdt-utilities-mvaplotter"><code class="docutils literal notranslate"><span class="pre">BDT_utilities.MVAPlotter</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.BDT_utilities.html#bdt-utilities-mvamaker"><code class="docutils literal notranslate"><span class="pre">BDT_utilities.MvaMaker</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis_suite.Plotting.html"><code class="docutils literal notranslate"><span class="pre">Plotting</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.Plotting.html#plotting-logfile"><code class="docutils literal notranslate"><span class="pre">Plotting.LogFile</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.Plotting.html#plotting-confighelper"><code class="docutils literal notranslate"><span class="pre">Plotting.configHelper</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.Plotting.html#plotting-pypad"><code class="docutils literal notranslate"><span class="pre">Plotting.pyPad</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.Plotting.html#plotting-stack"><code class="docutils literal notranslate"><span class="pre">Plotting.stack</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+
+  <button
+      data-action="sidebar#close"
+      title="Close navigation menu"
+      class="text-4xl text-gray-800 p-4 bottom-0 hover:text-brand xl:hidden focus:text-brand self-center">
+    <span class="sr-only">Close navigation menu</span>
+    <svg aria-hidden="true" class="fill-current stroke-current h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+  </button>
+</nav>
+  </aside>
+
+  <main
+    data-controller="scroll"
+    class="px-4 xl:ml-fluid grid-area-main overflow-y-auto flex flex-col h-full mx-0 md:mx-auto xl:mr-0"
+  ><nav role="navigation"
+     aria-label="breadcrumbs"
+     class="print:hidden mt-12 text-sm text-gray-light">
+  <a class="text-gray-light text-sm hover:text-gray-dark font-medium focus:text-gray-dark" href="../../../index.html">Analysis Suite  documentation</a>
+  <span class="mr-1">/</span><a class="text-gray-light text-sm hover:text-gray-dark" href="../../index.html">Module code</a>
+    <span class="mr-1">/</span><span aria-current="page">analysis_suite.commons.configs</span>
+</nav>
+    <article role="main" class="flex-1">
+      
+  <h1>Source code for analysis_suite.commons.configs</h1><div class="highlight"><pre>
+<code><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">pkgutil</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">uproot</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<div class="viewcode-block" id="get_cli"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_cli">[docs]</a><span class="k">def</span> <span class="nf">get_cli</span><span class="p">():</span>
+    <span class="kn">from</span> <span class="nn">.user</span> <span class="kn">import</span> <span class="n">workspace_area</span><span class="p">,</span> <span class="n">analysis_area</span>
+    <span class="kn">import</span> <span class="nn">analysis_suite.data.plotInfo</span> <span class="k">as</span> <span class="nn">plotInfo</span>
+
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">prog</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Central script for running tools in the Analysis suite&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;tool&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Tool to run&quot;</span><span class="p">,</span>
+                    <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;mva&#39;</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">,</span> <span class="s1">&#39;analyze&#39;</span><span class="p">,</span> <span class="s1">&#39;combine&#39;</span><span class="p">])</span>
+    <span class="c1">##################</span>
+    <span class="c1"># Common options #</span>
+    <span class="c1">##################</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-d&quot;</span><span class="p">,</span> <span class="s2">&quot;--workdir&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="n">workspace_area</span> <span class="o">/</span> <span class="n">x</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Working Directory&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-j&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of cores&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--log&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;ERROR&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span> <span class="s1">&#39;INFO&#39;</span><span class="p">,</span> <span class="s1">&#39;WARNING&#39;</span><span class="p">,</span> <span class="s1">&#39;ERROR&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set debug status (currently not used)&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-y&quot;</span><span class="p">,</span> <span class="s2">&quot;--years&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="p">[</span><span class="s2">&quot;2016&quot;</span><span class="p">,</span> <span class="s2">&quot;2017&quot;</span><span class="p">,</span> <span class="s2">&quot;2018&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span> \
+                                   <span class="k">else</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Year to use&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="s2">&quot;--systs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;Nominal&quot;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Systematics to be used&quot;</span><span class="p">)</span>
+    <span class="n">histInfo</span> <span class="o">=</span> <span class="p">[</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">pkgutil</span><span class="o">.</span><span class="n">iter_modules</span><span class="p">(</span><span class="n">plotInfo</span><span class="o">.</span><span class="n">__path__</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">ispkg</span><span class="p">]</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--info&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;plotInfo_default&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="n">histInfo</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Name of file containing histogram Info&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">elif</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;analyze&#39;</span><span class="p">:</span>
+        <span class="n">ntupleInfo</span> <span class="o">=</span> <span class="p">[</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">pkgutil</span><span class="o">.</span><span class="n">iter_modules</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="p">[</span><span class="n">analysis_area</span><span class="o">/</span><span class="s2">&quot;ntuple_info&quot;</span><span class="p">])</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">ispkg</span><span class="p">]</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--ntuple&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span> <span class="n">ntupleInfo</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Ntuple info class used for make root files&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;mva&quot;</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="s1">&#39;--train&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-m&#39;</span><span class="p">,</span> <span class="s1">&#39;--model&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DNN&#39;</span><span class="p">,</span> <span class="s1">&#39;TMVA&#39;</span><span class="p">,</span> <span class="s1">&#39;XGBoost&#39;</span><span class="p">,</span> <span class="s2">&quot;CutBased&quot;</span><span class="p">],</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Run the training&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--save&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--plot&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-r&#39;</span><span class="p">,</span> <span class="s1">&#39;--regions&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;Signal&quot;</span><span class="p">,</span>
+                            <span class="nb">type</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)],)</span>
+    <span class="k">elif</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;plot&quot;</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--name&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;ThreeTop&#39;</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Name of directory used for storing the plots&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--hists&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
+                            <span class="nb">type</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)],</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Pick specific histogram to plot&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--drawStyle&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;stack&#39;</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Way to draw graph&#39;</span><span class="p">,</span>
+                            <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;stack&#39;</span><span class="p">,</span> <span class="s1">&#39;compare&#39;</span><span class="p">,</span> <span class="s1">&#39;sigratio&#39;</span><span class="p">])</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ratio_range&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">],</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Ratio min ratio max (default 0.5 1.5)&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="s1">&#39;--type&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;processed&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;processed&#39;</span><span class="p">,</span> <span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="s1">&#39;ntuple&#39;</span><span class="p">],</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Type of file in the analysis change&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-r&#39;</span><span class="p">,</span> <span class="s1">&#39;--region&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;Signal&#39;</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Region that this histogram will be plotted from&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Combos</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;plot&quot;</span> <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;combine&quot;</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-sig&quot;</span><span class="p">,</span> <span class="s2">&quot;--signal&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Name of the group to be made into the Signal&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="setup"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.setup">[docs]</a><span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">analysis_suite.commons.user</span> <span class="kn">import</span> <span class="n">analysis_area</span>
+    <span class="kn">import</span> <span class="nn">shutil</span>
+    <span class="n">args</span><span class="o">.</span><span class="n">workdir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">workdir</span><span class="o">/</span><span class="s1">&#39;inputs.py&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inputs</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">analysis_area</span><span class="o">/</span><span class="s1">&#39;data/python/inputs.py&#39;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_inputs"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_inputs">[docs]</a><span class="k">def</span> <span class="nf">get_inputs</span><span class="p">(</span><span class="n">workdir</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">workdir</span><span class="p">,</span> <span class="n">Path</span><span class="p">):</span>
+        <span class="n">workdir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">workdir</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;.inputs&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;workspace.</span><span class="si">{</span><span class="n">workdir</span><span class="o">.</span><span class="n">stem</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_ntuple"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_ntuple">[docs]</a><span class="k">def</span> <span class="nf">get_ntuple</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;ntuple_info&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="findScale"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.findScale">[docs]</a><span class="k">def</span> <span class="nf">findScale</span><span class="p">(</span><span class="n">ratio</span><span class="p">):</span>
+    <span class="n">sigNum</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">ratio</span><span class="p">))</span>
+    <span class="n">tot</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">ratio</span><span class="p">)</span> <span class="o">/</span> <span class="n">sigNum</span><span class="p">)</span> <span class="o">*</span> <span class="n">sigNum</span>
+    <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="n">tot</span> <span class="o">+</span> <span class="n">sigNum</span><span class="o">//</span><span class="mi">2</span><span class="p">:</span>
+        <span class="n">tot</span> <span class="o">+=</span> <span class="n">sigNum</span><span class="o">//</span><span class="mi">2</span>
+    <span class="k">return</span> <span class="n">tot</span></div>
+
+
+<div class="viewcode-block" id="get_list_systs"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_list_systs">[docs]</a><span class="k">def</span> <span class="nf">get_list_systs</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">systs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">allSysts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">tool</span> <span class="o">==</span> <span class="s1">&#39;analyze&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">infile</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="n">all_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;*root&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">all_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">infile</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">file_</span> <span class="ow">in</span> <span class="n">all_files</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">uproot</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="p">:</span>
+                    <span class="k">if</span> <span class="s2">&quot;Systematics&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">allSysts</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_systs</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span>
+    <span class="k">elif</span> <span class="n">tool</span> <span class="o">==</span> <span class="s1">&#39;mva&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">infile</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/processed*root&quot;</span><span class="p">):</span>
+            <span class="n">allSysts</span> <span class="o">|=</span> <span class="p">{</span><span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])}</span>
+    <span class="k">elif</span> <span class="n">tool</span> <span class="o">==</span> <span class="s1">&#39;combine&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">infile</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/test*root&quot;</span><span class="p">):</span>
+            <span class="n">allSysts</span> <span class="o">|=</span> <span class="p">{</span><span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])}</span>
+
+    <span class="k">return</span> <span class="n">allSysts</span></div>
+
+<div class="viewcode-block" id="clean_syst"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.clean_syst">[docs]</a><span class="k">def</span> <span class="nf">clean_syst</span><span class="p">(</span><span class="n">syst</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">syst</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_down&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_up&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_plot_area"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_plot_area">[docs]</a><span class="k">def</span> <span class="nf">get_plot_area</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">.user</span> <span class="kn">import</span> <span class="n">www_area</span>
+    <span class="n">www_path</span> <span class="o">=</span> <span class="n">www_area</span><span class="o">/</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">www_path</span> <span class="o">/=</span> <span class="n">path</span><span class="o">.</span><span class="n">stem</span>
+    <span class="n">www_path</span> <span class="o">/=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y_%m_</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">www_path</span></div>
+
+<div class="viewcode-block" id="make_plot_paths"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.make_plot_paths">[docs]</a><span class="k">def</span> <span class="nf">make_plot_paths</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s2">&quot;plots&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_shape_systs"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_shape_systs">[docs]</a><span class="k">def</span> <span class="nf">get_shape_systs</span><span class="p">(</span><span class="n">addVar</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">analysis_suite.data.inputs</span> <span class="kn">import</span> <span class="n">systematics</span>
+    <span class="n">systs</span> <span class="o">=</span> <span class="p">[</span><span class="n">syst</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">syst</span> <span class="ow">in</span> <span class="n">systematics</span> <span class="k">if</span> <span class="n">syst</span><span class="o">.</span><span class="n">syst_type</span> <span class="o">==</span> <span class="s2">&quot;shape&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">addVar</span><span class="p">:</span>
+        <span class="n">systs</span> <span class="o">=</span> <span class="p">[</span><span class="n">syst</span><span class="o">+</span><span class="s2">&quot;_up&quot;</span> <span class="k">for</span> <span class="n">syst</span> <span class="ow">in</span> <span class="n">systs</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">syst</span><span class="o">+</span><span class="s2">&quot;_down&quot;</span> <span class="k">for</span> <span class="n">syst</span> <span class="ow">in</span> <span class="n">systs</span> <span class="p">]</span>
+    <span class="k">return</span> <span class="n">systs</span></div>
+
+<div class="viewcode-block" id="get_metadata"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_metadata">[docs]</a><span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="n">tlist</span><span class="p">,</span> <span class="n">varName</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">tlist</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">member</span><span class="p">(</span><span class="s1">&#39;fName&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">varName</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">member</span><span class="p">(</span><span class="s1">&#39;fTitle&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="get_systs"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_systs">[docs]</a><span class="k">def</span> <span class="nf">get_systs</span><span class="p">(</span><span class="n">tlist</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">([</span><span class="n">item</span><span class="o">.</span><span class="n">member</span><span class="p">(</span><span class="s1">&#39;fName&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">tlist</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="get_syst_index"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_syst_index">[docs]</a><span class="k">def</span> <span class="nf">get_syst_index</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">systName</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">uproot</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">syst_dir</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="s2">&quot;Systematics&quot;</span> <span class="ow">in</span> <span class="n">key</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">systNames</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">member</span><span class="p">(</span><span class="s2">&quot;fName&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">f</span><span class="p">[</span><span class="n">syst_dir</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="n">systName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">systNames</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">systNames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">systName</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_dirnames"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_dirnames">[docs]</a><span class="k">def</span> <span class="nf">get_dirnames</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">uproot</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">dirnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">classnames</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="bp">cls</span> <span class="o">==</span> <span class="s2">&quot;TDirectory&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dirnames</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">d</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dirnames</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="rOpen"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.rOpen">[docs]</a><span class="nd">@contextmanager</span>
+<span class="k">def</span> <span class="nf">rOpen</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">option</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">ROOT</span>
+    <span class="n">rootfile</span> <span class="o">=</span> <span class="n">ROOT</span><span class="o">.</span><span class="n">TFile</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">option</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">rootfile</span>
+    <span class="n">rootfile</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span></div>
+
+<span class="nd">@np</span><span class="o">.</span><span class="n">vectorize</span>
+<span class="k">def</span> <span class="nf">asymptotic_sig</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">b</span><span class="o">+</span><span class="mf">1e-5</span><span class="p">)</span>
+
+<span class="nd">@np</span><span class="o">.</span><span class="n">vectorize</span>
+<span class="k">def</span> <span class="nf">likelihood_sig</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="n">b</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">s</span><span class="o">/</span><span class="p">(</span><span class="n">b</span><span class="o">+</span><span class="mf">1e-5</span><span class="p">))</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span>
+</code></pre></div>
+
+    </article>
+
+    <footer>
+      
+        <div class="mt-20 mb-4 text-sm text-gray-700">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.1.1</a></div>
+      
+    </footer></main>
+
+
+      <button
+  data-search-target="snackbar"
+  data-action="search#hideSnackbar"
+  class="fixed bottom-0 right-0 z-20 opacity-0 p-4 m-4 tracking-wide bg-gray-900 text-gray-100 transition transform transform-gpu duration-500 translate-y-full"
+>
+  Clear highlights
+</button><div
+  data-sidebar-target="screen"
+  data-action="click->sidebar#close"
+  class="fixed hidden inset-0 bg-black bg-opacity-50">
+</div>
+    </div>
+    
+      
+  <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+  <script src="../../../_static/jquery.js"></script>
+  <script src="../../../_static/underscore.js"></script>
+  <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+  <script src="../../../_static/doctools.js"></script>
+<script src="../../../_static/theme.a9d041328d1560cbc665.js"></script>
+    
+  </body>
+</html>

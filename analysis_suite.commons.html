@@ -174,7 +174,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="analysis_suite.commons.configs.get_ntuple">
-<span class="sig-prename descclassname"><span class="pre">analysis_suite.commons.configs.</span></span><span class="sig-name descname"><span class="pre">get_ntuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/configs.html#get_ntuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.configs.get_ntuple" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">analysis_suite.commons.configs.</span></span><span class="sig-name descname"><span class="pre">get_ntuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'info'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/configs.html#get_ntuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.configs.get_ntuple" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -368,7 +368,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="analysis_suite.commons.info.NtupleInfo">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">analysis_suite.commons.info.</span></span><span class="sig-name descname"><span class="pre">NtupleInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">filename:</span> <span class="pre">str,</span> <span class="pre">trees:</span> <span class="pre">list,</span> <span class="pre">region:</span> <span class="pre">str,</span> <span class="pre">cut:</span> <span class="pre">Callable[[object],</span> <span class="pre">bool]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">changes:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/info.html#NtupleInfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.info.NtupleInfo" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">analysis_suite.commons.info.</span></span><span class="sig-name descname"><span class="pre">NtupleInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">filename:</span> <span class="pre">str,</span> <span class="pre">trees:</span> <span class="pre">list,</span> <span class="pre">region:</span> <span class="pre">str,</span> <span class="pre">cut:</span> <span class="pre">Callable[[object],</span> <span class="pre">bool]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">branches:</span> <span class="pre">list</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">changes:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/info.html#NtupleInfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.info.NtupleInfo" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="analysis_suite.commons.info.NtupleInfo.add_change">
@@ -378,6 +378,11 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="analysis_suite.commons.info.NtupleInfo.apply_cut">
 <span class="sig-name descname"><span class="pre">apply_cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vg</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/info.html#NtupleInfo.apply_cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.info.NtupleInfo.apply_cut" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analysis_suite.commons.info.NtupleInfo.branches">
+<span class="sig-name descname"><span class="pre">branches</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#analysis_suite.commons.info.NtupleInfo.branches" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -408,6 +413,11 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="analysis_suite.commons.info.NtupleInfo.region">
 <span class="sig-name descname"><span class="pre">region</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#analysis_suite.commons.info.NtupleInfo.region" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analysis_suite.commons.info.NtupleInfo.setup_branches">
+<span class="sig-name descname"><span class="pre">setup_branches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/info.html#NtupleInfo.setup_branches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.info.NtupleInfo.setup_branches" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">

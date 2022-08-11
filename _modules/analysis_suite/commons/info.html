@@ -223,6 +223,7 @@
     <span class="n">trees</span><span class="p">:</span> <span class="nb">list</span>
     <span class="n">region</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">cut</span> <span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">object</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">branches</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">changes</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
 
 <div class="viewcode-block" id="NtupleInfo.get_file"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.get_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -240,7 +241,16 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cut</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">vg</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">vg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div></div>
+            <span class="n">vg</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">vg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="NtupleInfo.setup_branches"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.setup_branches">[docs]</a>    <span class="k">def</span> <span class="nf">setup_branches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">branches</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">branches</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">branches</span><span class="p">:</span>
+                <span class="n">func</span><span class="p">(</span><span class="n">vg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">branches</span><span class="p">(</span><span class="n">vg</span><span class="p">)</span></div></div>
 </code></pre></div>
 
     </article>

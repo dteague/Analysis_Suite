@@ -144,11 +144,16 @@
 <h2>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this heading">¶</a></h2>
 <p>This area requires python3 for all python scripts as well as ROOT, so you need to be in a CMSSW area with ROOT 6.20 or greater. At time of writing, <code class="docutils literal notranslate"><span class="pre">CMSSW_11_2_0_pre9</span></code> fits the bill. You will also have to have certain packages not default for</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generic Area Setup</span>
-cmsrel CMSSW_11_2_0_pre9
-<span class="nb">cd</span> CMSSW_11_2_0_pre9/src
+cmsrel CMSSW_12_3_1
+<span class="nb">cd</span> CMSSW_12_3_1/src
 cmsenv
 git clone https://github.com/dteague/Analysis_suite analysis_suite
 <span class="nb">cd</span> analysis_suite
+
+<span class="c1"># Setting up scale factors</span>
+git submodule init
+git submodule update
+cp -r jsonpog-integration/POG data
 
 <span class="c1"># Building</span>
 python3 -m pip install --user -r requirements.txt
@@ -159,8 +164,22 @@ scram b -j <span class="m">4</span>
 </section>
 <section id="quick-start">
 <h2>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this heading">¶</a></h2>
-<p>The code has several modes: <code class="docutils literal notranslate"><span class="pre">analysis</span></code>, <code class="docutils literal notranslate"><span class="pre">mva</span></code>, <code class="docutils literal notranslate"><span class="pre">plot</span></code>, and <code class="docutils literal notranslate"><span class="pre">combine</span></code>. There are many options needed for the code to run, and it is detailed more in the running section of this tutorial. The main options needed for all running is the analysis which corresponds to the cpp code used for analysis as well as the fileInfo used for getting sample information, and the Work Directory or where all the output files will be saved</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./run_suite.py &lt;mode&gt; -a &lt;Analysis&gt; -d &lt;Work Directory&gt;
+<p>There are two main scripts that can be run in the code:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">analyze.py</span></code> for skimming NanoAOD files and turning them in ntuples</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run_suite.py</span></code> for modifying and changing the ntuples</p></li>
+</ul>
+<p>For <code class="docutils literal notranslate"><span class="pre">analyze.py</span></code>, you must run on an xrootd accessed file or to run locally, add the <code class="docutils literal notranslate"><span class="pre">--local</span></code> flag. The analysis is the TSelector that one wants the the file to be run with. In hte help text, a list oof the choices are given for convience. A typical example of how the code is run is</p>
+<p>Which creates a file called <code class="docutils literal notranslate"><span class="pre">output.root</span></code>, or if one wants to run over a local file:</p>
+<p>As for the <code class="docutils literal notranslate"><span class="pre">run_suite.py</span></code>, it takes the output ntuple created by <code class="docutils literal notranslate"><span class="pre">analyze.py</span></code> or the farmout jobs. The mode are</p>
+<ul class="simple">
+<li><p>flatten: Turn jagged ntuple into a rectilinear dataframe. Useful for machine learning</p></li>
+<li><p>mva: Run the flatten ntuples through one of the many machine learning tools. Returns the same flattened ntuple with the discriminate added and the overall dataframe shortened for the test/train sets needed</p></li>
+<li><p>plot: Plots both ntuples and flattened ntuples</p></li>
+<li><p>combine: Take input file and creates histograms and cards to be used by combine</p></li>
+</ul>
+<p>A more detailed account of how each module works is given in the running section of this documentation along with a full analysis runthrough in the workflow section. An example of how this code works is:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./run_suite.py &lt;mode&gt; -d &lt;Work Directory&gt; -y &lt;year&gt;
 </pre></div>
 </div>
 <p>Or if you need more information, just run <code class="docutils literal notranslate"><span class="pre">./run_suite.py</span> <span class="pre">--help</span></code></p>
@@ -172,7 +191,7 @@ scram b -j <span class="m">4</span>
 
   <footer>
     
-      <div class="mt-20 mb-4 text-sm text-gray-700 print:mt-4">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.2.1</a></div>
+      <div class="mt-20 mb-4 text-sm text-gray-700 print:mt-4">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.2.2</a></div>
     
   </footer></main>
 

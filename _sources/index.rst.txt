@@ -24,11 +24,16 @@ This area requires python3 for all python scripts as well as ROOT, so you need t
 .. code-block:: bash
 
    # Generic Area Setup
-   cmsrel CMSSW_11_2_0_pre9
-   cd CMSSW_11_2_0_pre9/src
+   cmsrel CMSSW_12_3_1
+   cd CMSSW_12_3_1/src
    cmsenv
    git clone https://github.com/dteague/Analysis_suite analysis_suite
    cd analysis_suite
+
+   # Setting up scale factors
+   git submodule init
+   git submodule update
+   cp -r jsonpog-integration/POG data
 
    # Building
    python3 -m pip install --user -r requirements.txt
@@ -40,10 +45,32 @@ This area requires python3 for all python scripts as well as ROOT, so you need t
 Quick Start
 ************
 
-The code has several modes: ``analysis``, ``mva``, ``plot``, and ``combine``. There are many options needed for the code to run, and it is detailed more in the running section of this tutorial. The main options needed for all running is the analysis which corresponds to the cpp code used for analysis as well as the fileInfo used for getting sample information, and the Work Directory or where all the output files will be saved
+There are two main scripts that can be run in the code:
+
+- ``analyze.py`` for skimming NanoAOD files and turning them in ntuples
+- ``run_suite.py`` for modifying and changing the ntuples
+
+For ``analyze.py``, you must run on an xrootd accessed file or to run locally, add the ``--local`` flag. The analysis is the TSelector that one wants the the file to be run with. In hte help text, a list oof the choices are given for convience. A typical example of how the code is run is
+
+.. code-block:: bash
+    ./analyze.py -a ThreeTop -v 1 -i <remote file>
+
+Which creates a file called ``output.root``, or if one wants to run over a local file:
+
+.. code-block:: bash
+    ./analyze.py -a ThreeTop -v 1 -i <local file> --local -o outName.root
+
+As for the ``run_suite.py``, it takes the output ntuple created by ``analyze.py`` or the farmout jobs. The mode are
+
+- flatten: Turn jagged ntuple into a rectilinear dataframe. Useful for machine learning
+- mva: Run the flatten ntuples through one of the many machine learning tools. Returns the same flattened ntuple with the discriminate added and the overall dataframe shortened for the test/train sets needed
+- plot: Plots both ntuples and flattened ntuples
+- combine: Take input file and creates histograms and cards to be used by combine
+
+A more detailed account of how each module works is given in the running section of this documentation along with a full analysis runthrough in the workflow section. An example of how this code works is:
 
 .. code-block:: bash
 
-   ./run_suite.py <mode> -a <Analysis> -d <Work Directory>
+   ./run_suite.py <mode> -d <Work Directory> -y <year>
 
 Or if you need more information, just run ``./run_suite.py --help``

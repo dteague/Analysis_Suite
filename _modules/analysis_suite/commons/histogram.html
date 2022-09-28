@@ -233,8 +233,8 @@
 <div class="viewcode-block" id="Histogram.efficiency"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.histogram.Histogram.efficiency">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">efficiency</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">bot</span><span class="p">):</span>
         <span class="n">alf</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mf">0.682689492137</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-        <span class="n">aa</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">vals</span><span class="o">*</span><span class="n">bot</span><span class="o">.</span><span class="n">vals</span><span class="o">/</span><span class="n">bot</span><span class="o">.</span><span class="n">sumw2</span><span class="o">+</span><span class="mi">1</span>
-        <span class="n">bb</span> <span class="o">=</span> <span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">vals</span><span class="o">-</span><span class="n">top</span><span class="o">.</span><span class="n">vals</span><span class="p">)</span><span class="o">*</span><span class="n">bot</span><span class="o">.</span><span class="n">vals</span><span class="o">/</span><span class="n">bot</span><span class="o">.</span><span class="n">sumw2</span><span class="o">+</span><span class="mi">1</span>
+        <span class="n">aa</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">vals</span><span class="o">*</span><span class="n">bot</span><span class="o">.</span><span class="n">vals</span><span class="o">/</span><span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">sumw2</span><span class="o">+</span><span class="mf">1e-6</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+        <span class="n">bb</span> <span class="o">=</span> <span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">vals</span><span class="o">-</span><span class="n">top</span><span class="o">.</span><span class="n">vals</span><span class="p">)</span><span class="o">*</span><span class="n">bot</span><span class="o">.</span><span class="n">vals</span><span class="o">/</span><span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">sumw2</span><span class="o">+</span><span class="mf">1e-6</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
 
         <span class="n">eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">beta</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">aa</span><span class="p">,</span> <span class="n">bb</span><span class="p">)])</span>
 
@@ -378,7 +378,7 @@
 
   <footer>
     
-      <div class="mt-20 mb-4 text-sm text-gray-700 print:mt-4">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.2.1</a></div>
+      <div class="mt-20 mb-4 text-sm text-gray-700 print:mt-4">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.2.2</a></div>
     
   </footer></main>
 

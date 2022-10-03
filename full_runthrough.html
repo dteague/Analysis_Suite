@@ -134,10 +134,87 @@
 </section>
 <section id="make-nonprompt-fake-rates">
 <h2>Make Nonprompt Fake Rates<a class="headerlink" href="#make-nonprompt-fake-rates" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>voms-proxy-init -rfc -valid <span class="m">144</span>:00 -voms cms -bits <span class="m">2048</span>
+<span class="c1"># Create lists of samples to run over</span>
+create_lists.py -y <span class="m">2018</span> -t mc -r output -g ttbar,DY,wjets,qcd -f nonprompt_measurement
+create_lists.py -y <span class="m">2018</span> -t data -r output -g MM,E -f nonprompt_measurement
+create_lists.py -y <span class="m">2018</span> -t mc -r output -g ttbar_lep,wjet_ht -f nonprompt_closure
+create_lists.py -y <span class="m">2018</span> -t data -r output -g MM,EM,EE -f nonprompt_closure
+<span class="c1"># Submit the jobs</span>
+farmoutJob.py -f nonprompt_measurement -y <span class="m">2018</span> -a FakeRate
+farmoutJob.py -f nonprompt_closure -y <span class="m">2018</span> -a Nonprompt_Closure
+<span class="c1"># After jobs are finished (monitor with condor_q)</span>
+hadd.py -f nonprompt_measurement -y <span class="m">2018</span> -a FakeRate -d run_through
+hadd.py -f nonprompt_closure -y <span class="m">2018</span> -a Nonprompt_Closure -d run_through
+<span class="c1"># creates and moves files to directory in /hdfs/store/user/&lt;user&gt;/workspace/charge_misId/2018/run_through</span>
+calculate_fr.py -y <span class="m">2018</span> -i run_through -r sideband,measurement,closure -d run_through
+<span class="c1"># Run after make both fake rates for charge_misId and Nonprompt</span>
+convert_fakerates.py -y <span class="m">2018</span> --nonprompt run_through --charge run_through
+</pre></div>
+</div>
 </section>
 <section id="make-charge-misidentification-fake-rates">
 <h2>Make Charge Misidentification Fake Rates<a class="headerlink" href="#make-charge-misidentification-fake-rates" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>voms-proxy-init -rfc -valid <span class="m">144</span>:00 -voms cms -bits <span class="m">2048</span>
+<span class="c1"># Create lists of samples to run over</span>
+create_lists.py -y <span class="m">2018</span> -t mc -r output -g dy,vv,ttbar_lep -f charge_misId
+create_lists.py -y <span class="m">2018</span> -t data -r output -g MM,EM,EE -f charge_misId
+<span class="c1"># Submit the jobs</span>
+farmoutJob.py -f charge_misId -y <span class="m">2018</span> -a Closure_MisId
+<span class="c1"># After jobs are finished (monitor with condor_q)</span>
+hadd.py -f charge_misId -y <span class="m">2018</span> -a Closure_MisId -d run_through
+<span class="c1"># creates and moves files to directory in /hdfs/store/user/&lt;user&gt;/workspace/charge_misId/2018/run_through</span>
+calculate_misId.py -y <span class="m">2018</span> -i run_through -r measurement,closure -d run_through
+<span class="c1"># Run after make both fake rates for charge_misId and Nonprompt</span>
+convert_fakerates.py -y <span class="m">2018</span> --nonprompt run_through --charge run_through
+</pre></div>
+</div>
 <p>This snippet of code runs the basic btagging on signal like events and then calculates the MC btagging efficiencies for different flavor jets. This is used for getting the correct btagging scale factors. These scale factors are found as <code class="docutils literal notranslate"><span class="pre">data/POG/USER/&lt;year&gt;/beff.json.gz</span></code></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>voms-proxy-init -rfc -valid <span class="m">144</span>:00 -voms cms -bits <span class="m">2048</span>
+create_lists.py -y <span class="m">2018</span> -t mc -r output -g ttt,tttt,ttX,ttXY,xg,vv,vvv,ttbar,dy,wjet,other -f befficiency
+farmoutJob.py -f befficiency -y <span class="m">2018</span> -a BEfficiency -t mc
+<span class="c1"># After jobs are finished (monitor with condor_q)</span>
+hadd.py -f befficiency -y <span class="m">2018</span> -a BEfficiency -t mc -d run_through
+<span class="c1"># creates and moves files to directory in /hdfs/store/user/&lt;user&gt;/workspace/befficiency/2018/run_through</span>
+beff.py -y <span class="m">2018</span> -i run_through
+</pre></div>
+</div>
+</section>
+<section id="run-analysis-code-on-signal-region">
+<h2>Run Analysis code on Signal Region<a class="headerlink" href="#run-analysis-code-on-signal-region" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>voms-proxy-init -rfc -valid <span class="m">144</span>:00 -voms cms -bits <span class="m">2048</span>
+<span class="c1"># Create lists of samples to run over</span>
+create_lists.py -y <span class="m">2018</span> -t mc -r output -g ttt,tttt,ttX,ttXY,xg,vv,vvv,ttbar,dy,wjet,other -f signal_region
+create_lists.py -y <span class="m">2018</span> -t data -r output -g MM,EM,EE -f signal_region
+<span class="c1"># Submit the jobs</span>
+farmoutJob.py -f signal_region_ -y <span class="m">2018</span> -a ThreeTop
+<span class="c1"># After jobs are finished (monitor with condor_q)</span>
+hadd.py -f signal_region -y <span class="m">2018</span> -a ThreeTop -d run_through
+</pre></div>
+</div>
+</section>
+<section id="blah-blah">
+<h2>blah blah<a class="headerlink" href="#blah-blah" title="Permalink to this heading">¶</a></h2>
+<p>This section is about running over the ntuples created to the final combine results. The output of the main file is all stored in <code class="docutils literal notranslate"><span class="pre">workspace/&lt;workdir&gt;</span></code> where workdir is specified by the <code class="docutils literal notranslate"><span class="pre">-d</span></code> option. The details are commented in the code block below</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Creates a file per systematic called workspace/run_through/2018/processed_&lt;Syst&gt;.root</span>
+<span class="c1">#   Create flattened files for signal region and TTZ control region</span>
+./run_suite.py flatten -y <span class="m">2018</span> -d run_through -n signal -j <span class="m">4</span>
+./run_suite.py flatten -y <span class="m">2018</span> -d run_through -n ttzCR -j <span class="m">4</span>
+<span class="c1"># Train over nominal for Signal region (-t says to train)</span>
+./run_suite.py mva -y <span class="m">2018</span> -d run_through -n signal -m XGBoost -t
+<span class="c1"># Apply model trained for Signal and TTZ CR.</span>
+<span class="c1">#   Creates files called workspace/run_through/2018/test_&lt;Syst&gt;.root</span>
+./run_suite.py mva -y <span class="m">2018</span> -d run_through -n signal,ttzCR -m XGBoost
+<span class="c1"># Creates histograms and datacards to be use by combine. Uses bjet as fitting variable</span>
+./run_suite.py combine -y <span class="m">2018</span> -d run_through -sig bjet
+<span class="c1"># Actual running of combine. combine.py is a wrapper for actual combine</span>
+<span class="c1">#   Three tests below calculate the significance, asymptotic limit, and impact plots</span>
+<span class="c1">#   These are stored in workspace/run_through/combine</span>
+combine.py sig -y <span class="m">2018</span> -d run_through -f bjet --blind -n <span class="nb">test</span>
+combine.py asymptotic -y <span class="m">2018</span> -d run_through -f bjet --blind -n <span class="nb">test</span>
+combine.py impact -y <span class="m">2018</span> -d run_through -f bjet --blind -n <span class="nb">test</span>
+</pre></div>
+</div>
 </section>
 </section>
 

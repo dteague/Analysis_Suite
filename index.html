@@ -170,7 +170,13 @@ scram b -j <span class="m">4</span>
 <li><p><code class="docutils literal notranslate"><span class="pre">run_suite.py</span></code> for modifying and changing the ntuples</p></li>
 </ul>
 <p>For <code class="docutils literal notranslate"><span class="pre">analyze.py</span></code>, you must run on an xrootd accessed file or to run locally, add the <code class="docutils literal notranslate"><span class="pre">--local</span></code> flag. The analysis is the TSelector that one wants the the file to be run with. In hte help text, a list oof the choices are given for convience. A typical example of how the code is run is</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./analyze.py -a ThreeTop -v <span class="m">1</span> -i &lt;remote file&gt;
+</pre></div>
+</div>
 <p>Which creates a file called <code class="docutils literal notranslate"><span class="pre">output.root</span></code>, or if one wants to run over a local file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./analyze.py -a ThreeTop -v <span class="m">1</span> -i &lt;<span class="nb">local</span> file&gt; --local -o outName.root
+</pre></div>
+</div>
 <p>As for the <code class="docutils literal notranslate"><span class="pre">run_suite.py</span></code>, it takes the output ntuple created by <code class="docutils literal notranslate"><span class="pre">analyze.py</span></code> or the farmout jobs. The mode are</p>
 <ul class="simple">
 <li><p>flatten: Turn jagged ntuple into a rectilinear dataframe. Useful for machine learning</p></li>

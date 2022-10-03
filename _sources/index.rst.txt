@@ -53,12 +53,14 @@ There are two main scripts that can be run in the code:
 For ``analyze.py``, you must run on an xrootd accessed file or to run locally, add the ``--local`` flag. The analysis is the TSelector that one wants the the file to be run with. In hte help text, a list oof the choices are given for convience. A typical example of how the code is run is
 
 .. code-block:: bash
-    ./analyze.py -a ThreeTop -v 1 -i <remote file>
+
+   ./analyze.py -a ThreeTop -v 1 -i <remote file>
 
 Which creates a file called ``output.root``, or if one wants to run over a local file:
 
 .. code-block:: bash
-    ./analyze.py -a ThreeTop -v 1 -i <local file> --local -o outName.root
+
+   ./analyze.py -a ThreeTop -v 1 -i <local file> --local -o outName.root
 
 As for the ``run_suite.py``, it takes the output ntuple created by ``analyze.py`` or the farmout jobs. The mode are
 

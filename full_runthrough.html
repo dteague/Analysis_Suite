@@ -6,13 +6,12 @@
     <meta charset="utf-8" />
     <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Plotting | Analysis Suite  documentation</title>
+    <title>Full Run-Through | Analysis Suite  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" />
     <link rel="stylesheet" href="_static/theme.9297a650d9dd3016d913.css" />
     <link rel="stylesheet" href="_static/style.css" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="prev" title="BDT_utilities" href="analysis_suite.BDT_utilities.html" />
   </head>
 
   <body class="antialiased text-gray scroll-smooth">
@@ -22,7 +21,7 @@
       data-action="keydown@window->search#focus "
       class="min-h-screen xl:h-screen flex flex-col xl:grid xl:grid-layout print:block print:h-auto"
     >
-      <a class="block transition -translate-x-full focus:translate-x-0 opacity-0 focus:opacity-100 text-xl bg-white p-4 z-20 absolute top-0 left-0 h-14" href="#code-class-docutils-literal-notranslate-span-class-pre-plotting-span-code" title="Skip navigation links">Skip to content</a>
+      <a class="block transition -translate-x-full focus:translate-x-0 opacity-0 focus:opacity-100 text-xl bg-white p-4 z-20 absolute top-0 left-0 h-14" href="#full-run-through" title="Skip navigation links">Skip to content</a>
 
       <header class="grid-area-header z-10 h-14 fixed w-full top-0 print:hidden">
         <div class="bg-gray-dark shadow-md flex items-center h-full xl:px-2 relative"><div class="flex items-center">
@@ -70,7 +69,7 @@
   class="h-full overflow-y-auto bg-white text-gray-600 pt-8 flex flex-col"
 >
   <div class="nav-toc flex-1 pl-6"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Main Page</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Basic running</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="running.html#analysis-analyze">Analysis (<code class="docutils literal notranslate"><span class="pre">analyze</span></code>)</a></li>
@@ -79,7 +78,7 @@
 <li class="toctree-l2"><a class="reference internal" href="running.html#setup-combine-combine">Setup Combine (<code class="docutils literal notranslate"><span class="pre">combine</span></code>)</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="reference internal" href="analysis_suite.html">Analysis Suite Documentation</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="analysis_suite.html">Analysis Suite Documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="analysis_suite.commons.html"><code class="docutils literal notranslate"><span class="pre">commons</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="analysis_suite.commons.html#commons-awkward-commons"><code class="docutils literal notranslate"><span class="pre">commons.awkward_commons</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="analysis_suite.commons.html#module-analysis_suite.commons.configs"><code class="docutils literal notranslate"><span class="pre">commons.configs</span></code></a></li>
@@ -93,11 +92,11 @@
 <li class="toctree-l3"><a class="reference internal" href="analysis_suite.BDT_utilities.html#bdt-utilities-mvamaker"><code class="docutils literal notranslate"><span class="pre">BDT_utilities.MvaMaker</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">Plotting</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#plotting-logfile"><code class="docutils literal notranslate"><span class="pre">Plotting.LogFile</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#plotting-confighelper"><code class="docutils literal notranslate"><span class="pre">Plotting.configHelper</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#plotting-pypad"><code class="docutils literal notranslate"><span class="pre">Plotting.pyPad</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#plotting-stack"><code class="docutils literal notranslate"><span class="pre">Plotting.stack</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis_suite.Plotting.html"><code class="docutils literal notranslate"><span class="pre">Plotting</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="analysis_suite.Plotting.html#plotting-logfile"><code class="docutils literal notranslate"><span class="pre">Plotting.LogFile</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="analysis_suite.Plotting.html#plotting-confighelper"><code class="docutils literal notranslate"><span class="pre">Plotting.configHelper</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="analysis_suite.Plotting.html#plotting-pypad"><code class="docutils literal notranslate"><span class="pre">Plotting.pyPad</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="analysis_suite.Plotting.html#plotting-stack"><code class="docutils literal notranslate"><span class="pre">Plotting.stack</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -121,24 +120,24 @@
      aria-label="breadcrumbs"
      class="print:hidden mt-12 text-sm text-gray-light">
   <a class="text-gray-light text-sm hover:text-gray-dark font-medium focus:text-gray-dark" href="index.html">Analysis Suite  documentation</a>
-  <span class="mr-1">/</span><a class="text-gray-light text-sm hover:text-gray-dark" href="analysis_suite.html">Analysis Suite Documentation</a>
-    <span class="mr-1">/</span><span aria-current="page"><code class="docutils literal notranslate"><span class="pre">Plotting</span></code></span>
+  <span class="mr-1">/</span><span aria-current="page">Full Run-Through</span>
 </nav>
   <article role="main" class="flex-1">
     
-  <section id="plotting">
-<h1><code class="docutils literal notranslate"><span class="pre">Plotting</span></code><a class="headerlink" href="#plotting" title="Permalink to this heading">¶</a></h1>
-<section id="plotting-logfile">
-<h2><code class="docutils literal notranslate"><span class="pre">Plotting.LogFile</span></code><a class="headerlink" href="#plotting-logfile" title="Permalink to this heading">¶</a></h2>
+  <section id="full-run-through">
+<h1>Full Run-Through<a class="headerlink" href="#full-run-through" title="Permalink to this heading">¶</a></h1>
+<p>In this section, we give an example set of code used for the 3top analysis. These are the commands that are used to go from NanoAOD files to a result from combine. This set of instructions tries to be as thorough as possible and will be tested periodically to ensure it should work on all setups.</p>
+<p>Currently, the code base is only useable on the wisconsin cluster, but efforts to expand to using on other machines, namely lxplus are on the way. The only thing needed at the Wisconsin cluster is a way to submit jobs and a place to store the output. Wisconsin has a script called “farmoutAnalysis” which submits the jobs to condor and writes the output to a hadoop area. These files are hadd’ed and stored on the hdfs area for running. To genericize the code, this step is what needs to be fixed</p>
+<p>Each code section does a distinct part of the analysis needed in whole, but each is done such that one can run each section individually. This is also done for 2018, but easily expanded to 2016pre, 2016post, 2017.</p>
+<section id="initial-job-creation">
+<h2>Initial Job Creation<a class="headerlink" href="#initial-job-creation" title="Permalink to this heading">¶</a></h2>
 </section>
-<section id="plotting-confighelper">
-<h2><code class="docutils literal notranslate"><span class="pre">Plotting.configHelper</span></code><a class="headerlink" href="#plotting-confighelper" title="Permalink to this heading">¶</a></h2>
+<section id="make-nonprompt-fake-rates">
+<h2>Make Nonprompt Fake Rates<a class="headerlink" href="#make-nonprompt-fake-rates" title="Permalink to this heading">¶</a></h2>
 </section>
-<section id="plotting-pypad">
-<h2><code class="docutils literal notranslate"><span class="pre">Plotting.pyPad</span></code><a class="headerlink" href="#plotting-pypad" title="Permalink to this heading">¶</a></h2>
-</section>
-<section id="plotting-stack">
-<h2><code class="docutils literal notranslate"><span class="pre">Plotting.stack</span></code><a class="headerlink" href="#plotting-stack" title="Permalink to this heading">¶</a></h2>
+<section id="make-charge-misidentification-fake-rates">
+<h2>Make Charge Misidentification Fake Rates<a class="headerlink" href="#make-charge-misidentification-fake-rates" title="Permalink to this heading">¶</a></h2>
+<p>This snippet of code runs the basic btagging on signal like events and then calculates the MC btagging efficiencies for different flavor jets. This is used for getting the correct btagging scale factors. These scale factors are found as <code class="docutils literal notranslate"><span class="pre">data/POG/USER/&lt;year&gt;/beff.json.gz</span></code></p>
 </section>
 </section>
 

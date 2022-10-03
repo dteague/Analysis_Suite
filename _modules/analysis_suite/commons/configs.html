@@ -282,13 +282,6 @@
     <span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s2">&quot;plots&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="get_shape_systs"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_shape_systs">[docs]</a><span class="k">def</span> <span class="nf">get_shape_systs</span><span class="p">(</span><span class="n">addVar</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="kn">from</span> <span class="nn">analysis_suite.data.inputs</span> <span class="kn">import</span> <span class="n">systematics</span>
-    <span class="n">systs</span> <span class="o">=</span> <span class="p">[</span><span class="n">syst</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">syst</span> <span class="ow">in</span> <span class="n">systematics</span> <span class="k">if</span> <span class="n">syst</span><span class="o">.</span><span class="n">syst_type</span> <span class="o">==</span> <span class="s2">&quot;shape&quot;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">addVar</span><span class="p">:</span>
-        <span class="n">systs</span> <span class="o">=</span> <span class="p">[</span><span class="n">syst</span><span class="o">+</span><span class="s2">&quot;_up&quot;</span> <span class="k">for</span> <span class="n">syst</span> <span class="ow">in</span> <span class="n">systs</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">syst</span><span class="o">+</span><span class="s2">&quot;_down&quot;</span> <span class="k">for</span> <span class="n">syst</span> <span class="ow">in</span> <span class="n">systs</span> <span class="p">]</span>
-    <span class="k">return</span> <span class="n">systs</span></div>
-
 <div class="viewcode-block" id="get_metadata"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.get_metadata">[docs]</a><span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="n">tlist</span><span class="p">,</span> <span class="n">varName</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">tlist</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">member</span><span class="p">(</span><span class="s1">&#39;fName&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">varName</span><span class="p">:</span>
@@ -320,15 +313,6 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">mags</span><span class="p">)</span> <span class="o">/</span> <span class="n">mags</span></div>
 
 
-
-
-<div class="viewcode-block" id="rOpen"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.configs.rOpen">[docs]</a><span class="nd">@contextmanager</span>
-<span class="k">def</span> <span class="nf">rOpen</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">option</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-    <span class="kn">import</span> <span class="nn">ROOT</span>
-    <span class="n">rootfile</span> <span class="o">=</span> <span class="n">ROOT</span><span class="o">.</span><span class="n">TFile</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">option</span><span class="p">)</span>
-    <span class="k">yield</span> <span class="n">rootfile</span>
-    <span class="n">rootfile</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span></div>
-
 <span class="nd">@np</span><span class="o">.</span><span class="n">vectorize</span>
 <span class="k">def</span> <span class="nf">asymptotic_sig</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">s</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">b</span><span class="o">+</span><span class="mf">1e-5</span><span class="p">)</span>
@@ -342,7 +326,7 @@
 
   <footer>
     
-      <div class="mt-20 mb-4 text-sm text-gray-700 print:mt-4">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.2.2</a></div>
+      <div class="mt-20 mb-4 text-sm text-gray-700 print:mt-4">&copy; 2021, Dylan Teague&nbsp;Made with <a href="https://www.sphinx-doc.org">Sphinx 5.2.3</a></div>
     
   </footer></main>
 

@@ -1,3 +1,8 @@
 <lcgdict>
   <class name="BaseSelector"/>
+  <class name="ThreeTop"/>
+  <class name="FakeRate"/>
+  <class name="Nonprompt_Closure"/>
+  <class name="Closure_MisId"/>
+  <class name="BEfficiency"/>
 </lcgdict>

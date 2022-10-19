@@ -62,7 +62,7 @@ def scale_misId(vg, fake_rate):
     fr1 = get_fake_rate(part, fake_rate, 0)
     fr2 = get_fake_rate(part, fake_rate, 1)
     print(sum((fr1/(1-fr1)+fr2/(1-fr2))))
-    vg.scale = (fr1/(1-fr1)+fr2/(1-fr2))
+    vg.scale = (fr1/(1-fr1)+fr2/(1-fr2))*0.86
 
 def measurement(workdir, ginfo, year, input_dir):
     plot_dir = workdir / f'MR_{year}'
@@ -79,17 +79,17 @@ def measurement(workdir, ginfo, year, input_dir):
     plotter = Plotter(ntuple.get_file(year=year, workdir=input_dir), groups, ntuple=ntuple, year=year)
     plotter.cut(lambda vg : vg["Met"] > 25)
     plotter.set_groups(bkg=bkg)
-    for chan in chans:
-        latex = latex_chan[chan]
-        plotter.mask(lambda vg : vg["TightElectron"].num() == chan.count('E'))
-        plotter.fill_hists(graphs, ginfo)
-        for graph in graphs_1d:
-            plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}.png', chan=latex, region=f"$MR({latex})$")
+    # for chan in chans:
+    #     latex = latex_chan[chan]
+    #     plotter.mask(lambda vg : vg["TightElectron"].num() == chan.count('E'))
+    #     plotter.fill_hists(graphs, ginfo)
+    #     for graph in graphs_1d:
+    #         plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}.png', chan=latex, region=f"$MR({latex})$")
 
     plotter.mask(lambda vg : vg["TightElectron"].num() > 0)
     plotter.fill_hists(graphs, ginfo)
-    for graph in graphs_1d:
-        plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_e.png', chan="e\ell", region="$MR(e\ell)$")
+    # for graph in graphs_1d:
+    #     plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_e.png', chan="e\ell", region="$MR(e\ell)$")
 
     all_fr = plotter.get_sum(bkg, 'all_fr')
     flip_fr = plotter.get_sum(bkg, 'flip_fr')
@@ -120,49 +120,44 @@ def closure(workdir, ginfo, year, input_dir):
     groups = ginfo.setup_groups([ "data", "charge_flip"]+ mc_bkg)
     graphs = pinfo.charge_misId['Closure']
 
-    # TF setup
-    ntuple_os = config.get_ntuple('charge_misId', 'closure_os')
-    plotter_os = Plotter(ntuple_os.get_file(year=year, workdir=input_dir), groups, ntuple=ntuple_os, year=year)
-    # plotter_os.cut(lambda vg : vg["LHE_HT"] > 70, "DYm50_amc")
-    plotter_os.set_groups(bkg=["DY", "ttbar_lep", 'VV'])
-    plotter_os.fill_hists(graphs, ginfo)
-    # lhe_ht = plotter_os.get_hists("lhe_ht")
-    # print(lhe_ht["DY"].vals)
-    # print(lhe_ht["DY_ht"].vals)
-    # print(lhe_ht["DY"].vals/lhe_ht["DY_ht"].vals)
-    for graph in graphs:
-        plotter_os.plot_stack(graph.name, plot_dir/f'{graph.name}_OS_allMet.png', chan='ee', region="$OS({})$")
+    # # TF setup
+    # ntuple_os = config.get_ntuple('charge_misId', 'closure_os')
+    # plotter_os = Plotter(ntuple_os.get_file(year=year, workdir=input_dir), groups, ntuple=ntuple_os, year=year)
+    # # plotter_os.cut(lambda vg : vg["LHE_HT"] > 70, "DYm50_amc")
+    # plotter_os.set_groups(bkg=["DY", "ttbar_lep", 'VV'])
+    # plotter_os.fill_hists(graphs, ginfo)
+    # for graph in graphs:
+    #     plotter_os.plot_stack(graph.name, plot_dir/f'{graph.name}_OS_allMet.png', chan='ee', region="$OS({})$")
 
-    plotter_os.mask(lambda vg : vg["Met"] < 50, clear=False)
-    plotter_os.fill_hists(graphs, ginfo)
-    for graph in graphs:
-        plotter_os.plot_stack(graph.name, plot_dir/f'{graph.name}_OS.png', chan='ee', region="$OS({})$")
-
+    # plotter_os.mask(lambda vg : vg["Met"] < 50, clear=False)
+    # plotter_os.fill_hists(graphs, ginfo)
+    # for graph in graphs:
+    #     plotter_os.plot_stack(graph.name, plot_dir/f'{graph.name}_OS.png', chan='ee', region="$OS({})$")
     
 
     ntuple_ss = config.get_ntuple('charge_misId', 'closure_ss')
     plotter_ss = Plotter(ntuple_ss.get_file(year=year, workdir=input_dir), groups, ntuple=ntuple_ss, year=year)
+    plotter_ss.cut(lambda vg : vg["Met"] < 50)
     # plotter_ss.cut(lambda vg : vg["LHE_HT"] < 70, "DYm50_amc")
     plotter_ss.set_groups(bkg=["DY", "ttbar_lep", 'VV'])
-    plotter_ss.fill_hists(graphs, ginfo)
-    for graph in graphs:
-        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_allMet_mc.png', chan='ee', region="$SS({})$")
+    # plotter_ss.fill_hists(graphs, ginfo)
+    # for graph in graphs:
+    #     plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_allMet_mc.png', chan='ee', region="$SS({})$")
 
-    plotter_ss.mask(lambda vg : vg["Met"] < 50, clear=False)
-    plotter_ss.fill_hists(graphs, ginfo)
-    for graph in graphs:
-        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_mc.png', chan='ee', region="$SS({})$")
+    # plotter_ss.fill_hists(graphs, ginfo)
+    # for graph in graphs:
+    #     plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_mc.png', chan='ee', region="$SS({})$")
     # exit()
 
     with open(workdir/f"charge_misid_rate_{year}.pickle", "rb") as f:
         fake_rates = pickle.load(f)
         print(fake_rates)
     plotter_ss.scale(lambda vg : scale_misId(vg, fake_rates), groups='charge_flip')
-
+    print(plotter_ss.get_integral())
     plotter_ss.set_groups(bkg=mc_bkg, sig='charge_flip')
     plotter_ss.fill_hists(graphs, ginfo)
-    for graph in graphs:
-        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_all.png', chan='ee', region="$SS({})$")
+    # for graph in graphs:
+    #     plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_all.png', chan='ee', region="$SS({})$")
     # Plot with just Data-Driven Background
     plotter_ss.set_groups(bkg=['charge_flip'])
     for graph in graphs:

@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 import boost_histogram.axis as axis
+import numpy as np
+import awkward as ak
+
 from analysis_suite.plotting.plotter import GraphInfo
 
-cm_ptbins = axis.Variable([15, 50, 75, 100, 150])
+# cm_ptbins = axis.Variable([15, 50, 75, 100, 150])
+# cm_ptbins = axis.Variable([15, 25, 50, 90, 150])
+cm_ptbins = axis.Variable([15, 25, 30, 50, 70, 100, 150])
+# cm_ptbins = axis.Variable([15, 25, 35, 50, 90, 150])
 cm_etabins = axis.Variable([0.0, 1.1, 1.479, 1.653, 2.5])
 
 def fake_chargeMisId(vg):

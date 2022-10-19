@@ -197,9 +197,21 @@ info ={
             "wjets",
         ]
     },
+    "ewk_lep" : {
+        "Name": r"EWK",
+        "Composite": True,
+        "Members": [
+            'ttbar_lep',
+            "DYm50",
+            "DYm50_amc",
+            "DYm10-50",
+            "wjets",
+        ]
+    },
     "DY_ht": {
         "Name": r"DY",
         "Members" : [
+            # "DYm50_amc",
             "DYm50_ht40-70",
             "DYm50_ht70-100",
             "DYm50_ht100-200",

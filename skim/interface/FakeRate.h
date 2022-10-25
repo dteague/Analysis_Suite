@@ -30,14 +30,11 @@ private:
     LeptonOut_Fake* o_tightMuons;
     LeptonOut_Fake* o_fakeElectrons;
     LeptonOut_Fake* o_tightElectrons;
-    ParticleOut* o_muon;
     JetOut* o_jets;
-    JetOut* o_bJets;
 
     TRVariable<Float_t> Pileup_nTrueInt;
 
-    std::vector<Float_t> o_ht, o_htb, o_met, o_metphi;
-    std::vector<size_t> o_nb_loose, o_nb_tight;
+    std::vector<Float_t> o_ht, o_met, o_metphi;
     std::vector<int> o_lo_hlt, o_hi_hlt;
 
     LorentzVector lead_lep;

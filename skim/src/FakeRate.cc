@@ -59,14 +59,10 @@ void FakeRate::SetupOutTreeBranches(TTree* tree)
     tree->Branch("FakeElectron", "LeptonOut_Fake", &o_fakeElectrons);
     tree->Branch("TightElectron", "LeptonOut_Fake", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
-    tree->Branch("BJets", "JetOut", &o_bJets);
 
     tree->Branch("HT", &o_ht);
-    tree->Branch("HT_b", &o_htb);
     tree->Branch("Met", &o_met);
     tree->Branch("Met_phi", &o_metphi);
-    tree->Branch("N_bloose", &o_nb_loose);
-    tree->Branch("N_btight", &o_nb_tight);
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
 
@@ -81,11 +77,8 @@ void FakeRate::clearOutputs()
 {
     LOG_FUNC << "Start of clearOutputs";
     o_ht.clear();
-    o_htb.clear();
     o_met.clear();
     o_metphi.clear();
-    o_nb_loose.clear();
-    o_nb_tight.clear();
     LOG_FUNC << "End of clearOutputs";
 }
 
@@ -198,7 +191,7 @@ bool FakeRate::measurement_cuts()
     CutInfo cuts;
 
     passCuts &= single_lep_cuts(cuts);
-    passCuts &= cuts.setCut("passMetCut", met.pt() < 20);
+    passCuts &= cuts.setCut("passMetCut", met.pt() < 30);
     passCuts &= cuts.setCut("passMtCut", met.mt(lead_lep.Pt(), lead_lep.Phi()) < 20);
     // Fill Cut flow
     fillCutFlow(Channel::Measurement, cuts);
@@ -212,10 +205,9 @@ bool FakeRate::sideband_cuts()
     CutInfo cuts;
 
     passCuts &= single_lep_cuts(cuts);
-    passCuts &= cuts.setCut("passMetCut", met.pt() > 20);
-    passCuts &= cuts.setCut("passTightLep", nLeps(Level::Fake) == 1);
+    passCuts &= cuts.setCut("passMetCut", met.pt() > 30);
     passCuts &= cuts.setCut("passTightLep", nLeps(Level::Tight) == 1);
-    passCuts &= cuts.setCut("passLeadLepPt", lead_lep.Pt() > 20);
+    // passCuts &= cuts.setCut("passLeadLepPt", lead_lep.Pt() > 20);
 
     // Fill Cut flow
     fillCutFlow(Channel::SideBand, cuts);
@@ -243,17 +235,13 @@ void FakeRate::FillValues(const Bitmap& event_bitmap)
     elec.fillLepton_Iso(*o_fakeElectrons, Level::FakeNotTight, event_bitmap);
     elec.fillLepton_Iso( *o_tightElectrons, Level::Tight, event_bitmap);
     jet.fillJet(*o_jets, Level::Tight, event_bitmap);
-    jet.fillJet(*o_bJets, Level::Bottom, event_bitmap);
 
     for (size_t syst = 0; syst < numSystematics(); ++syst) {
         setupSyst(syst);
 
         o_ht.push_back(jet.getHT(Level::Tight, syst));
-        o_htb.push_back(jet.getHT(Level::Bottom, syst));
         o_met.push_back(met.pt());
         o_metphi.push_back(met.phi());
-        o_nb_loose.push_back(jet.n_loose_bjet.at(syst));
-        o_nb_tight.push_back(jet.n_tight_bjet.at(syst));
     }
     LOG_FUNC << "End of FillValues";
 }

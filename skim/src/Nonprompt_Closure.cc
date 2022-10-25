@@ -6,6 +6,8 @@ enum class Channel {
     TightTight,
     TightFake,
     FakeFake,
+    DY_Tight,
+    DY_Fake,
     None,
 };
 
@@ -22,17 +24,20 @@ void Nonprompt_Closure::Init(TTree* tree)
     met_type = MET_Type::PUPPI;
     BaseSelector::Init(tree);
 
-    createTree("Closure_FF", Channel::FakeFake);
-    createTree("Closure_TF", Channel::TightFake);
-    if (isMC_) {
-        createTree("Closure_TT", Channel::TightTight);
-    }
+    // createTree("Closure_FF", Channel::FakeFake);
+    // createTree("Closure_TF", Channel::TightFake);
+    // if (isMC_) {
+    //     createTree("Closure_TT", Channel::TightTight);
+    // }
+    createTree("DY_Fake", Channel::DY_Fake);
+    createTree("DY_Tight", Channel::DY_Tight);
 
     muon.setup_map(Level::FakeNotTight);
     elec.setup_map(Level::FakeNotTight);
 
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
+        LHE_HT.setup(fReader, "LHE_HT");
     } else {
         sfMaker.setup_prescale();
     }
@@ -89,6 +94,9 @@ void Nonprompt_Closure::SetupOutTreeBranches(TTree* tree)
     tree->Branch("Met_phi", &o_metphi);
     tree->Branch("N_bloose", &o_nb_loose);
     tree->Branch("N_btight", &o_nb_tight);
+    if (isMC_) {
+        tree->Branch("LHE_HT", &o_ht_lhe);
+    }
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
 
@@ -108,6 +116,7 @@ void Nonprompt_Closure::clearOutputs()
     o_metphi.clear();
     o_nb_loose.clear();
     o_nb_tight.clear();
+    o_ht_lhe.clear();
     LOG_FUNC << "End of clearOutputs";
 }
 
@@ -149,6 +158,12 @@ void Nonprompt_Closure::setSubChannel()
         } else {
             subChannel_ = Subchannel::EM;
         }
+    } else if (nLeps(Level::Fake) == 3) {
+        if (muon.size(Level::Tight) == 2) {
+            subChannel_ = Subchannel::MM;
+        } else if(elec.size(Level::Tight) == 2) {
+            subChannel_ = Subchannel::EE;
+        }
     }
     LOG_FUNC << "End of setSubChannel";
 }
@@ -178,6 +193,11 @@ bool Nonprompt_Closure::getCutFlow()
         if (nLeps(Level::Tight) == 2) (*currentChannel_) = Channel::TightTight;
         else if (nLeps(Level::Tight) == 1) (*currentChannel_) = Channel::TightFake;
         else (*currentChannel_) = Channel::FakeFake;
+    }
+
+    if (dy_closure_cuts()) {
+        if (nLeps(Level::Tight) == 3) (*currentChannel_) = Channel::DY_Tight;
+        else (*currentChannel_) = Channel::DY_Fake;
     }
 
     if (*currentChannel_ == Channel::None) {
@@ -220,6 +240,44 @@ bool Nonprompt_Closure::closure_cuts()
     return passCuts;
 }
 
+bool Nonprompt_Closure::dy_closure_cuts()
+{
+    bool passCuts = true;
+    CutInfo cuts;
+    Lepton& tag_lep = subChannel_ == Subchannel::MM ? static_cast<Lepton&>(muon) : static_cast<Lepton&>(elec);
+    Lepton& probe_lep = subChannel_ == Subchannel::MM ? static_cast<Lepton&>(elec) : static_cast<Lepton&>(muon);
+
+    passCuts &= cuts.setCut("passPreselection", true);
+    passCuts &= cuts.setCut("passMETFilter", metfilters.pass());
+    passCuts &= cuts.setCut("pass2TagLepton", tag_lep.size(Level::Tight) == 2);
+    passCuts &= cuts.setCut("passProbeLepton", probe_lep.size(Level::Fake) == 1);
+
+    // Trigger Cuts
+    passCuts &= cuts.setCut("passLeadPtCut", getLeadPt() > 25);
+    passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
+
+    int charge = 0;
+    float mass = -1;
+    if (subChannel_ == Subchannel::MM && tag_lep.size(Level::Tight) == 2) {
+        mass = (muon.p4(Level::Tight, 0) + muon.p4(Level::Tight, 1)).M();
+        charge = muon.charge(Level::Tight, 0) * muon.charge(Level::Tight, 1);
+    } else if (subChannel_ == Subchannel::EE && tag_lep.size(Level::Tight) == 2) {
+        mass = (elec.p4(Level::Tight, 0) + elec.p4(Level::Tight, 1)).M();
+        charge = elec.charge(Level::Tight, 0) * elec.charge(Level::Tight, 1);
+    }
+    passCuts &= cuts.setCut("passZCut", mass > 70. && mass < 115);
+    passCuts &= cuts.setCut("passOSTagLeptons", charge < 0);
+    // passCuts &= cuts.setCut("passMetCut", met.pt() < 50);
+
+    cuts.setCut("passFakeLeps", probe_lep.size(Level::Tight) == 0);
+    fillCutFlow(Channel::DY_Fake, cuts);
+    cuts.cuts.pop_back();
+    cuts.setCut("pass1TightLeps", probe_lep.size(Level::Tight) == 1);
+    fillCutFlow(Channel::DY_Tight, cuts);
+
+    return passCuts;
+}
+
 float Nonprompt_Closure::getLeadPt()
 {
     if (subChannel_ == Subchannel::MM) {
@@ -251,6 +309,10 @@ void Nonprompt_Closure::FillValues(const Bitmap& event_bitmap)
         o_metphi.push_back(met.phi());
         o_nb_loose.push_back(jet.n_loose_bjet.at(syst));
         o_nb_tight.push_back(jet.n_tight_bjet.at(syst));
+        if (isMC_) {
+            o_ht_lhe.push_back(*LHE_HT);
+        }
+
     }
     LOG_FUNC << "End of FillValues";
 }

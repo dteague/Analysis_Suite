@@ -34,21 +34,15 @@ void Closure_MisId::Init(TTree* tree)
     }
 
     if (year_ == Year::yr2016pre) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
-                                      "HLT_DoubleMu8_Mass8_PFHT300"});
+        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
         setupTrigger(Subchannel::EM, {"HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL",
-                                      "HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
-                                      "HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT300"});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT300"});
+                                      "HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",});
+        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
     } else if (year_ == Year::yr2016post) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
-                                      "HLT_DoubleMu8_Mass8_PFHT300"});
+        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
         setupTrigger(Subchannel::EM, {"HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT300"});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT300"});
+                                      "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",});
+        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
     } else if(year_ == Year::yr2017) {
         setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
         setupTrigger(Subchannel::EM, {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",

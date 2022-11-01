@@ -39,7 +39,7 @@ void FakeRate::Init(TTree* tree)
                                  // "HLT_Mu8",
                                  // "HLT_Mu17"
         });
-    setupTrigger(Subchannel::E, {"HLT_Ele8_CaloIdL_TrackIdL_IsoVL_PFJet30", // Was 12, changed to 8
+    setupTrigger(Subchannel::E, {"HLT_Ele12_CaloIdL_TrackIdL_IsoVL_PFJet30", // Was 12, changed to 8
                                  "HLT_Ele23_CaloIdL_TrackIdL_IsoVL_PFJet30", // was 23, changed to 17
                                  // "HLT_Ele8_CaloIdM_TrackIdM_PFJet30",
                                  // "HLT_Ele17_CaloIdM_TrackIdM_PFJet30"

@@ -22,8 +22,8 @@ void Lepton::setup(std::string name, TTreeReader& fReader)
     iso.setup(fReader, name + "_miniPFRelIso_all");
 
     isoCut = 0.1;
-    ptRatioCut = 0.75;
-    ptRelCut = 8.;
+    // ptRatioCut = 0.75;
+    // ptRelCut = 8.;
     mvaCut = 0.4;
 
     GenericParticle::setup(name, fReader);
@@ -132,7 +132,9 @@ float Lepton::getFakePtFactor(size_t idx) const
     if (passJetIsolation(idx)) {
         return 1.;
     } else {
+        // return 1.;
         return cone_correction/ptRatio(idx);
+        // return 1./ptRatio(idx);
     }
 #endif
 }

@@ -30,12 +30,8 @@ void Muon::setup(TTreeReader& fReader)
     }
     std::string roccor_file = scaleDir_+"/POG/USER/"+yearMap.at(year_)+"_UL/RoccoR.txt";
     roc_corr.init(roccor_file);
-    cone_correction = 0.65;
-    // mvaCut = 0.65;
-    // isoCut = 0.16;
-    // ptRatioCut = 0.76;
-    // ptRelCut = 7.2;
-
+    cone_correction = 0.725;
+    ptRatioCut = 0.50;
 }
 
 void Muon::createLooseList()
@@ -59,7 +55,7 @@ void Muon::createFakeList(Particle& jets)
             && mediumId.at(i)
             && sip3d.at(i) < 4
             && m_pt.at(i)*getFakePtFactor(i) > 15
-            && (ptRatio(i) > 0.4 || mvaTTH.at(i) > mvaCut)
+            && (ptRatio(i) > ptRatioCut || mvaTTH.at(i) > mvaCut)
             )
             {
                 m_partList[Level::Fake]->push_back(i);

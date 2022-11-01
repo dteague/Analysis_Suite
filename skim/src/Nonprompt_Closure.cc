@@ -24,13 +24,13 @@ void Nonprompt_Closure::Init(TTree* tree)
     met_type = MET_Type::PUPPI;
     BaseSelector::Init(tree);
 
-    // createTree("Closure_FF", Channel::FakeFake);
-    // createTree("Closure_TF", Channel::TightFake);
-    // if (isMC_) {
-    //     createTree("Closure_TT", Channel::TightTight);
-    // }
-    createTree("DY_Fake", Channel::DY_Fake);
-    createTree("DY_Tight", Channel::DY_Tight);
+    createTree("Closure_FF", Channel::FakeFake);
+    createTree("Closure_TF", Channel::TightFake);
+    if (isMC_) {
+        createTree("Closure_TT", Channel::TightTight);
+    }
+    // createTree("DY_Fake", Channel::DY_Fake);
+    // createTree("DY_Tight", Channel::DY_Tight);
 
     muon.setup_map(Level::FakeNotTight);
     elec.setup_map(Level::FakeNotTight);
@@ -216,7 +216,7 @@ bool Nonprompt_Closure::closure_cuts()
     passCuts &= cuts.setCut("passPreselection", true);
     passCuts &= cuts.setCut("passMETFilter", metfilters.pass());
     passCuts &= cuts.setCut("pass2FakeLep",  nLeps(Level::Fake) == 2);
-    // passCuts &= cuts.setCut("passTightLep", nLeps(Level::Tight) >= 1);
+
     // Trigger Cuts
     passCuts &= cuts.setCut("passLeadPtCut", getLeadPt() > 25);
     passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
@@ -281,11 +281,11 @@ bool Nonprompt_Closure::dy_closure_cuts()
 float Nonprompt_Closure::getLeadPt()
 {
     if (subChannel_ == Subchannel::MM) {
-        return muon.pt(Level::Fake, 0);
+        return muon.rawpt(Level::Fake, 0);
     } else if (subChannel_ == Subchannel::EE) {
-        return elec.pt(Level::Fake, 0);
+        return elec.rawpt(Level::Fake, 0);
     } else if(subChannel_ == Subchannel::EM){
-        return std::max(muon.pt(Level::Fake, 0), elec.pt(Level::Fake, 0));
+        return std::max(muon.rawpt(Level::Fake, 0), elec.rawpt(Level::Fake, 0));
     }
     return 0.;
 }

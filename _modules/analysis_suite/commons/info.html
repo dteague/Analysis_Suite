@@ -83,7 +83,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.configs"><code class="docutils literal notranslate"><span class="pre">commons.configs</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#commons-histogram"><code class="docutils literal notranslate"><span class="pre">commons.histogram</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.info"><code class="docutils literal notranslate"><span class="pre">commons.info</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#module-analysis_suite.commons.makeSimpleHtml"><code class="docutils literal notranslate"><span class="pre">commons.makeSimpleHtml</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../analysis_suite.commons.html#commons-makesimplehtml"><code class="docutils literal notranslate"><span class="pre">commons.makeSimpleHtml</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../analysis_suite.BDT_utilities.html"><code class="docutils literal notranslate"><span class="pre">BDT_utilities</span></code></a><ul>
@@ -229,6 +229,13 @@
 <div class="viewcode-block" id="NtupleInfo.get_file"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.get_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
 
+<div class="viewcode-block" id="NtupleInfo.get_filename"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.get_filename">[docs]</a>    <span class="k">def</span> <span class="nf">get_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">workdir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span> <span class="n">workdir</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">))</span>
+            <span class="n">workdir</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting from workdir </span><span class="si">{</span><span class="n">workdir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span> <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">))</span></div>
+
 <div class="viewcode-block" id="NtupleInfo.add_change"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.add_change">[docs]</a>    <span class="k">def</span> <span class="nf">add_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">changes</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">changes</span><span class="p">[</span><span class="n">tree</span><span class="p">]</span> <span class="o">=</span> <span class="n">changes</span></div>
 
@@ -248,10 +255,22 @@
         <span class="k">return</span> <span class="n">member</span></div>
 
 <div class="viewcode-block" id="NtupleInfo.apply_cut"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.apply_cut">[docs]</a>    <span class="k">def</span> <span class="nf">apply_cut</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">cut_vg</span><span class="p">(</span><span class="n">vg</span><span class="p">,</span> <span class="n">cut</span><span class="p">):</span>
+            <span class="n">vg</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">vg</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">vg</span><span class="o">.</span><span class="n">parts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">part</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cut</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cut</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">cut</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cut</span><span class="p">:</span>
+                <span class="n">cut_vg</span><span class="p">(</span><span class="n">cut</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">vg</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">vg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">))</span></div>
+            <span class="n">cut_vg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cut</span><span class="p">)</span></div>
+
+
+
+
 
 <div class="viewcode-block" id="NtupleInfo.setup_branches"><a class="viewcode-back" href="../../../analysis_suite.commons.html#analysis_suite.commons.info.NtupleInfo.setup_branches">[docs]</a>    <span class="k">def</span> <span class="nf">setup_branches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vg</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">branches</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

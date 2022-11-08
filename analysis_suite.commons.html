@@ -86,7 +86,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#module-analysis_suite.commons.configs"><code class="docutils literal notranslate"><span class="pre">commons.configs</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#commons-histogram"><code class="docutils literal notranslate"><span class="pre">commons.histogram</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-analysis_suite.commons.info"><code class="docutils literal notranslate"><span class="pre">commons.info</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-analysis_suite.commons.makeSimpleHtml"><code class="docutils literal notranslate"><span class="pre">commons.makeSimpleHtml</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#commons-makesimplehtml"><code class="docutils literal notranslate"><span class="pre">commons.makeSimpleHtml</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="analysis_suite.BDT_utilities.html"><code class="docutils literal notranslate"><span class="pre">BDT_utilities</span></code></a><ul>
@@ -168,7 +168,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="analysis_suite.commons.histogram.Histogram.efficiency">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">efficiency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bot</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/histogram.html#Histogram.efficiency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.histogram.Histogram.efficiency" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">efficiency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asymm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/histogram.html#Histogram.efficiency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.histogram.Histogram.efficiency" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -203,7 +203,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="analysis_suite.commons.histogram.Histogram.plot_band">
-<span class="sig-name descname"><span class="pre">plot_band</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pad</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/histogram.html#Histogram.plot_band"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.histogram.Histogram.plot_band" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">plot_band</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pad</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asymm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/histogram.html#Histogram.plot_band"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.histogram.Histogram.plot_band" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -353,6 +353,11 @@
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="analysis_suite.commons.info.NtupleInfo.get_filename">
+<span class="sig-name descname"><span class="pre">get_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">year</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/info.html#NtupleInfo.get_filename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.info.NtupleInfo.get_filename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="analysis_suite.commons.info.NtupleInfo.ignore">
 <span class="sig-name descname"><span class="pre">ignore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/info.html#NtupleInfo.ignore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.info.NtupleInfo.ignore" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -380,24 +385,8 @@
 </dd></dl>
 
 </section>
-<section id="module-analysis_suite.commons.makeSimpleHtml">
-<span id="commons-makesimplehtml"></span><h2><code class="docutils literal notranslate"><span class="pre">commons.makeSimpleHtml</span></code><a class="headerlink" href="#module-analysis_suite.commons.makeSimpleHtml" title="Permalink to this heading">¶</a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="analysis_suite.commons.makeSimpleHtml.writeHTML">
-<span class="sig-prename descclassname"><span class="pre">analysis_suite.commons.makeSimpleHtml.</span></span><span class="sig-name descname"><span class="pre">writeHTML</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/analysis_suite/commons/makeSimpleHtml.html#writeHTML"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#analysis_suite.commons.makeSimpleHtml.writeHTML" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>Creates a useable HTML page of plots</strong></p>
-<p>Copies the necessary files (located in the html directory)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<em>string</em>) – Where the files should be saved</p></li>
-<li><p><strong>name</strong> (<em>string</em>) – Name of the analysis used for titling</p></li>
-<li><p><strong>channels</strong> (<em>list</em><em> of </em><em>strings</em><em>, </em><em>optional</em>) – List of channels to create the differnt sub-webpages</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
+<section id="commons-makesimplehtml">
+<h2><code class="docutils literal notranslate"><span class="pre">commons.makeSimpleHtml</span></code><a class="headerlink" href="#commons-makesimplehtml" title="Permalink to this heading">¶</a></h2>
 </section>
 </section>
 

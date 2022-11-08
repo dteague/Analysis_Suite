@@ -85,9 +85,9 @@ class BaseGetter:
         if callable(mask):
             mask = ak.to_numpy(mask(self))
         self._base_mask[self._base_mask] = mask
-        self.clear_mask()
+        self.reset()
 
-    def get_graph(self, graph):
+    def get_graph(self, graph, *args):
         """
         Parameters
         ----------
@@ -97,9 +97,12 @@ class BaseGetter:
         if graph.cuts is not None:
             self.mask = graph.cuts
         if callable(graph.func):
-            return graph.func(self)
+            return graph.func(self, *args)
         else:
             return self.get_hist(graph.func)
+
+    def reset(self):
+        self.clear_mask()
 
     def get_hist(self, var):
         """

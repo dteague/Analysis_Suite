@@ -131,7 +131,7 @@ class Plotter:
                 output[key] += sum(vg.scale)
         return output
 
-    def fill_hists(self, graphs, ginfo=None, subset=None):
+    def fill_hists(self, graphs, ginfo, *args, subset=None):
         if isinstance(graphs, dict):
             self.graphs = graphs
         elif isinstance(graphs, list):
@@ -145,11 +145,13 @@ class Plotter:
             for group, members in self.groups.items():
                 self.hists[name][group] = Histogram(group, *graph.bins(), group_info=ginfo)
                 for member in members:
-                    vals, weight = self.get_array(member, graph)
+                    vals, weight = self.get_array(member, graph, *args)
                     self.hists[name][group].fill(*vals, weight=weight, member=member)
 
-    def mask(self, mask, clear=True):
+    def mask(self, mask, clear=True, groups=None):
         for key, vg in self.dfs.items():
+            if groups is not None and key not in groups:
+                continue
             if isinstance(vg, dict):
                 for subvg in vg.values():
                     if clear:
@@ -161,41 +163,43 @@ class Plotter:
                 vg.mask = mask
 
     def cut(self, mask, groups=None):
+        def _cut(vg, mask):
+            if isinstance(vg, dict):
+                for key, subvg in vg.items():
+                    subvg.cut(mask)
+            else:
+                vg.cut(mask)
+
         if groups is None:
             for vg in self.dfs.values():
-                self._cut(vg, mask)
+                _cut(vg, mask)
         elif isinstance(groups, str):
-            self._cut(self.dfs[groups], mask)
+            _cut(self.dfs[groups], mask)
         else:
             for group in groups:
                 for member in self.groups[group]:
-                    self._cut(self.dfs[member], mask)
+                    _cut(self.dfs[member], mask)
 
-    def _cut(self, vg, mask):
-        if isinstance(vg, dict):
-            for key, subvg in vg.items():
-                subvg.cut(mask)
-        else:
-            vg.cut(mask)
 
     def scale(self, scaler, groups=None):
+        def _scale(vg, scaler):
+            if isinstance(vg, dict):
+                for key, subvg in vg.items():
+                    scaler(subvg)
+            else:
+                scaler(vg)
+
         if groups is None:
             for vg in self.dfs.values():
-                self._scale(vg, scaler)
+                _scale(vg, scaler)
         elif isinstance(groups, str):
             for member in self.groups[groups]:
-                self._scale(self.dfs[member], scaler)
+                _scale(self.dfs[member], scaler)
         else:
             for group in groups:
                 for member in self.groups[group]:
-                    self._scale(self.dfs[member], scaler)
+                    _scale(self.dfs[member], scaler)
 
-    def _scale(self, vg, scaler):
-        if isinstance(vg, dict):
-            for key, subvg in vg.items():
-                scaler(subvg)
-        else:
-            scaler(vg)
 
     def scale_hists(self, group, scale, scale_df=False):
         for name, hist in self.hists.items():
@@ -211,7 +215,7 @@ class Plotter:
                 self.dfs[member].scale = scale
 
 
-    def get_array(self, member, graph):
+    def get_array(self, member, graph, *args):
         if isinstance(graph, str):
             graph = self.graphs[graph]
 
@@ -219,7 +223,7 @@ class Plotter:
             vals = [[] for _ in range(graph.dim())]
             scales = np.array([])
             for tree, vg in self.dfs[member].items():
-                v, s = vg.get_graph(graph)
+                v, s = vg.get_graph(graph, *args)
                 if len(s) == 0:
                     continue
                 if graph.dim() == 1:
@@ -229,7 +233,7 @@ class Plotter:
                 scales = np.concatenate((scales, s))
             return vals, scales
         else:
-            vals, scales = self.dfs[member].get_graph(graph)
+            vals, scales = self.dfs[member].get_graph(graph, *args)
             return [vals], scales
 
 
@@ -333,7 +337,8 @@ class Plotter:
     def plot_stack(self, name, outfile, chan=None, **kwargs):
         graph = self.graphs[name]
         signal = self.hists[name].get(self.sig, Histogram(""))
-        data = self.hists[name].get(self.data, Histogram(""))
+        data = copy(self.hists[name].get(self.data, Histogram("")))
+        data.color = 'k'
         stack = self.make_stack(name)
         plotter = ratio_plot if data else nonratio_plot
 

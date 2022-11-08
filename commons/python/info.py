@@ -102,6 +102,13 @@ class NtupleInfo:
     def get_file(self, **kwargs):
         return Path(str(self.filename).format(**kwargs))
 
+    def get_filename(self, year, workdir=None):
+        if workdir is None:
+            path = Path(str(self.filename).format(year=year, workdir=""))
+            workdir = max([int(d.name) for d in path.glob("*") if d.name.isnumeric()])
+            print(f"Getting from workdir {workdir}")
+        return Path(str(self.filename).format(year=year, workdir=workdir))
+
     def add_change(self, tree, changes):
         self.changes[tree] = changes
 
@@ -121,10 +128,22 @@ class NtupleInfo:
         return member
 
     def apply_cut(self, vg, *args):
+        def cut_vg(vg, cut):
+            vg.cut(self.cut(vg))
+            for name, part in vg.parts.items():
+                part.reset()
+
         if self.cut is None:
             return
+        elif isinstance(self.cut, list):
+            for cut in self.cut:
+                cut_vg(cut)
         else:
-            vg.cut(self.cut(vg, *args))
+            cut_vg(self.cut)
+
+
+
+
 
     def setup_branches(self, vg):
         if self.branches is None:

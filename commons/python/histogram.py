@@ -21,21 +21,25 @@ class Histogram:
     def __add__(self, right):
         hist = Histogram(self.group, self.axis)
         hist.hist = self.hist + right.hist
+        hist.set_metadata(self)
         return hist
 
     def __sub__(self, right):
         hist = Histogram(self.group, self.axis)
         hist.hist = self.hist + (-1)*right.hist
+        hist.set_metadata(self)
         return hist
 
     def __mul__(self, right):
         hist = Histogram(self.group, *self.hist.axes)
         hist.hist = right*self.hist
+        hist.set_metadata(self)
         return hist
 
     def __rmul__(self, right):
         hist = Histogram(self.group, *self.hist.axes)
         hist.hist = right*self.hist
+        hist.set_metadata(self)
         return hist
 
     def __imul__(self, right):
@@ -99,21 +103,24 @@ class Histogram:
         elif attr == 'sumw2':
             return self.hist.view().variance
         elif attr == 'err_ratio':
-            return np.nan_to_num(self.sumw2/self.vals**2)
+            return np.nan_to_num(self.sumw2/(self.vals**2+1e-6))
         else:
             raise Exception()
 
     @staticmethod
-    def efficiency(top, bot):
+    def efficiency(top, bot, asymm=False):
         alf = (1-0.682689492137)/2
         aa = top.vals*bot.vals/(bot.sumw2+1e-6)+1
         bb = (bot.vals-top.vals)*bot.vals/(bot.sumw2+1e-6)+1
 
-        eff = np.array([beta.mean(p, t) for p, t in zip(aa, bb)])
-
         lo = np.array([beta.ppf(alf, p, t) for p, t in zip(aa, bb)])
         hi = np.array([beta.ppf(1 - alf, p, t) for p, t in zip(aa, bb)])
-        error2 = (eff-lo)**2 + (hi-eff)**2
+        if asymm:
+            eff = lo
+            error2 = ((hi-lo)/2)**2
+        else:
+            eff = np.array([beta.mean(p, t) for p, t in zip(aa, bb)])
+            error2 = ((eff-lo)**2 + (hi-eff)**2)/2
 
         return_obj = Histogram("", *top.hist.axes)
         return_obj.hist.values()[:] = eff
@@ -224,12 +231,15 @@ class Histogram:
         return color_plot
 
 
-    def plot_band(self, pad, **kwargs):
+    def plot_band(self, pad, asymm=False, **kwargs):
         if not self or pad is None:
             return
+        if asymm:
+            bottom = self.vals
+        else:
+            bottom = self.vals - self.err
         pad.hist(weights=2*self.err, x=self.axis.centers,
-                 bins=self.axis.edges,
-                 bottom=self.vals - self.err,
+                 bins=self.axis.edges, bottom=bottom,
                  histtype='stepfilled', color=self.color,
                  align='mid', stacked=True, hatch='//',
                  alpha=0.4, label=self.name, **kwargs)

@@ -2,8 +2,6 @@
 import numpy as np
 import uproot
 
-import analysis_suite.commons.user as user
-
 @np.vectorize
 def likelihood_sig(s, b):
     return np.sqrt(2*(s+b)*np.log(1+s/(b+1e-5))-2*s)
@@ -17,13 +15,3 @@ def get_syst_index(filename, systName):
     else:
         return systNames.index(systName)
 
-def get_plot_area(name, path=None):
-    www_path = user.www_area/name
-    if path:
-        www_path /= path.stem
-    www_path /= time.strftime("%Y_%m_%d")
-    return www_path
-
-def make_plot_paths(path):
-    (path/"plots").mkdir(exist_ok=True, parents=True)
-    (path/"logs").mkdir(exist_ok=True, parents=True)

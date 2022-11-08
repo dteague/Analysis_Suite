@@ -76,9 +76,10 @@ class NtupleGetter(BaseGetter):
         else:
             self.jec_var = ""
 
-    # @staticmethod
-    # def _combine(arr1, arr2):
-    #     return ak.sum(ak.unzip(ak.cartesian([arr1, arr2], axis=-1)), axis=0)
+    def reset(self):
+        self.clear_mask()
+        for part in self.parts.values():
+            part.reset()
 
     def mergeParticles(self, merge, *parts):
         self.part_name = np.append(self.part_name, merge)
@@ -198,6 +199,9 @@ class NtupleGetter(BaseGetter):
 class ParticleBase:
     def __init__(self, vg):
         self.vg = vg
+
+    def reset(self):
+        pass
 
     def num(self):
         return ak.num(self.shape(), axis=-1)
@@ -355,8 +359,10 @@ class MergeParticle(ParticleBase):
     def __init__(self, parts):
         super().__init__(parts[0].vg)
         self.parts = parts
+        self.reset()
+
+    def reset(self):
         self._idx_sort = ak.argsort(self._get_combined_item("pt"), ascending=False)
-        # self.vg = self.parts[0].vg
 
     def __getattr__(self, var):
         return self._get_combined_item(var)[self._sort]
@@ -396,4 +402,3 @@ class MergeParticle(ParticleBase):
     def mask(self):
         """ """
         return self.vg.mask[self.vg._base_mask]
-

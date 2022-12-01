@@ -88,6 +88,7 @@ protected:
     TTreeReader fReader;
     std::string groupName_;
     TFile* outfile;
+    Long64_t stop_point = -1;
 
     std::map<Channel, TreeInfo> trees;
 

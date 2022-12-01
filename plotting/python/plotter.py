@@ -98,7 +98,7 @@ class Plotter:
                 for member in members:
                     xsec = 1. if fileInfo.is_data(member) else fileInfo.get_xsec(member)*self.lumi*1000
                     for tree in ntuple.trees:
-                        if ntuple.ignore(tree, group):
+                        if ntuple.exclude(tree, group):
                             continue
                         vg = getter.NtupleGetter(root_file, tree, member, xsec, syst, systName)
                         if not vg:
@@ -365,7 +365,7 @@ class Plotter:
             data.plot_points(pad)
             error.plot_band(pad)
 
-            if (region := kwargs.get('region', False)):
+            if (region := kwargs.get('region', False)) and data:
                 (subpad if subpad else pad).text(graph.edges()[0], -0.7, region.format(chan))
 
             # ratio pad

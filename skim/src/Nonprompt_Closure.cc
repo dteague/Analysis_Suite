@@ -34,6 +34,8 @@ void Nonprompt_Closure::Init(TTree* tree)
 
     muon.setup_map(Level::FakeNotTight);
     elec.setup_map(Level::FakeNotTight);
+    muon.setup_map(Level::LooseNotFake);
+    elec.setup_map(Level::LooseNotFake);
 
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
@@ -45,31 +47,29 @@ void Nonprompt_Closure::Init(TTree* tree)
 
     // Dilepton triggers
     if (year_ == Year::yr2016pre) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
-                                      "HLT_DoubleMu8_Mass8_PFHT300"});
+        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
         setupTrigger(Subchannel::EM, {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
-                                      "HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT300",
                                       "HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL"});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT300"});
+        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
     } else if (year_ == Year::yr2016post) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
-                                      "HLT_DoubleMu8_Mass8_PFHT300"});
+        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
         setupTrigger(Subchannel::EM, {"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT300",
                                       "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT300"});
+        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
     } else if(year_ == Year::yr2017) {
         setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
         setupTrigger(Subchannel::EM, {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+                                      "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
                                       "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"});
+        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+                                      "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
     } else if (year_ == Year::yr2018) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8"});
+        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
+                                      "HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
         setupTrigger(Subchannel::EM, {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
                                       "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"});
+        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+                                      "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
     }
 
     setupTrigger(Subchannel::None);
@@ -81,8 +81,10 @@ void Nonprompt_Closure::SetupOutTreeBranches(TTree* tree)
 {
     LOG_FUNC << "Start of SetupOutTreeBranches";
     BaseSelector::SetupOutTreeBranches(tree);
+    tree->Branch("LooseMuon", "LeptonOut_Fake", &o_looseMuons);
     tree->Branch("FakeMuon", "LeptonOut_Fake", &o_fakeMuons);
     tree->Branch("TightMuon", "LeptonOut_Fake", &o_tightMuons);
+    tree->Branch("LooseElectron", "LeptonOut_Fake", &o_looseElectrons);
     tree->Branch("FakeElectron", "LeptonOut_Fake", &o_fakeElectrons);
     tree->Branch("TightElectron", "LeptonOut_Fake", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
@@ -142,6 +144,8 @@ void Nonprompt_Closure::setOtherGoodParticles(size_t syst)
     LOG_FUNC << "Start of setOtherGoodParticles";
     muon.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
     elec.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
+    muon.xorLevel(Level::Loose, Level::Fake, Level::LooseNotFake);
+    elec.xorLevel(Level::Loose, Level::Fake, Level::LooseNotFake);
     LOG_FUNC << "End of setOtherGoodParticles";
 }
 
@@ -222,7 +226,7 @@ bool Nonprompt_Closure::closure_cuts()
     passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
 
     passCuts &= cuts.setCut("passSSLeptons", isSameSign());
-    passCuts &= cuts.setCut("passZVeto", muon.passZVeto() && elec.passZVeto());
+    passCuts &= cuts.setCut("passZVeto", muon.passZVeto_Fake() && elec.passZVeto_Fake());
     passCuts &= cuts.setCut("passJetNumber", jet.size(Level::Tight) >= 2);
     passCuts &= cuts.setCut("passMetCut", met.pt() > 50);
     passCuts &= cuts.setCut("passHTCut", jet.getHT(Level::Tight) > 100);
@@ -293,8 +297,10 @@ float Nonprompt_Closure::getLeadPt()
 void Nonprompt_Closure::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
+    muon.fillLepton_Iso(*o_looseMuons, Level::Loose, event_bitmap);
     muon.fillLepton_Iso(*o_fakeMuons, Level::FakeNotTight, event_bitmap);
     muon.fillLepton_Iso( *o_tightMuons, Level::Tight, event_bitmap);
+    elec.fillLepton_Iso(*o_looseElectrons, Level::Loose, event_bitmap);
     elec.fillLepton_Iso(*o_fakeElectrons, Level::FakeNotTight, event_bitmap);
     elec.fillLepton_Iso( *o_tightElectrons, Level::Tight, event_bitmap);
     jet.fillJet(*o_jets, Level::Tight, event_bitmap);

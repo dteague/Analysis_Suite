@@ -26,19 +26,15 @@ private:
     bool sideband_cuts();
     bool single_lep_cuts(CutInfo& cuts);
 
-    LeptonOut_Fake* o_fakeMuons;
-    LeptonOut_Fake* o_tightMuons;
-    LeptonOut_Fake* o_fakeElectrons;
-    LeptonOut_Fake* o_tightElectrons;
+    LeptonOut_Fake *o_looseMuons, *o_fakeMuons, *o_tightMuons;
+    LeptonOut_Fake *o_looseElectrons, *o_fakeElectrons, *o_tightElectrons;
     JetOut* o_jets;
 
     TRVariable<Float_t> Pileup_nTrueInt;
 
     std::vector<Float_t> o_ht, o_met, o_metphi;
-    std::vector<int> o_lo_hlt, o_hi_hlt;
 
     LorentzVector lead_lep;
-    float lead_rawpt;
 };
 
 

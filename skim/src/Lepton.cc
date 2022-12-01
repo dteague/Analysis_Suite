@@ -81,6 +81,22 @@ std::pair<size_t, float> Lepton::getCloseJet(size_t lidx, const Particle& jet)
 
 bool Lepton::passZVeto()
 {
+    auto lister = list(Level::Fake);
+    for (auto i = lister.begin(); i != lister.end(); ++i) {
+        LorentzVector tlep = p4(*i);
+        for (auto j = i; j != lister.end(); ++j) {
+            if (*i != *j || charge(*i) * charge(*j) > 0)
+                continue;
+            float mass = (p4(*i) + tlep).M();
+            if (mass < LOW_ENERGY_CUT || (fabs(mass - ZMASS) < ZWINDOW))
+                return false;
+        }
+    }
+    return true;
+}
+
+bool Lepton::passZVeto_Fake()
+{
     for (auto tidx : list(Level::Loose)) {
         LorentzVector tlep = p4(tidx);
         for (auto lidx : list(Level::Loose)) {
@@ -93,6 +109,7 @@ bool Lepton::passZVeto()
     }
     return true;
 }
+
 
 bool Lepton::passZCut(float low, float high)
 {

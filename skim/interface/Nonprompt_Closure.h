@@ -26,11 +26,8 @@ private:
     float getLeadPt();
     bool isSameSign();
 
-    LeptonOut_Fake* o_fakeMuons;
-    LeptonOut_Fake* o_tightMuons;
-    LeptonOut_Fake* o_fakeElectrons;
-    LeptonOut_Fake* o_tightElectrons;
-    ParticleOut* o_muon;
+    LeptonOut_Fake *o_looseMuons, *o_fakeMuons, *o_tightMuons;
+    LeptonOut_Fake* o_looseElectrons, *o_fakeElectrons, *o_tightElectrons;
     JetOut* o_jets;
     JetOut* o_bJets;
 
@@ -39,7 +36,6 @@ private:
 
     std::vector<Float_t> o_ht, o_htb, o_met, o_metphi, o_ht_lhe;
     std::vector<size_t> o_nb_loose, o_nb_tight;
-    std::vector<int> o_lo_hlt, o_hi_hlt;
 
 };
 

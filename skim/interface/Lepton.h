@@ -13,6 +13,7 @@ public:
     virtual void createFakeList(Particle& jets){};
     virtual void createTightList(Particle& jets){};
     bool passZVeto();
+    bool passZVeto_Fake();
     bool passZCut(float low, float high);
     void setup(std::string name, TTreeReader& fReader);
     std::pair<size_t, float> getCloseJet(size_t lidx, const Particle& jet);

@@ -25,6 +25,8 @@ void FakeRate::Init(TTree* tree)
 
     muon.setup_map(Level::FakeNotTight);
     elec.setup_map(Level::FakeNotTight);
+    muon.setup_map(Level::LooseNotFake);
+    elec.setup_map(Level::LooseNotFake);
 
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
@@ -54,8 +56,10 @@ void FakeRate::SetupOutTreeBranches(TTree* tree)
 {
     LOG_FUNC << "Start of SetupOutTreeBranches";
     BaseSelector::SetupOutTreeBranches(tree);
+    tree->Branch("LooseMuon", "LeptonOut_Fake", &o_looseMuons);
     tree->Branch("FakeMuon", "LeptonOut_Fake", &o_fakeMuons);
     tree->Branch("TightMuon", "LeptonOut_Fake", &o_tightMuons);
+    tree->Branch("LooseElectron", "LeptonOut_Fake", &o_looseElectrons);
     tree->Branch("FakeElectron", "LeptonOut_Fake", &o_fakeElectrons);
     tree->Branch("TightElectron", "LeptonOut_Fake", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
@@ -115,6 +119,8 @@ void FakeRate::setOtherGoodParticles(size_t syst)
     LOG_FUNC << "Start of setOtherGoodParticles";
     muon.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
     elec.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
+    muon.xorLevel(Level::Loose, Level::Fake, Level::LooseNotFake);
+    elec.xorLevel(Level::Loose, Level::Fake, Level::LooseNotFake);
     LOG_FUNC << "End of setOtherGoodParticles";
 }
 
@@ -192,7 +198,7 @@ bool FakeRate::measurement_cuts()
 
     passCuts &= single_lep_cuts(cuts);
     passCuts &= cuts.setCut("passMetCut", met.pt() < 30);
-    passCuts &= cuts.setCut("passMtCut", met.mt(lead_lep.Pt(), lead_lep.Phi()) < 20);
+    // passCuts &= cuts.setCut("passMtCut", met.mt(lead_lep.Pt(), lead_lep.Phi()) < 20);
     // Fill Cut flow
     fillCutFlow(Channel::Measurement, cuts);
 
@@ -206,7 +212,10 @@ bool FakeRate::sideband_cuts()
 
     passCuts &= single_lep_cuts(cuts);
     passCuts &= cuts.setCut("passMetCut", met.pt() > 30);
-    passCuts &= cuts.setCut("passTightLep", nLeps(Level::Tight) == 1);
+    if (groupName_.find("qcd") == std::string::npos) {
+        passCuts &= cuts.setCut("passTightLep", nLeps(Level::Tight) == 1);
+    }
+    // passCuts &= cuts.setCut("passMtCut", met.mt(lead_lep.Pt(), lead_lep.Phi()) > 20);
     // passCuts &= cuts.setCut("passLeadLepPt", lead_lep.Pt() > 20);
 
     // Fill Cut flow
@@ -230,8 +239,10 @@ void FakeRate::set_leadlep()
 void FakeRate::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
+    muon.fillLepton_Iso(*o_looseMuons, Level::LooseNotFake, event_bitmap);
     muon.fillLepton_Iso(*o_fakeMuons, Level::FakeNotTight, event_bitmap);
     muon.fillLepton_Iso( *o_tightMuons, Level::Tight, event_bitmap);
+    elec.fillLepton_Iso(*o_looseElectrons, Level::LooseNotFake, event_bitmap);
     elec.fillLepton_Iso(*o_fakeElectrons, Level::FakeNotTight, event_bitmap);
     elec.fillLepton_Iso( *o_tightElectrons, Level::Tight, event_bitmap);
     jet.fillJet(*o_jets, Level::Tight, event_bitmap);

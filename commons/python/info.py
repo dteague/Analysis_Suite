@@ -118,7 +118,7 @@ class NtupleInfo:
     def set_exclusive(self, tree, groups):
         if isinstance(groups, str):
             groups = [groups]
-        self.groups[tree] = groups
+        self.exclusives[tree] = groups
 
     def exclude(self, tree, group):
         if tree in self.exclusives:

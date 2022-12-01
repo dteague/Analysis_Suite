@@ -14,7 +14,10 @@ class GroupInfo:
         self.group2MemberMap = self.get_memberMap()
 
     def get_legend_name(self, group):
-        return ginfo[group]["Name"]
+        if group in ginfo:
+            return ginfo[group]["Name"]
+        else:
+            return group
 
     def get_color(self, group):
         return self.group2color[group]
@@ -93,11 +96,11 @@ fileInfo = FileInfo()
 class NtupleInfo:
     filename: str
     trees: list
-    region: str
+    region: str = ""
     cut : Callable[[object], bool] = None
     branches: list = None
     changes: dict = field(default_factory=dict)
-    ignores: dict = field(default_factory=dict)
+    exclusives: dict = field(default_factory=dict)
 
     def get_file(self, **kwargs):
         return Path(str(self.filename).format(**kwargs))
@@ -112,14 +115,14 @@ class NtupleInfo:
     def add_change(self, tree, changes):
         self.changes[tree] = changes
 
-    def add_ignore(self, tree, ignores):
-        if isinstance(ignores, str):
-            ignores = [ignores]
-        self.ignores[tree] = ignores
+    def set_exclusive(self, tree, groups):
+        if isinstance(groups, str):
+            groups = [groups]
+        self.groups[tree] = groups
 
-    def ignore(self, tree, group):
-        if tree in self.ignores:
-            return group in self.ignores[tree]
+    def exclude(self, tree, group):
+        if tree in self.exclusives:
+            return group not in self.exclusives[tree]
         return False
 
     def get_change(self, tree, member):

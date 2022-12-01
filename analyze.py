@@ -138,6 +138,7 @@ if __name__ == "__main__":
                         help="Number of cores to run over")
     parser.add_argument('-ns', '--no_syst', action='store_true',
                         help="Run with no systematics")
+    parser.add_argument("-n", "--number_events", default=-1)
     args = parser.parse_args()
 
     inputfile = args.infile if (env := os.getenv("INPUT")) is None else env
@@ -171,11 +172,12 @@ if __name__ == "__main__":
         'Selection': details["selection"],
         'Year': details["year"],
         'Xsec': 1,
-        'isData': True
+        'isData': True,
     }
     if not args.local:
         inputs['MetaData'].update({'Xsec': fileInfo.get_xsec(groupName), 'isData': fileInfo.is_data(groupName)})
     inputs["Verbosity"] = args.verbose
+    inputs["NEvents"] = args.number_events
     inputs["Systematics"] = get_shape_systs() if not args.no_syst else []
 
     # Possibly need to fix for fakefactor stuff

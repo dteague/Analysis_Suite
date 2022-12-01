@@ -57,6 +57,8 @@ void BaseSelector::Init(TTree* tree)
             }
         } else if (itemName == "Verbosity") {
             loguru::g_stderr_verbosity = std::stoi(item->GetTitle());
+        } else if (itemName == "NEvents") {
+            stop_point = std::stoi(item->GetTitle());
         }
     }
 
@@ -112,8 +114,9 @@ void BaseSelector::Init(TTree* tree)
 
 Bool_t BaseSelector::Process(Long64_t entry)
 {
-    if (loguru::g_stderr_verbosity > 8 && entry > 2) return false;
-    else if (loguru::g_stderr_verbosity > 2 && entry > 10000) return false;
+    if (stop_point > 0 && entry > stop_point) return false;
+    // if (loguru::g_stderr_verbosity > 8 && entry > 2) return false;
+    // else if (loguru::g_stderr_verbosity > 2 && entry > 10000) return false;
 
     LOG_FUNC << "Start of Process";
     if (loguru::g_stderr_verbosity > 0) {

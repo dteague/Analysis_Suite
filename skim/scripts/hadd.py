@@ -6,6 +6,16 @@ from pathlib import Path
 import shutil
 from datetime import datetime
 
+def get_files(analysis, year, filename, typ, rerun=False):
+    input_dir = user.hdfs_area / f"{analysis}_{year}_{filename}_{typ}"
+    if not input_dir.exists():
+        print(input_dir, "does not exist")
+        return
+    files = f"{input_dir}/*root "
+    if rerun and Path(f"{input_dir}_rerun").exists():
+        files += f"{input_dir}_rerun/*root "
+    return files
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--filename", required=True,
                     help="output filename")
@@ -31,11 +41,10 @@ for typ in args.types:
     for year in args.years:
         output_dir = base_dir / year / args.workdir
         output_dir.mkdir(parents=True, exist_ok=True)
-        input_dir = user.hdfs_area / f"{args.analysis}_{year}_{args.filename}_{typ}"
-        if not input_dir.exists():
-            continue
-        files = f"{input_dir}/*root "
-        if args.rerun and Path(f"{input_dir}_rerun").exists():
-            files += f"{input_dir}_rerun/*root"
+        if year == "2016":
+            files = get_files(args.analysis, "2016pre", args.filename, typ, args.rerun)
+            files += get_files(args.analysis, "2016post", args.filename, typ, args.rerun)
+        else:
+            files = get_files(args.analysis, year, args.filename, typ, args.rerun)
         subprocess.call(f"hadd -f -v 1 {args.filename}_{typ}_{year}.root {files}", shell=True)
         shutil.move(f'{args.filename}_{typ}_{year}.root', output_dir)

@@ -5,6 +5,7 @@ sphinx
 sphinxawesome_theme
 prettytable
 prettyprinter
+snakemake
 
 # in cmssw
 numpy

@@ -11,6 +11,7 @@ enum class Channel {
 void BEfficiency::Init(TTree* tree)
 {
     LOG_FUNC << "Start of Init";
+    met_type = MET_Type::PUPPI;
     BaseSelector::Init(tree);
 
     createTree("Signal", Channel::Signal);

@@ -24,13 +24,25 @@ void Nonprompt_Closure::Init(TTree* tree)
     met_type = MET_Type::PUPPI;
     BaseSelector::Init(tree);
 
-    createTree("Closure_FF", Channel::FakeFake);
-    createTree("Closure_TF", Channel::TightFake);
-    if (isMC_) {
-        createTree("Closure_TT", Channel::TightTight);
+
+    if (groupName_.find("ttbar") != std::string::npos ||
+        groupName_.find("wjets") != std::string::npos ||
+        !isMC_) {
+        createTree("Closure_FF", Channel::FakeFake);
+        createTree("Closure_TF", Channel::TightFake);
+        if (isMC_) {
+            createTree("Closure_TT", Channel::TightTight);
+        }
     }
-    // createTree("DY_Fake", Channel::DY_Fake);
-    // createTree("DY_Tight", Channel::DY_Tight);
+
+    if (groupName_.find("DY") != std::string::npos ||
+        groupName_.find("zz") != std::string::npos ||
+        groupName_.find("wz") != std::string::npos ||
+        groupName_.find("ww") != std::string::npos ||
+        !isMC_) {
+        createTree("DY_Fake", Channel::DY_Fake);
+        createTree("DY_Tight", Channel::DY_Tight);
+    }
 
     muon.setup_map(Level::FakeNotTight);
     elec.setup_map(Level::FakeNotTight);
@@ -39,7 +51,6 @@ void Nonprompt_Closure::Init(TTree* tree)
 
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
-        LHE_HT.setup(fReader, "LHE_HT");
     } else {
         sfMaker.setup_prescale();
     }
@@ -96,9 +107,6 @@ void Nonprompt_Closure::SetupOutTreeBranches(TTree* tree)
     tree->Branch("Met_phi", &o_metphi);
     tree->Branch("N_bloose", &o_nb_loose);
     tree->Branch("N_btight", &o_nb_tight);
-    if (isMC_) {
-        tree->Branch("LHE_HT", &o_ht_lhe);
-    }
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
 
@@ -118,7 +126,6 @@ void Nonprompt_Closure::clearOutputs()
     o_metphi.clear();
     o_nb_loose.clear();
     o_nb_tight.clear();
-    o_ht_lhe.clear();
     LOG_FUNC << "End of clearOutputs";
 }
 
@@ -297,10 +304,10 @@ float Nonprompt_Closure::getLeadPt()
 void Nonprompt_Closure::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
-    muon.fillLepton_Iso(*o_looseMuons, Level::Loose, event_bitmap);
+    muon.fillLepton_Iso(*o_looseMuons, Level::LooseNotFake, event_bitmap);
     muon.fillLepton_Iso(*o_fakeMuons, Level::FakeNotTight, event_bitmap);
     muon.fillLepton_Iso( *o_tightMuons, Level::Tight, event_bitmap);
-    elec.fillLepton_Iso(*o_looseElectrons, Level::Loose, event_bitmap);
+    elec.fillLepton_Iso(*o_looseElectrons, Level::LooseNotFake, event_bitmap);
     elec.fillLepton_Iso(*o_fakeElectrons, Level::FakeNotTight, event_bitmap);
     elec.fillLepton_Iso( *o_tightElectrons, Level::Tight, event_bitmap);
     jet.fillJet(*o_jets, Level::Tight, event_bitmap);
@@ -315,10 +322,6 @@ void Nonprompt_Closure::FillValues(const Bitmap& event_bitmap)
         o_metphi.push_back(met.phi());
         o_nb_loose.push_back(jet.n_loose_bjet.at(syst));
         o_nb_tight.push_back(jet.n_tight_bjet.at(syst));
-        if (isMC_) {
-            o_ht_lhe.push_back(*LHE_HT);
-        }
-
     }
     LOG_FUNC << "End of FillValues";
 }

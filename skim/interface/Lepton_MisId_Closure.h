@@ -23,7 +23,6 @@ private:
     void setSubChannel();
     float getLeadPt();
     float get_mass();
-    void set_LHELeps();
 
     TTree* treeFakeRate_;
 
@@ -32,13 +31,11 @@ private:
     JetOut* o_jets;
 
     TRVariable<Float_t> Pileup_nTrueInt;
-    TRVariable<Float_t> LHE_HT;
-    TRArray<Int_t> LHE_pdgId;
 
     size_t nLHE_leps;
 
-    std::vector<Float_t> o_ht, o_ht_lhe, o_htb, o_met, o_metphi, o_centrality, o_nlhe_leps;
-    int nlooseMu, nlooseEl;
+    std::vector<Float_t> o_ht, o_htb, o_met, o_metphi, o_centrality;
+    std::vector<int> o_nlooseMu, o_nlooseEl;
 };
 
 #endif // LEPTON_MISID_CLOSURE_H_

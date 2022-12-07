@@ -254,6 +254,7 @@ bool ThreeTop::baseline_cuts()
     // if (passCuts) trigEff_leadPt.fill(getLeadPt(), trig_cuts.pass_cut(subChannel_), subChannel_, *weight);
     passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
     passCuts &= cuts.setCut("passLeadPt", getLeadPt() > 25);
+    passCuts &= cuts.setCut("LeptonVeto", nLeps(Level::Loose) == nLeps(Level::Tight));
 
     passCuts &= cuts.setCut("passJetNumber", jet.size(Level::Tight) >= 2);
     passCuts &= cuts.setCut("passBJetNumber", jet.size(Level::Bottom) >= 1);

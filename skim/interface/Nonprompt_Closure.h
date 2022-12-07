@@ -32,9 +32,8 @@ private:
     JetOut* o_bJets;
 
     TRVariable<Float_t> Pileup_nTrueInt;
-    TRVariable<Float_t> LHE_HT;
 
-    std::vector<Float_t> o_ht, o_htb, o_met, o_metphi, o_ht_lhe;
+    std::vector<Float_t> o_ht, o_htb, o_met, o_metphi;
     std::vector<size_t> o_nb_loose, o_nb_tight;
 
 };

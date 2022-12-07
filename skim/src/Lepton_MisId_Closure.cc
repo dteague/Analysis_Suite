@@ -29,8 +29,6 @@ void Closure_MisId::Init(TTree* tree)
     createTree("OS_MR", Channel::OS_MR);
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
-        LHE_HT.setup(fReader, "LHE_HT");
-        LHE_pdgId.setup(fReader, "LHEPart_pdgId");
     }
 
     if (year_ == Year::yr2016pre) {
@@ -67,18 +65,14 @@ void Closure_MisId::SetupOutTreeBranches(TTree* tree)
     tree->Branch("TightMuon", "LeptonOut", &o_tightMuons);
     tree->Branch("TightElectron", "LeptonOut", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
-    tree->Branch("Nloose_Mu", &nlooseMu);
-    tree->Branch("Nloose_El", &nlooseEl);
+    tree->Branch("Nloose_Muon", &o_nlooseMu);
+    tree->Branch("Nloose_Electron", &o_nlooseEl);
 
     tree->Branch("HT", &o_ht);
     tree->Branch("HT_b", &o_htb);
     tree->Branch("Met", &o_met);
     tree->Branch("Met_phi", &o_metphi);
     tree->Branch("Centrality", &o_centrality);
-    if (isMC_) {
-        tree->Branch("LHE_HT", &o_ht_lhe);
-        tree->Branch("LHE_nLeps", &o_nlhe_leps);
-    }
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
 
@@ -93,8 +87,8 @@ void Closure_MisId::clearOutputs()
 {
     LOG_FUNC << "Start of clearOutputs";
     o_ht.clear();
-    o_ht_lhe.clear();
-    o_nlhe_leps.clear();
+    o_nlooseEl.clear();
+    o_nlooseMu.clear();
     o_htb.clear();
     o_met.clear();
     o_metphi.clear();
@@ -167,7 +161,6 @@ bool Closure_MisId::getCutFlow()
     if(measurement_cuts()) {
         (*currentChannel_) = Channel::OS_MR;
     }
-    set_LHELeps();
 
     if (*currentChannel_ == Channel::None) {
         return false; // Pass no channels
@@ -255,16 +248,6 @@ float Closure_MisId::get_mass() {
     }
 }
 
-void Closure_MisId::set_LHELeps()
-{
-    nLHE_leps = 0;
-    for (size_t i = 0; i < LHE_pdgId.size(); ++i) {
-        if (abs(LHE_pdgId.at(i)) == 11 || abs(LHE_pdgId.at(i)) == 13 || abs(LHE_pdgId.at(i)) == 15) {
-            nLHE_leps++;
-        }
-    }
-}
-
 void Closure_MisId::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
@@ -272,8 +255,6 @@ void Closure_MisId::FillValues(const Bitmap& event_bitmap)
     elec.fillLepton(*o_tightElectrons, Level::Tight, event_bitmap);
     jet.fillJet(*o_jets, Level::Tight, event_bitmap);
 
-    nlooseMu = muon.size(Level::Loose);
-    nlooseEl = elec.size(Level::Loose);
     for (size_t syst = 0; syst < numSystematics(); ++syst) {
         setupSyst(syst);
         o_ht.push_back(jet.getHT(Level::Tight, syst));
@@ -281,10 +262,8 @@ void Closure_MisId::FillValues(const Bitmap& event_bitmap)
         o_met.push_back(met.pt());
         o_metphi.push_back(met.phi());
         o_centrality.push_back(jet.getCentrality(Level::Tight, syst));
-        if (isMC_) {
-            o_ht_lhe.push_back(*LHE_HT);
-            o_nlhe_leps.push_back(nLHE_leps);
-        }
+        o_nlooseMu.push_back(muon.size(Level::Loose));
+        o_nlooseEl.push_back(elec.size(Level::Loose));
     }
     LOG_FUNC << "End of FillValues";
 }

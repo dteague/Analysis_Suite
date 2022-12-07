@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import shutil
-from pathlib import Path
 import subprocess
 from analysis_suite.commons.setup_functions import get_analyses
 import analysis_suite.commons.user as user
@@ -10,14 +9,14 @@ runfile_dir = user.analysis_area / "runfiles"
 if not runfile_dir.exists():
     runfile_dir.mkdir()
 
-# runfile_options = set()
-# for f in runfile_dir.glob("*.dat"):
-#     name = f.stem
-#     runfile_options.add(name[:name.index("201")-1])
+runfile_options = set()
+for f in runfile_dir.glob("*.dat"):
+    name = f.stem
+    runfile_options.add(name[:name.rfind("_", 0, name.rfind("_"))])
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--filename", required=True,
-                    # choices = list(runfile_options),
+                    choices = list(runfile_options),
                     help="output filename")
 parser.add_argument("-y", "--years", required=True,
                     type=lambda x : ["2016", "2017", "2018"] if x == "all" \
@@ -38,26 +37,14 @@ for typ in args.types:
     for year in args.years:
         analysis_dir = f"{args.analysis}_{year}_{args.filename}_{typ}"
         nfs_scratch = user.submit_area/f'{analysis_dir}-analyze'
+        runfile = (runfile_dir / f'{args.filename}_{typ}_{year}.dat').resolve()
+        if not runfile.exists():
+            print(f"{runfile} not found!")
+            continue
 
-        if args.rerun:
-            runfile = runfile_dir / f'{args.filename}_{typ}_rerun_{year}.dat'
-            jobs = {d.name for d in nfs_scratch.iterdir() if d.is_dir()}
-            files = {f.stem for f in (user.hdfs_area/analysis_dir).iterdir()}
-            unrun_files = jobs - files
-            with open(runfile, 'w') as infile:
-                for ana in unrun_files:
-                    with open(nfs_scratch / ana / f'{ana}.inputs') as f:
-                        infile.write(f.readline())
-            analysis_dir += '_rerun'
-        else:
-            runfile = runfile_dir / f'{args.filename}_{typ}_{year}.dat'
-            if not runfile.exists():
-                print(f"{runfile} not found!")
-                continue
-        runfile = runfile.resolve()
-
-        shutil.rmtree(user.submit_area/f"{analysis_dir}-analyze", ignore_errors=True)
-        shutil.rmtree(user.hdfs_area/analysis_dir, ignore_errors=True)
+        if not args.rerun:
+            shutil.rmtree(user.submit_area/f"{analysis_dir}-analyze", ignore_errors=True)
+            shutil.rmtree(user.hdfs_area/analysis_dir, ignore_errors=True)
 
         farmout_call = f"farmoutAnalysisJobs {analysis_dir}"
         farmout_call += f' --input-file-list={runfile}'
@@ -67,8 +54,6 @@ for typ in args.types:
         farmout_call += f' --base-requirements="{farmout_requirements}"'
         # farmout_call += f' --use-singularity=CentOS7'
         farmout_call += f' --output-dir={user.eos_area/analysis_dir}'
+        farmout_call += " --resubmit-failed-jobs" if args.rerun else ""
 
         subprocess.call(farmout_call, shell=True)
-
-        if args.rerun:
-            runfile.unlink()

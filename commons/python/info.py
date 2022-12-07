@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass, field
 from typing import  Callable
 from pathlib import Path
+import logging
 
 from analysis_suite.data.FileInfo import info as finfo
 from analysis_suite.data.PlotGroups import info as ginfo
@@ -20,6 +21,9 @@ class GroupInfo:
             return group
 
     def get_color(self, group):
+        if group not in self.group2color:
+            logging.warning("No color info given, default to black")
+            return 'black'
         return self.group2color[group]
 
     def get_memberMap(self):

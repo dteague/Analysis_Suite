@@ -105,7 +105,7 @@ class Histogram:
         elif attr == 'err_ratio':
             return np.nan_to_num(self.sumw2/(self.vals**2+1e-6))
         else:
-            raise Exception()
+            raise Exception(f"{attr} was not found!")
 
     @staticmethod
     def efficiency(top, bot, asymm=False):

@@ -28,4 +28,6 @@ ntuple_info/__init__.py
 
 !data/python/plotInfo/*py
 data/POG
-!data/POG/USER/*
+!data/POG/USER/*/RoccoR.txt
+
+data/.analyze_info

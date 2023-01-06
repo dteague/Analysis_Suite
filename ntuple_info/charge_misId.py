@@ -26,5 +26,5 @@ closure_ss = NtupleInfo(
         lambda vg : vg.mergeParticles("TightLepton", "TightMuon", "TightElectron"),
     ]
 )
-closure_ss.add_change('OS_CR', {'data': 'charge_flip'})
-closure_ss.set_exclusive('OS_CR', "charge_flip")
+closure_ss.add_change('OS_CR', {'charge_flip': 'data'})
+closure_ss.set_exclusive('OS_CR', "data")

@@ -6,7 +6,7 @@ trees = ["Nonprompt_FakeRate", "OS_Charge_MisId", "Signal_Dilepton", 'Signal_Mul
 ]
 
 info = NtupleInfo(
-    filename = user.hdfs_area / 'workspace/signal_region/{year}',
+    filename = user.hdfs_area / 'workspace/signal_region/{year}/{workdir}/',
     trees = trees,
     region = 'ttzCR',
     cut=lambda vg : vg['passZVeto'] == 0,
@@ -15,5 +15,5 @@ info = NtupleInfo(
     ],
 )
 
-info.add_change('Nonprompt_FakeRate', {'data': 'nonprompt'})
-info.add_change('OS_Charge_MisId', {'data': 'charge_misId'})
+info.add_change('Nonprompt_FakeRate', {'nonprompt': 'data'})
+info.add_change('OS_Charge_MisId', {'charge_misId': 'data'})

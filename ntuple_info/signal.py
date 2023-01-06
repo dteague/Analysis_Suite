@@ -14,5 +14,5 @@ info = NtupleInfo(
     ]
 )
 
-info.add_change('Nonprompt_FakeRate', {'data': 'nonprompt'})
-info.add_change('OS_Charge_MisId', {'data': 'charge_misId'})
+info.add_change('Nonprompt_FakeRate', {'nonprompt': 'data'})
+info.add_change('OS_Charge_MisId', {'charge_flip': 'data'})

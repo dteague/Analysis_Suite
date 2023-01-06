@@ -216,6 +216,7 @@ float Jet::getTotalBTagWeight() {
         auto scaler = (hadronFlavour.at(jidx) == 0) ? btag_udsg_scale : btag_bc_scale;
         float bSF = scaler.evaluate({tag_syst, "M", hadronFlavour.at(jidx), fabs(eta(jidx)), pt(jidx)});
         float eff = btag_eff.evaluate({eff_syst, "M", hadronFlavour.at(jidx), fabs(eta(jidx)), pt(jidx)});
+        // std::cout << hadronFlavour.at(jidx) << " "<< fabs(eta(jidx)) << " " << pt(jidx) << " " << eff << std::endl;
         weight *= (1 - bSF * eff) / (1 - eff);
     }
     return weight;

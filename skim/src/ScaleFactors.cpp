@@ -13,6 +13,9 @@ void ScaleFactors::init(TTreeReader& fReader)
         LHEPdfWeight.setup(fReader, "LHEPdfWeight");
         PSWeight.setup(fReader, "PSWeight");
 
+        PrefireWeight.setup(fReader, "L1PreFiringWeight_Nom");
+        PrefireWeight_up.setup(fReader, "L1PreFiringWeight_Up");
+        PrefireWeight_down.setup(fReader, "L1PreFiringWeight_Dn");
         // Pileup Weights
         auto corr_set = getScaleFile("LUM", "puWeights");
         pu_scale = WeightHolder(corr_set->at("Collisions" + yearNum.at(year_)+ "_UltraLegacy_goldenJSON"),
@@ -35,6 +38,7 @@ void ScaleFactors::init(TTreeReader& fReader)
             LOG_WARN << "Fake Rates not found for this year. May not be necessary, will continue";
         }
     }
+
     LOG_FUNC << "End init";
 }
 
@@ -65,6 +69,15 @@ size_t ScaleFactors::getPrescale(size_t run, size_t lumi, std::string trig)
     size_t lumi_idx = run_info.distance(lumi) - 1;
 
     return run_info.prescales[lumi_idx][trigger_idx[trig]];
+}
+
+float ScaleFactors::getPrefire()
+{
+    if (currentSyst == Systematic::Prefire) {
+        return (currentVar == eVar::Up) ? *PrefireWeight_up : *PrefireWeight_down;
+    } else {
+        return *PrefireWeight;
+    }
 }
 
 float ScaleFactors::getPileupSF(int nPU)

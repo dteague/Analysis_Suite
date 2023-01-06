@@ -58,6 +58,8 @@ enum class Systematic {
     PDF_alphaZ,
     PDF_unc,
 
+    Prefire,
+
     BJet_BTagging,
     BJet_Eff,
     BJet_Shape_hf,
@@ -95,6 +97,7 @@ static const std::unordered_map<std::string, Systematic> syst_by_name = {
     { "PDF_alphaZ", Systematic::PDF_alphaZ},
     { "PS_ISR", Systematic::PS_ISR },
     { "PS_FSR", Systematic::PS_FSR },
+    { "Prefire", Systematic::Prefire },
 
     { "BJet_BTagging", Systematic::BJet_BTagging },
     { "BJet_Eff", Systematic::BJet_Eff },

@@ -46,20 +46,26 @@ void ThreeTop::Init(TTree* tree)
     // Dilepton triggers
     if (year_ == Year::yr2016pre) {
         setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
-                                      "HLT_DoubleMu8_Mass8_PFHT300"});
+                                      // "HLT_DoubleMu8_Mass8_PFHT300"
+            });
         setupTrigger(Subchannel::EM, {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
                                       "HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL",
-                                      "HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT300"});
+                                      // "HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT300"
+            });
         setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT300"});
+                                      // "HLT_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT300"
+            });
     } else if (year_ == Year::yr2016post) {
         setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
-                                      "HLT_DoubleMu8_Mass8_PFHT300"});
+                                      // "HLT_DoubleMu8_Mass8_PFHT300"
+            });
         setupTrigger(Subchannel::EM, {"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
                                       "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT300"});
+                                      // "HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT300"
+            });
         setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT300"});
+                                      // "HLT_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT300"
+            });
     } else if(year_ == Year::yr2017) {
         setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
         setupTrigger(Subchannel::EM, {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
@@ -128,21 +134,14 @@ void ThreeTop::ApplyScaleFactors()
     LOG_FUNC << "Start of ApplyScaleFactors";
     LOG_EVENT << "weight: " << (*weight);
     (*weight) *= sfMaker.getPileupSF(*Pileup_nTrueInt);
-    LOG_EVENT << "weight after pu scale: " << (*weight);
     (*weight) *= sfMaker.getLHESF();
-    LOG_EVENT << "weight after lhe scale: " << (*weight);
     (*weight) *= sfMaker.getLHEPdf();
-    LOG_EVENT << "weight after pdf scale: " << (*weight);
+    (*weight) *= sfMaker.getPrefire();
     (*weight) *= sfMaker.getPartonShower();
-    LOG_EVENT << "weight after ps scale: " << (*weight);
     (*weight) *= jet.getScaleFactor();
-    LOG_EVENT << "weight after jet scale: " << (*weight);
     (*weight) *= jet.getTotalBTagWeight();
-    LOG_EVENT << "weight after bjet scale: " << (*weight);
     (*weight) *= elec.getScaleFactor();
-    LOG_EVENT << "weight after elec scale: " << (*weight);
     (*weight) *= muon.getScaleFactor();
-    LOG_EVENT << "weight after muon scale: " << (*weight);
     (*weight) *= rTop.getScaleFactor();
     LOG_FUNC << "End of ApplyScaleFactors";
 }
@@ -254,7 +253,7 @@ bool ThreeTop::baseline_cuts()
     // if (passCuts) trigEff_leadPt.fill(getLeadPt(), trig_cuts.pass_cut(subChannel_), subChannel_, *weight);
     passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
     passCuts &= cuts.setCut("passLeadPt", getLeadPt() > 25);
-    passCuts &= cuts.setCut("LeptonVeto", nLeps(Level::Loose) == nLeps(Level::Tight));
+    passCuts &= cuts.setCut("LeptonVeto", nLeps(Level::Loose) == nLeps(Level::Fake));
 
     passCuts &= cuts.setCut("passJetNumber", jet.size(Level::Tight) >= 2);
     passCuts &= cuts.setCut("passBJetNumber", jet.size(Level::Bottom) >= 1);
@@ -291,12 +290,12 @@ bool ThreeTop::nonprompt_cuts()
     bool passCuts = true;
     CutInfo cuts;
 
-    passCuts &= cuts.setCut("pass2FakeLeptons", nLeps(Level::Fake) == 2);
+    passCuts &= cuts.setCut("pass2FakeLeptons", nLeps(Level::Fake) == 2 && nLeps(Level::Tight) < 2);
     passCuts &= cuts.setCut("passSameSign;", isSameSign(Level::Fake));
 
     // Fill Cut flow
-    cuts.setCut("pass1FakeLeps", nLeps(Level::Fake) >= 1);
-    cuts.setCut("pass2FakeLeps", nLeps(Level::Fake) == 2);
+    // cuts.setCut("pass1FakeLeps", nLeps(Level::Tight) == 1);
+    // cuts.setCut("pass2FakeLeps", nLeps(Level::Tight) == 0);
     fillCutFlow(Channel::Nonprompt_FakeRate, cuts);
 
     LOG_FUNC << "End of nonprompt_cuts";

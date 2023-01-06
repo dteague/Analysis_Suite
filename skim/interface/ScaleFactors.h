@@ -22,6 +22,7 @@ public:
     float getLHESF();
     float getLHEPdf();
     float getPartonShower();
+    float getPrefire();
 
     size_t getPrescale(size_t run, size_t lumi, std::string trig);
 
@@ -35,6 +36,7 @@ private:
     TRArray<Float_t> LHEScaleWeight;
     TRArray<Float_t> LHEPdfWeight;
     TRArray<Float_t> PSWeight;
+    TRVariable<Float_t> PrefireWeight, PrefireWeight_up, PrefireWeight_down;
 
     nlohmann::json golden_json, prescale_json;
 

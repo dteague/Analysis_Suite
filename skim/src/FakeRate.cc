@@ -91,15 +91,12 @@ void FakeRate::ApplyScaleFactors()
     LOG_FUNC << "Start of ApplyScaleFactors";
     LOG_EVENT << "weight: " << (*weight);
     (*weight) *= sfMaker.getPileupSF(*Pileup_nTrueInt);
-    LOG_EVENT << "weight after pu scale: " << (*weight);
     (*weight) *= sfMaker.getLHESF();
-    LOG_EVENT << "weight after lhe scale: " << (*weight);
+    (*weight) *= sfMaker.getPrefire();
+    (*weight) *= sfMaker.getPartonShower();
     (*weight) *= jet.getScaleFactor();
-    LOG_EVENT << "weight after jet scale: " << (*weight);
     (*weight) *= elec.getScaleFactor();
-    LOG_EVENT << "weight after elec scale: " << (*weight);
     (*weight) *= muon.getScaleFactor();
-    LOG_EVENT << "weight after muon scale: " << (*weight);
     LOG_FUNC << "End of ApplyScaleFactors";
 }
 

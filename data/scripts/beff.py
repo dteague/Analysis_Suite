@@ -51,17 +51,17 @@ jet_flavs = {'udsg': 0, 'c': 4, 'b': 5}
 wps = {"L": 1, "M": 2, "T": 3}
 systs = ['central', 'down', 'up']
 
-
 def make_efficiencies(ginfo, year, input_dir):
     weights = {wp: dict() for wp in wps.keys()}
 
-    all_groups = ['other']
+    all_groups = ['all']
     groups = ginfo.setup_groups(all_groups)
     ntuple = config.get_ntuple('befficiency', 'measurement')
     graphs = pinfo.ptetas
 
-    plotter = Plotter(ntuple.get_file(year=year, workdir=input_dir), groups, ntuple=ntuple, year=year)
-    plotter.fill_hists(graphs)
+    plotter = Plotter(ntuple.get_filename(year=year, workdir=input_dir), groups, ntuple=ntuple, year=year)
+    plotter.fill_hists(graphs, ginfo)
+
     for flav_name, flav in jet_flavs.items():
         all_hist = plotter.get_sum(all_groups, f'{flav_name}_all')
         for wp_name, wp_id in wps.items():
@@ -100,12 +100,12 @@ def make_efficiencies(ginfo, year, input_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-y", "--years", required=True,
-                        type=lambda x : ["2016pre", "2017post" "2017", "2018"] if x == "all" \
+                        type=lambda x : ["2016pre", "2016post" "2017", "2018"] if x == "all" \
                                    else [i.strip() for i in x.split(',')],
                         help="Year to use")
-    parser.add_argument('-i', '--input_dir', default='befficiency')
+    parser.add_argument('-i', '--input_dir', default=None)
     args = parser.parse_args()
 
-    ginfo = GroupInfo(color_by_group)
+    ginfo = GroupInfo()
     for year in args.years:
         make_efficiencies(ginfo, year, args.input_dir)

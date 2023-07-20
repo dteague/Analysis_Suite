@@ -1,9 +1,8 @@
 #include "analysis_suite/skim/interface/Lepton.h"
 #include "analysis_suite/skim/interface/CommonFuncs.h"
+#include "analysis_suite/skim/interface/Jet.h"
 
 #include <limits>
-
-// #define NOMVATTH
 
 void Lepton::setup(std::string name, TTreeReader& fReader)
 {
@@ -14,16 +13,16 @@ void Lepton::setup(std::string name, TTreeReader& fReader)
     sip3d.setup(fReader, name+"_sip3d");
     if (isMC) {
         genPartIdx.setup(fReader, name+"_genPartIdx");
+        genPartFlav.setup(fReader, name+"_genPartFlav");
     }
-
     // Isolation variables
+    jetIdx.setup(fReader, name + "_jetIdx");
     ptRel.setup(fReader, name + "_jetPtRelv2");
     ptRatio_.setup(fReader, name + "_jetRelIso");
     iso.setup(fReader, name + "_miniPFRelIso_all");
 
     isoCut = 0.1;
-    // ptRatioCut = 0.75;
-    // ptRelCut = 8.;
+    ptRatioCut = 0.4;
     mvaCut = 0.4;
 
     GenericParticle::setup(name, fReader);
@@ -44,7 +43,7 @@ void Lepton::fillLepton(LeptonOut& output, Level level, const Bitmap& event_bitm
 
 }
 
-void Lepton::fillLepton_Iso(LeptonOut_Fake& output, Level level, const Bitmap& event_bitmap)
+void Lepton::fillLepton_Iso(LeptonOut_Fake& output, Jet& jet, Level level, const Bitmap& event_bitmap)
 {
     output.clear();
     for (size_t idx = 0; idx < size(); ++idx) {
@@ -52,9 +51,17 @@ void Lepton::fillLepton_Iso(LeptonOut_Fake& output, Level level, const Bitmap& e
         if (pass) {
             output.rawPt.push_back(m_pt.at(idx));
             output.ptRatio.push_back(ptRatio(idx));
-            output.ptRel.push_back(ptRel.at(idx));
+            output.ptRatio2.push_back(ptRatio2(idx, jet));
             output.mvaTTH.push_back(mvaTTH.at(idx));
             output.iso.push_back(iso.at(idx));
+            if (jetIdx.at(idx) != -1) {
+                output.jet_btag.push_back(jet.btag.at(jetIdx.at(idx)));
+            } else {
+                output.jet_btag.push_back(-1.);
+            }
+            if (isMC) {
+                output.jet_flav.push_back(static_cast<Int_t>(genPartFlav.at(idx)));
+            }
         }
     }
 }
@@ -79,81 +86,52 @@ std::pair<size_t, float> Lepton::getCloseJet(size_t lidx, const Particle& jet)
     return std::make_pair(minIdx, minDr);
 }
 
-bool Lepton::passZVeto()
+float Lepton::massInRange(Level level, float low, float high)
 {
-    auto lister = list(Level::Fake);
-    for (auto i = lister.begin(); i != lister.end(); ++i) {
-        LorentzVector tlep = p4(*i);
-        for (auto j = i; j != lister.end(); ++j) {
-            if (*i != *j || charge(*i) * charge(*j) > 0)
+    auto lep_list = list(level);
+    for (auto i = lep_list.begin(); i != lep_list.end(); ++i) {
+        LorentzVector lep = p4(*i);
+        for (auto j = i; j != lep_list.end(); ++j) {
+            if (*i == *j || charge(*i) * charge(*j) > 0) {
                 continue;
-            float mass = (p4(*i) + tlep).M();
-            if (mass < LOW_ENERGY_CUT || (fabs(mass - ZMASS) < ZWINDOW))
-                return false;
+            }
+            float mass = (p4(*j) + lep).M();
+            if (mass >= low && mass < high)
+                return mass;
         }
     }
-    return true;
+    return -1.;
 }
 
-bool Lepton::passZVeto_Fake()
+bool Lepton::isInMassRange(Level level, float low, float high)
 {
-    for (auto tidx : list(Level::Loose)) {
-        LorentzVector tlep = p4(tidx);
-        for (auto lidx : list(Level::Loose)) {
-            if (tidx >= lidx || charge(tidx) * charge(lidx) > 0)
+    auto lep_list = list(level);
+    for (auto i = lep_list.begin(); i != lep_list.end(); ++i) {
+        LorentzVector lep = p4(*i);
+        for (auto j = i; j != lep_list.end(); ++j) {
+            if (*i == *j || charge(*i) * charge(*j) > 0) {
                 continue;
-            float mass = (p4(lidx) + tlep).M();
-            if (mass < LOW_ENERGY_CUT || (fabs(mass - ZMASS) < ZWINDOW))
-                return false;
-        }
-    }
-    return true;
-}
-
-
-bool Lepton::passZCut(float low, float high)
-{
-    for (auto tidx : list(Level::Fake)) { //tightList
-        LorentzVector tlep = p4(tidx);
-        for (auto lidx : list(Level::Fake)) {
-            if (tidx >= lidx || charge(tidx) * charge(lidx) > 0)
-                continue;
-            float mass = (p4(lidx) + tlep).M();
-            if (mass > low && mass < high)
+            }
+            float mass = (p4(*j) + lep).M();
+            if (mass >= low && mass < high)
                 return true;
         }
-    }
+     }
     return false;
 }
 
 bool Lepton::passJetIsolation(size_t idx) const
 {
-#ifdef NOMVATTH
-    return iso.at(idx) < isoCut && ( ptRatio(idx) > ptRatioCut || ptRel.at(idx) > ptRelCut );
-#else
-    return mvaTTH.at(idx) > mvaCut;
-#endif
+     return mvaTTH.at(idx) > mvaCut;
 }
 
 float Lepton::getFakePtFactor(size_t idx) const
 {
-#ifdef NOMVATTH
-    if (ptRel.at(idx) > ptRelCut) {
-        if (iso.at(idx) > isoCut)
-            return (1 + iso.at(idx)-isoCut);
-    } else if (ptRatio(idx) <= ptRatioCut) {
-        return ptRatioCut/ptRatio(idx);
-    }
-    return 1.;
-#else
     if (passJetIsolation(idx)) {
         return 1.;
     } else {
-        // return 1.;
         return cone_correction/ptRatio(idx);
-        // return 1./ptRatio(idx);
     }
-#endif
 }
 
 void Lepton::fillFlippedCharge(GenParticle& gen)

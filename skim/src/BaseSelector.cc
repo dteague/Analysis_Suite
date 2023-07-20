@@ -28,6 +28,11 @@ void BaseSelector::Init(TTree* tree)
     TList* rootSystList = new TList();
     rootSystList->SetName("Systematics");
     rootSystList->Add(new TNamed("Nominal", "Nominal"));
+
+    TList* syst_index_list = new TList();
+    syst_index_list->SetName("Syst_Index");
+    syst_index_list->Add(new TNamed("0", "0"));
+
     LOG_POST <<  "Start Reading python inputs";
     for (auto item : *fInput) {
         std::string itemName = item->GetName();
@@ -42,6 +47,9 @@ void BaseSelector::Init(TTree* tree)
                     isMC_ = static_cast<std::string>(data->GetTitle()) == "False";
                 } else if (dataName == "Group") {
                     groupName_ = data->GetTitle();
+                } else if (dataName == "Dataset") {
+                    std::cout << data->GetTitle() << std::endl;
+                    dataset_ = dataset_name_to_enum.at(data->GetTitle());
                 }
             }
         } else if (itemName == "Systematics") {
@@ -52,6 +60,17 @@ void BaseSelector::Init(TTree* tree)
                     continue;
                 // Add systematic to list used by selector as well as TList for writing out
                 systematics_.push_back(syst_by_name.at(systName));
+                if (std::find(systs_that_change.begin(), systs_that_change.end(), systematics_.back()) != systs_that_change.end()) {
+                    novel_systs.insert(novel_systs.end(), {syst_to_index.size(), syst_to_index.size()+1});
+                    size_t start = novel_systs.size()-2;
+                    syst_to_index.insert(syst_to_index.end(), {start, start+1});
+                    syst_index_list->Add(new TNamed(std::to_string(start), std::to_string(start)));
+                    syst_index_list->Add(new TNamed(std::to_string(start+1), std::to_string(start+1)));
+                } else {
+                    syst_index_list->Add(new TNamed("0", "0"));
+                    syst_index_list->Add(new TNamed("0", "0"));
+                    syst_to_index.insert(syst_to_index.end(), {0, 0});
+                }
                 rootSystList->Add(new TNamed((systName + "_up").c_str(), systName.c_str()));
                 rootSystList->Add(new TNamed((systName + "_down").c_str(), systName.c_str()));
             }
@@ -71,6 +90,7 @@ void BaseSelector::Init(TTree* tree)
 
     outdir = outfile->mkdir(groupName_.c_str());
     fOutput->Add(rootSystList);
+    fOutput->Add(syst_index_list);
     LOG_POST << "Finished setting python inputs";
     setupSystematicInfo();
 
@@ -103,6 +123,7 @@ void BaseSelector::Init(TTree* tree)
         rGen.setup(fReader);
         rGenJet.setup(fReader);
     }
+    trig_cuts.set_dataset(dataset_);
 
     if (loguru::g_stderr_verbosity > 0) {
         bar.set_total(tree->GetEntries());
@@ -213,7 +234,7 @@ void BaseSelector::SetupEvent(size_t systNum)
     if (isMC_) {
         ApplyScaleFactors();
     }
-    // (*weight) *= muon.getRocCorrection(rGen, isMC_);
+    (*weight) *= muon.getRocCorrection(rGen);
 
     LOG_FUNC << "End of SetupEvent";
 }

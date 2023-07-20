@@ -36,10 +36,10 @@ condition_dict = {
         ],
         "2018": [
             "Run2018A-UL2018_MiniAODv2_NanoAODv9-v*",
-            "Run2018B-U2018_MiniAODv2_NanoAODv9-v*",
+            "Run2018B-UL2018_MiniAODv2_NanoAODv9-v*",
             "Run2018C-UL2018_MiniAODv2_NanoAODv9-v*",
             "Run2018D-UL2018_MiniAODv2_NanoAODv9-v*",
-        ]
+        ],
     },
     "mc" : {
         "2016pre":  ["RunIISummer20UL16NanoAODAPVv9*-106X_mcRun2_asymptotic_preVFP*v*"],
@@ -72,6 +72,11 @@ dataset_dict = {
             '2017' : 'SingleElectron',
             '2018' : 'EGamma',
         },
+        "Met": {
+            "2016": "MET",
+            "2017": "MET",
+            "2018": "MET",
+        }
     },
 
     "mc" : {
@@ -107,7 +112,7 @@ dataset_dict = {
             'WZG_TuneCP5*',
             'ZGToLLG_01J_5f_TuneCP5*',
         ],
-        'vv' : [
+        'vv_inc' : [
             'WW_TuneCP5*',
             'WZ_TuneCP5*',
             'ZZ_TuneCP5*',
@@ -148,7 +153,15 @@ dataset_dict = {
         'other' : [
             'GluGluHToZZTo4L_M125_TuneCP5_13TeV_powheg2_JHUGenV7011_pythia8',
             'ST_tW_Dilept_5f_DR_TuneCP5*',
-            'tZq_ll_4f_ckm_NLO_TuneCP5_13TeV-amcatnlo-pythia8',
+            'tZq_ll_4f_ckm_NLO_TuneCP5*',
+        ],
+        'vv' : [
+            'WZTo3LNu_Tune*',
+            'WWTo2L2Nu_TuneCP5_DoubleScattering_*',
+            'VHToNonbb_M125_Tune*',
+            'ZZTo4L_Tune*',
+            'WpWpJJ_EWK-QCD_Tune*',
+            "SSWW_Tune*",
         ],
         # VV
         # To be done

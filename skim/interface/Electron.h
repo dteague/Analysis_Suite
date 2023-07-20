@@ -6,6 +6,9 @@
 class Electron : public Lepton {
 public:
     void setup(TTreeReader& fReader);
+
+    void fillElectron(ElectronOut& output, Level level, const Bitmap& event_bitmap);
+
     virtual void createLooseList() override;
     virtual void createFakeList(Particle& jets) override;
     virtual void createTightList(Particle& jets) override;
@@ -26,6 +29,8 @@ public:
     TRArray<Float_t> hcalSumEt;
     TRArray<Float_t> tkSumPt;
 
+    TRArray<Float_t> dEscaleDown, dEscaleUp, dEsigmaDown, dEsigmaUp;
+
     TRArray<Bool_t> mva_l;
     TRArray<Bool_t> mva_80;
     TRArray<Bool_t> mva_90;
@@ -35,6 +40,7 @@ private:
 
     const float BARREL_ETA = 1.479;
     WeightHolder electron_scale;
+
 };
 
 #endif // __ELECTRON_H_

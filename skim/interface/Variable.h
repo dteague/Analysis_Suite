@@ -7,6 +7,8 @@
 #include <TTreeReaderArray.h>
 #include <TTreeReaderValue.h>
 
+#include <stdexcept>
+
 #include "analysis_suite/skim/interface/logging.h"
 
 #define BITMAP_SIZE 64
@@ -17,16 +19,19 @@ class TRVariable {
 public:
     TRVariable() {}
 
-    TRVariable(TTreeReader& fReader, std::string branch) {
-        setup(fReader, branch);
+    TRVariable(TTreeReader& fReader, std::string branch, bool needed=true) {
+        setup(fReader, branch, needed);
     }
 
-    void setup(TTreeReader& fReader, std::string branch) {
+    void setup(TTreeReader& fReader, std::string branch, bool needed=true) {
         branch_ = branch;
         if (fReader.GetTree()->GetBranchStatus(branch.c_str())) {
             val = new TTreeReaderValue<T>(fReader, branch.c_str());
+
+        } else if (!needed) {
+            std::cout << "Branch (" << branch << ") not found and not needed, will continue to run" << std::endl;
         } else {
-            std::cout << "Branch (" << branch << ") not found, will continue to run" << std::endl;
+            throw std::out_of_range("Branch (" + branch + ") not found and needed, will stop");
         }
     }
     T operator*() const {
@@ -71,11 +76,13 @@ public:
         setup(fReader, branch);
     }
 
-    void setup(TTreeReader& fReader, std::string branch) {
+    void setup(TTreeReader& fReader, std::string branch, bool needed=true) {
         if (fReader.GetTree()->GetBranchStatus(branch.c_str())) {
             array = new TTreeReaderArray<T>(fReader, branch.c_str());
+        } else if (!needed) {
+            std::cout << "Branch (" << branch << ") not found and not needed, will continue to run" << std::endl;
         } else {
-            std::cout << "Branch (" << branch << ") not found, will continue to run" << std::endl;
+            throw std::out_of_range("Branch (" + branch + ") not found and needed, will stop");
         }
     }
     T at(size_t idx) const {

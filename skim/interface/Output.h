@@ -41,11 +41,13 @@ struct JetOut {
     std::vector<std::pair<Float_t, Float_t>> jer;
     std::vector<std::pair<Float_t, Float_t>> jes;
     std::vector<Float_t> discriminator;
+    std::vector<Int_t> pass_btag;
     void clear() {
         generic_clear(this);
         jer.clear();
         jes.clear();
         discriminator.clear();
+        pass_btag.clear();
     }
 };
 
@@ -68,20 +70,36 @@ struct LeptonOut {
     }
 };
 
+struct ElectronOut {
+    PARTICLE_VARS;
+    std::vector<std::pair<Float_t, Float_t>> dEScale;
+    std::vector<std::pair<Float_t, Float_t>> dESigma;
+    void clear() {
+        generic_clear(this);
+        dEScale.clear();
+        dESigma.clear();
+    }
+};
+
+
 struct LeptonOut_Fake {
     PARTICLE_VARS;
     std::vector<Float_t> rawPt;
     std::vector<Float_t> ptRatio;
-    std::vector<Float_t> ptRel;
+    std::vector<Float_t> ptRatio2;
     std::vector<Float_t> mvaTTH;
     std::vector<Float_t> iso;
+    std::vector<Float_t> jet_btag;
+    std::vector<Int_t> jet_flav;
     void clear() {
         generic_clear(this);
         rawPt.clear();
         ptRatio.clear();
-        ptRel.clear();
+        ptRatio2.clear();
         mvaTTH.clear();
         iso.clear();
+        jet_btag.clear();
+        jet_flav.clear();
     }
 };
 

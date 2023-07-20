@@ -17,17 +17,38 @@ void Electron::setup(TTreeReader& fReader)
     tkSumPt.setup(fReader, "Electron_dr03TkSumPt");
     id = PID::Electron;
     mva_l.setup(fReader, "Electron_mvaFall17V2noIso_WPL");
-    mva_80.setup(fReader, "Electron_mvaFall17V2noIso_WP80");
+    // mva_80.setup(fReader, "Electron_mvaFall17V2noIso_WP80");
     mva_90.setup(fReader, "Electron_mvaFall17V2noIso_WP90");
+    tid.setup(fReader, "Electron_mvaFall17V2noIso_WP80");
 
     if(isMC) {
         auto corr_set = getScaleFile("EGM", "electron");
         electron_scale = WeightHolder(corr_set->at("UL-Electron-ID-SF"), Systematic::Electron_Scale,
                                       {"sf", "sfup", "sfdown"});
+        dEscaleDown.setup(fReader, "Electron_dEscaleDown");
+        dEscaleUp.setup(fReader, "Electron_dEscaleUp");
+        dEsigmaDown.setup(fReader, "Electron_dEsigmaDown");
+        dEsigmaUp.setup(fReader, "Electron_dEsigmaUp");
     }
-    cone_correction = 0.85;
-    ptRatioCut = 0.7;
+    if (year_ == Year::yr2016pre)        cone_correction = 0.825;
+    else if (year_ == Year::yr2016post)  cone_correction = 0.825;
+    else if (year_ == Year::yr2017)      cone_correction = 0.775;
+    else if (year_ == Year::yr2018)      cone_correction = 0.800;
 }
+
+
+void Electron::fillElectron(ElectronOut& output, Level level, const Bitmap& event_bitmap)
+{
+    output.clear();
+    for (size_t idx = 0; idx < size(); ++idx) {
+        bool pass = fillParticle(output, level, idx, event_bitmap);
+        if (pass) {
+            output.dEScale.push_back(std::make_pair(dEscaleDown.at(idx), dEscaleUp.at(idx)));
+            output.dESigma.push_back(std::make_pair(dEsigmaDown.at(idx), dEsigmaUp.at(idx)));
+        }
+    }
+}
+
 
 void Electron::createLooseList()
 {
@@ -50,13 +71,16 @@ void Electron::createLooseList()
 void Electron::createFakeList(Particle& jets)
 {
     for (auto i : list(Level::Loose)) {
-        if (mva_90.at(i)
+        if (m_pt.at(i) > 15 // Trigger pt threshold
+            && mva_90.at(i)
             && sip3d.at(i) < 4
             && lostHits.at(i) == 0
             && tightCharge.at(i) == 2
             // && passTriggerRequirements(i) // Nonmva
             && getFakePtFactor(i)*m_pt.at(i) > 15
+
             && (ptRatio(i) > ptRatioCut || mvaTTH.at(i) > mvaCut) // MVA
+            // && (m_pt.at(i) > 14 || mvaTTH.at(i) > mvaCut) // MVA
             )
             {
                 m_partList[Level::Fake]->push_back(i);
@@ -69,8 +93,9 @@ void Electron::createFakeList(Particle& jets)
 void Electron::createTightList(Particle& jets)
 {
     for (auto i : list(Level::Fake)) {
-        if (pt(i) > 15
-            && passJetIsolation(i))
+        if (// pt(i) > 15
+            // &&
+            passJetIsolation(i))
             {
                 m_partList[Level::Tight]->push_back(i);
         } else {

@@ -36,7 +36,6 @@ farmout_requirements = '(MY.RequiresSharedFS=!=true || TARGET.HasAFS_OSG) && (TA
 for typ in args.types:
     for year in args.years:
         analysis_dir = f"{args.analysis}_{year}_{args.filename}_{typ}"
-        nfs_scratch = user.submit_area/f'{analysis_dir}-analyze'
         runfile = (runfile_dir / f'{args.filename}_{typ}_{year}.dat').resolve()
         if not runfile.exists():
             print(f"{runfile} not found!")
@@ -44,6 +43,7 @@ for typ in args.types:
 
         if not args.rerun:
             shutil.rmtree(user.submit_area/f"{analysis_dir}-analyze", ignore_errors=True)
+            shutil.rmtree(user.scratch_area/f"{analysis_dir}-analyze", ignore_errors=True)
             shutil.rmtree(user.hdfs_area/analysis_dir, ignore_errors=True)
 
         farmout_call = f"farmoutAnalysisJobs {analysis_dir}"
@@ -55,5 +55,5 @@ for typ in args.types:
         # farmout_call += f' --use-singularity=CentOS7'
         farmout_call += f' --output-dir={user.eos_area/analysis_dir}'
         farmout_call += " --resubmit-failed-jobs" if args.rerun else ""
-
+        # print(farmout_call)
         subprocess.call(farmout_call, shell=True)

@@ -39,6 +39,7 @@ enum class PID {
 };
 
 enum class Level {
+    Loose_NoPUID,
     Loose,
     Fake,
     Tight,
@@ -78,6 +79,9 @@ enum class Systematic {
     Jet_JER,
     Jet_JES,
     Jet_PUID,
+
+    Electron_EScale,
+    Electron_ESigma,
 
     ChargeMisId_stat,
     Nonprompt_Mu_stat,
@@ -123,6 +127,11 @@ static const std::unordered_map<std::string, Systematic> syst_by_name = {
     { "Nonprompt_El_stat", Systematic::Nonprompt_El_stat },
 };
 
+static const std::vector<Systematic> systs_that_change = {
+    Systematic::Jet_JER,
+    Systematic::Jet_JES,
+};
+
 const std::vector<Systematic> jec_systs = {
     Systematic::Jet_JER,
     Systematic::Jet_JES,
@@ -143,5 +152,25 @@ static const std::unordered_map<eVar, std::string> varName_by_var = {
     { eVar::Up, "up" },
     { eVar::Down, "down" },
 };
+
+enum class Dataset {
+    DoubleMuon,
+    MuonEG,
+    DoubleEG,
+    Met,
+    None,
+};
+
+static const std::unordered_map<std::string, Dataset> dataset_name_to_enum {
+    {"DoubleMuon", Dataset::DoubleMuon},
+    {"MuonEG", Dataset::MuonEG},
+    {"DoubleEG", Dataset::DoubleEG},
+    {"Met", Dataset::Met},
+    {"None", Dataset::None},
+};
+
+static const float ZMASS = 91.188;
+static const float ZWINDOW = 15;
+static const float LOW_ENERGY_CUT = 12;
 
 #endif // __COMMONENUMS_H_

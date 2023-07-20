@@ -9,9 +9,9 @@ void ScaleFactors::init(TTreeReader& fReader)
     LOG_FUNC << "Start init";
     if (isMC) {
         // Generator Weights
-        LHEScaleWeight.setup(fReader, "LHEScaleWeight");
-        LHEPdfWeight.setup(fReader, "LHEPdfWeight");
-        PSWeight.setup(fReader, "PSWeight");
+        LHEScaleWeight.setup(fReader, "LHEScaleWeight", false);
+        LHEPdfWeight.setup(fReader, "LHEPdfWeight", false);
+        PSWeight.setup(fReader, "PSWeight", false);
 
         PrefireWeight.setup(fReader, "L1PreFiringWeight_Nom");
         PrefireWeight_up.setup(fReader, "L1PreFiringWeight_Up");
@@ -24,19 +24,19 @@ void ScaleFactors::init(TTreeReader& fReader)
         // Golden Json
         std::ifstream golden_json_file(scaleDir_ + "/golden_json/golden_json_" + yearMap.at(year_).substr(0,4) + ".json");
         golden_json_file >> golden_json;
+    }
 
-        // Fake Rates
-        try {
-            auto corr_set = getScaleFile("USER", "fake_rates");
-            charge_misId = WeightHolder(corr_set->at("Charge_MisId"), Systematic::ChargeMisId_stat,
-                                        {"nom", "up", "down"});
-            nonprompt_muon = WeightHolder(corr_set->at("Nonprompt_muon"), Systematic::Nonprompt_Mu_stat,
-                                          {"nom", "up", "down"});
-            nonprompt_elec = WeightHolder(corr_set->at("Nonprompt_electron"), Systematic::Nonprompt_El_stat,
-                                          {"nom", "up", "down"});
-        } catch (...) {
-            LOG_WARN << "Fake Rates not found for this year. May not be necessary, will continue";
-        }
+    // Fake Rates
+    try {
+        auto corr_set = getScaleFile("USER", "fake_rates");
+        charge_misId = WeightHolder(corr_set->at("Charge_MisId"), Systematic::ChargeMisId_stat,
+                                    {"nom", "up", "down"});
+        nonprompt_muon = WeightHolder(corr_set->at("Nonprompt_muon"), Systematic::Nonprompt_Mu_stat,
+                                      {"nom", "up", "down"});
+        nonprompt_elec = WeightHolder(corr_set->at("Nonprompt_electron"), Systematic::Nonprompt_El_stat,
+                                      {"nom", "up", "down"});
+    } catch (...) {
+        LOG_WARN << "Fake Rates not found for this year. May not be necessary, will continue";
     }
 
     LOG_FUNC << "End init";

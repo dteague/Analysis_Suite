@@ -7,14 +7,15 @@
 
 #include <unordered_map>
 
+class Jet;
+
 class Lepton : public Particle {
 public:
     virtual void createLooseList(){};
     virtual void createFakeList(Particle& jets){};
     virtual void createTightList(Particle& jets){};
-    bool passZVeto();
-    bool passZVeto_Fake();
-    bool passZCut(float low, float high);
+    float massInRange(Level level, float low=ZMASS-ZWINDOW, float high=ZMASS+ZWINDOW);
+    bool isInMassRange(Level level, float low=ZMASS-ZWINDOW, float high=ZMASS+ZWINDOW);
     void setup(std::string name, TTreeReader& fReader);
     std::pair<size_t, float> getCloseJet(size_t lidx, const Particle& jet);
     bool passJetIsolation(size_t idx) const;
@@ -22,6 +23,7 @@ public:
     float getFakePtFactor(size_t idx) const;
 
     float pt_(size_t idx) const override { return m_pt.at(idx)*fakePtFactor.at(idx); }
+    float rawpt(size_t i) const { return m_pt.at(i); }
     float rawpt(Level level, size_t i) const { return m_pt.at(idx(level, i)); }
 
     Int_t charge(size_t idx) { return m_charge.at(idx); };
@@ -34,6 +36,13 @@ public:
     float getMT(Level level, size_t i, float met, float met_phi) const { return getMT(idx(level, i), met, met_phi); }
 
     float ptRatio(size_t i) const { return 1/(1+ptRatio_.at(i)); }
+    float ptRatio2(size_t i, Particle& jets) const {
+        if (jetIdx.at(i) < 0) {
+            return 1/(1+ptRatio_.at(i));
+        } else {
+            return m_pt.at(i)/jets.pt(jetIdx.at(i));
+        }
+    }
 
     virtual void setupGoodLists(Particle& jets, GenParticle& gen) override
     {
@@ -63,9 +72,11 @@ public:
     TRArray<Float_t> ptRel;
     TRArray<Float_t> ptRatio_;
     TRArray<Float_t> iso;
+    TRArray<Bool_t> tid;
+    TRArray<Int_t> jetIdx;
 
     void fillLepton(LeptonOut& output, Level level, const Bitmap& event_bitmap);
-    void fillLepton_Iso(LeptonOut_Fake& output, Level level, const Bitmap& event_bitmap);
+    void fillLepton_Iso(LeptonOut_Fake& output, Jet& jet, Level level, const Bitmap& event_bitmap);
 
 protected:
     TRArray<Int_t> m_charge;
@@ -73,10 +84,8 @@ protected:
     TRArray<Float_t> dxy;
     TRArray<Float_t> sip3d;
     TRArray<Int_t> genPartIdx;
+    TRArray<UChar_t> genPartFlav;
 
-    const float ZMASS = 91.188;
-    const float ZWINDOW = 15;
-    const float LOW_ENERGY_CUT = 12;
 
     PID id;
 

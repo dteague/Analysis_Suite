@@ -66,8 +66,8 @@ protected:
         SetupOutTreeBranches(trees.at(chan).tree);
     }
 
-    void setupTrigger(Subchannel sChan, std::vector<std::string> trigs = {}) {
-        trig_cuts.setup_channel(sChan, fReader, trigs);
+    void setupTrigger(Subchannel sChan, Dataset dataset, std::vector<std::string> trigs = {}) {
+        trig_cuts.setup_channel(sChan, dataset, fReader, trigs);
     }
 
     void fillCutFlow(Channel chan, CutInfo& cuts) {
@@ -98,6 +98,7 @@ protected:
     Year year_;
     bool isMC_ = true;
     Subchannel subChannel_;
+    Dataset dataset_ = Dataset::None;
 
     // Current weight and all weights
     float* weight;
@@ -106,6 +107,11 @@ protected:
     // Current channel and all channels
     Channel* currentChannel_;
     std::vector<Channel> o_channels;
+
+    // Systs that change stuff
+    std::vector<size_t> syst_to_index = { 0 };
+    std::vector<size_t> novel_systs = { 0 };
+    size_t n_novel_systs = 1;
 
     std::vector<Bool_t> o_pass_event;
 

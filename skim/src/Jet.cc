@@ -13,7 +13,14 @@ void Jet::setup(TTreeReader& fReader)
         rawFactor.setup(fReader, "Jet_rawFactor");
         rho.setup(fReader, "fixedGridRhoFastjetAll");
     }
+    neHEF.setup(fReader, "Jet_neHEF");
+    neEmEF.setup(fReader, "Jet_neEmEF");
+    muEF.setup(fReader, "Jet_muEF");
+    chHEF.setup(fReader, "Jet_chHEF");
+    chEmEF.setup(fReader, "Jet_chEmEF");
+    nConstituents.setup(fReader, "Jet_nConstituents");
 
+    setup_map(Level::Loose_NoPUID);
     setup_map(Level::Loose);
     setup_map(Level::Bottom);
     setup_map(Level::Tight);
@@ -35,6 +42,10 @@ void Jet::setup(TTreeReader& fReader)
         medium_bjet_cut = 0.2783;
         tight_bjet_cut =  0.7100;
     }
+    bjet_cuts["L"] = loose_bjet_cut;
+    bjet_cuts["M"] = medium_bjet_cut;
+    bjet_cuts["T"] = tight_bjet_cut;
+
 
     // use_shape_btag = true;
     if (isMC) {
@@ -86,6 +97,10 @@ void Jet::fillJet(JetOut& output, Level level, const Bitmap& event_bitmap)
     for (size_t idx = 0; idx < size(); ++idx) {
         bool pass = fillParticle(output, level, idx, event_bitmap);
         if (pass) {
+            if (btag.at(idx) > tight_bjet_cut) output.pass_btag.push_back(3);
+            else if (btag.at(idx) > medium_bjet_cut) output.pass_btag.push_back(2);
+            else if (btag.at(idx) > loose_bjet_cut) output.pass_btag.push_back(1);
+            else output.pass_btag.push_back(0);
             output.discriminator.push_back(btag.at(idx));
             output.jer.push_back(get_JEC_pair(Systematic::Jet_JER, idx));
             output.jes.push_back(get_JEC_pair(Systematic::Jet_JES, idx));
@@ -113,10 +128,14 @@ void Jet::createLooseList()
     for (size_t i = 0; i < size(); i++) {
         if (pt(i) > 25
             && fabs(eta(i)) < 2.4
-            && (jetId.at(i) & looseId) != 0
-            && (pt(i) > 50 || (puId.at(i) >> PU_Medium) & 1)
+            && (jetId.at(i) & tightId) != 0
+            && (neHEF.at(i) < 0.9 && neEmEF.at(i) < 0.9 && muEF.at(i) < 0.8 && chEmEF.at(i) < 0.8 && chHEF.at(i) > 0. && nConstituents.at(i) > 1)
             && (closeJetDr_by_index.find(i) == closeJetDr_by_index.end() || closeJetDr_by_index.at(i) >= pow(0.4, 2))) {
-            m_partList[Level::Loose]->push_back(i);
+            if (pt(i) > 50 || (puId.at(i) >> PU_Medium) & 1) {
+                m_partList[Level::Loose]->push_back(i);
+            } else {
+                m_partList[Level::Loose_NoPUID]->push_back(i);
+            }
         }
     }
 }
@@ -200,24 +219,44 @@ void Jet::setupJEC(GenericParticle& genJet)
     }
 }
 
-float Jet::getTotalBTagWeight() {
+float Jet::getPileupIDWeight()
+{
     float weight = 1;
+    std::string syst = systName(puid_scale);
+    for (auto idx : list(Level::Loose)) {
+        if (pt(idx) < 50)
+            weight *= puid_scale.evaluate({eta(idx), pt(idx), syst, "M"});
+    }
+    for (auto idx : list(Level::Loose_NoPUID)) {
+        float eff = puid_scale.evaluate({eta(idx), pt(idx), "MCEff", "M"});
+        float sf = puid_scale.evaluate({eta(idx), pt(idx), syst, "M"});
+        weight *= (1 - sf*eff) / (1 -eff);
+    }
+    return weight;
+}
+
+float Jet::getBJetWeight(size_t idx, std::string lvl)
+{
+    auto scaler = (hadronFlavour.at(idx) == 0) ? btag_udsg_scale : btag_bc_scale;
+    return scaler.evaluate({"central", lvl, hadronFlavour.at(idx), fabs(eta(idx)), pt(idx)});
+}
+
+float Jet::getTotalBTagWeight(std::string btag_wp) {
+    float weight = 1;
+    if (!isMC) {
+        return weight;
+    }
     std::string tag_syst = systName(btag_bc_scale);
     std::string eff_syst = systName(btag_eff);
-    const auto& goodBJets = list(Level::Bottom);
-    for (auto bidx : goodBJets) {
-        auto scaler = (hadronFlavour.at(bidx) == 0) ? btag_udsg_scale : btag_bc_scale;
-        weight *= scaler.evaluate({tag_syst, "M", hadronFlavour.at(bidx), fabs(eta(bidx)), pt(bidx)});
-    }
-    for (auto jidx : list(Level::Tight)) {
-        if (std::find(goodBJets.begin(), goodBJets.end(), jidx) != goodBJets.end()) {
-            continue; // is a bjet, weighting already taken care of
+    for(auto i : list(Level::Loose)) {
+        auto scaler = (hadronFlavour.at(i) == 0) ? btag_udsg_scale : btag_bc_scale;
+        float bSF = scaler.evaluate({tag_syst, btag_wp, hadronFlavour.at(i), fabs(eta(i)), pt(i)});
+        if (btag.at(i) > bjet_cuts[btag_wp]) {
+            weight *= bSF;
+        } else {
+            float eff = btag_eff.evaluate({eff_syst, btag_wp, hadronFlavour.at(i), fabs(eta(i)), pt(i)});
+            weight *= (1 - bSF * eff) / (1 - eff);
         }
-        auto scaler = (hadronFlavour.at(jidx) == 0) ? btag_udsg_scale : btag_bc_scale;
-        float bSF = scaler.evaluate({tag_syst, "M", hadronFlavour.at(jidx), fabs(eta(jidx)), pt(jidx)});
-        float eff = btag_eff.evaluate({eff_syst, "M", hadronFlavour.at(jidx), fabs(eta(jidx)), pt(jidx)});
-        // std::cout << hadronFlavour.at(jidx) << " "<< fabs(eta(jidx)) << " " << pt(jidx) << " " << eff << std::endl;
-        weight *= (1 - bSF * eff) / (1 - eff);
     }
     return weight;
 }
@@ -237,16 +276,16 @@ void Jet::setup_jer(size_t i, GenericParticle& genJets)
     float resolution = jet_resolution.evaluate({eta(i), m_pt.at(i), *rho});
     size_t g = genJetIdx.at(i);
     bool hasGenJet = genJetIdx.at(i) != -1;
-    float pt_ratio = (hasGenJet) ? 1-m_pt.at(i)/genJets.pt(g) : 0.;
+    float pt_ratio = (hasGenJet) ? 1-genJets.pt(g)/m_pt.at(i) : 0.;
 
     for (auto var : all_vars) {
         float scale = jer_scale.evaluate({eta(i), jer_scale.name_by_var.at(var)});
         if (hasGenJet
             && deltaR(eta(i), genJets.eta(g), phi(i), genJets.phi(g)) < jet_dr/2
             && fabs(pt_ratio) < 3*resolution)
-            {
-                jer[var].push_back(1 + (scale-1)*pt_ratio);
-            } else if (scale > 1.) {
+        {
+            jer[var].push_back(1 + (scale-1)*pt_ratio);
+        } else if (scale > 1.) {
             std::normal_distribution<> gaussian{0, resolution};
             jer[var].push_back(1 + gaussian(gen)*sqrt(pow(scale,2) - 1));
         } else {

@@ -4,6 +4,9 @@
 #include "analysis_suite/skim/interface/Nonprompt_Closure.h"
 #include "analysis_suite/skim/interface/Lepton_MisId_Closure.h"
 #include "analysis_suite/skim/interface/BEfficiency.h"
+#include "analysis_suite/skim/interface/DY_test.h"
+#include "analysis_suite/skim/interface/SingleLep_Trigger.h"
+#include "analysis_suite/skim/interface/TwoLepton.h"
 
 namespace {
 namespace {
@@ -13,5 +16,8 @@ namespace {
     Nonprompt_Closure pNonprompt_Closure;
     Closure_MisId pClosure_MisId;
     BEfficiency pBEfficiency;
+    DY_test pDY_test;
+    SingleLep_Trigger pSingleLep_Trigger;
+    TwoLepton pTwoLepton;
 } // namespace
 } // namespace

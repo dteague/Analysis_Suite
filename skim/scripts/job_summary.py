@@ -9,6 +9,9 @@ def dirs(directory):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--data', action='store_true')
+parser.add_argument("-y", "--years", help="Year to check")
+parser.add_argument("-a", "--analysis", help="Analysis used")
+parser.add_argument("-f", "--filename", help="runfile to check")
 args = parser.parse_args()
 
 hdfs_dirs = set(dirs(user.hdfs_area))
@@ -17,6 +20,12 @@ run_jobs = sorted(hdfs_dirs.intersection(scratch_dirs))
 
 if args.data:
     run_jobs = filter(lambda x: "data" in x, run_jobs)
+if args.analysis is not None:
+    run_jobs = filter(lambda x: args.analysis in x, run_jobs)
+if args.filename is not None:
+    run_jobs = filter(lambda x: args.filename in x, run_jobs)
+if args.years is not None:
+    run_jobs = filter(lambda x: args.years in x, run_jobs)
 
 table = PrettyTable(["Submitted", "Completed", "Diff", "Job Name"])
 table.align = "r"

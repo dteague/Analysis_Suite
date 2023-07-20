@@ -26,4 +26,6 @@ for year in args.years:
         with open(input_file) as f:
             if args.era in f.read() and (output_dir/f"{file_dir.name}.root").exists():
                 hadd_files += str(output_dir/f"{file_dir.name}.root") + " "
+
+
     subprocess.call(f"hadd -f -v 1 {args.output}_{year}.root {hadd_files}", shell=True)

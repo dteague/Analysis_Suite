@@ -21,7 +21,6 @@ public:
 
 private:
     void setSubChannel();
-    void set_leadlep();
     bool measurement_cuts();
     bool sideband_cuts();
     bool single_lep_cuts(CutInfo& cuts);
@@ -33,8 +32,8 @@ private:
     TRVariable<Float_t> Pileup_nTrueInt;
 
     std::vector<Float_t> o_ht, o_met, o_metphi;
-
-    LorentzVector lead_lep;
+    std::vector<Float_t> bjet_scales;
+    Int_t hlt_loPt_prescale, hlt_hiPt_prescale;
 };
 
 

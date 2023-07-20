@@ -19,19 +19,22 @@ void Muon::setup(TTreeReader& fReader)
     tightCharge.setup(fReader, "Muon_tightCharge");
     mediumId.setup(fReader, "Muon_mediumId");
     nTrackerLayers.setup(fReader, "Muon_nTrackerLayers");
-
+    tid.setup(fReader, "Muon_tightId");
 
     id = PID::Muon;
 
     if (isMC) {
         auto corr_set = getScaleFile("MUO", "muon_Z");
-        muon_scale = WeightHolder(corr_set->at("NUM_MediumID_DEN_TrackerMuons"), Systematic::Muon_Scale,
+        muon_scale = WeightHolder(corr_set->at("NUM_MediumID_DEN_genTracks"), Systematic::Muon_Scale,
                                   {"sf", "systup", "systdown"});
     }
     std::string roccor_file = scaleDir_+"/POG/USER/"+yearMap.at(year_)+"_UL/RoccoR.txt";
     roc_corr.init(roccor_file);
-    cone_correction = 0.725;
-    ptRatioCut = 0.50;
+
+    if (year_ == Year::yr2016pre)        cone_correction = 0.750;
+    else if (year_ == Year::yr2016post)  cone_correction = 0.750;
+    else if (year_ == Year::yr2017)      cone_correction = 0.700;
+    else if (year_ == Year::yr2018)      cone_correction = 0.725;
 }
 
 void Muon::createLooseList()
@@ -51,11 +54,13 @@ void Muon::createLooseList()
 void Muon::createFakeList(Particle& jets)
 {
     for (auto i : list(Level::Loose)) {
-        if (tightCharge.at(i) == 2
+        if (m_pt.at(i) > 12 // Trigger pt threshold
+            && tightCharge.at(i) == 2
             && mediumId.at(i)
             && sip3d.at(i) < 4
-            && m_pt.at(i)*getFakePtFactor(i) > 15
             && (ptRatio(i) > ptRatioCut || mvaTTH.at(i) > mvaCut)
+            && m_pt.at(i)*getFakePtFactor(i) > 15 // Total pt threshold
+            // && (m_pt.at(i) > 10 || passJetIsolation(i))
             )
             {
                 m_partList[Level::Fake]->push_back(i);
@@ -83,7 +88,8 @@ float Muon::getScaleFactor()
     float weight = 1.;
     std::string syst = systName(muon_scale);
     for (auto midx : list(Level::Fake)) {
-        weight *= muon_scale.evaluate({yearMap.at(year_)+"_UL", fabs(eta(midx)), pt(midx), syst});
+        float pt = (m_pt.at(midx) > 15) ? m_pt.at(midx) : 15.;
+        weight *= muon_scale.evaluate({yearMap.at(year_)+"_UL", fabs(eta(midx)), pt, syst});
     }
     return weight;
 }

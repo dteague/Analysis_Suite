@@ -32,28 +32,39 @@ void Closure_MisId::Init(TTree* tree)
     }
 
     if (year_ == Year::yr2016pre) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
-        setupTrigger(Subchannel::EM, {"HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL",
-                                      "HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
+        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
+                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
+        setupTrigger(Subchannel::EM, Dataset::MuonEG,
+                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+                      "HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL"});
+        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
+                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
     } else if (year_ == Year::yr2016post) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
-        setupTrigger(Subchannel::EM, {"HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
+        setupTrigger(Subchannel::MM,  Dataset::DoubleMuon,
+                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
+        setupTrigger(Subchannel::EM, Dataset::MuonEG,
+                     {"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
+        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
+                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
     } else if(year_ == Year::yr2017) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
-        setupTrigger(Subchannel::EM, {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"});
+        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
+                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
+        setupTrigger(Subchannel::EM, Dataset::MuonEG,
+                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
+        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
+                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+                      "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
     } else if (year_ == Year::yr2018) {
-        setupTrigger(Subchannel::MM, {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8"});
-        setupTrigger(Subchannel::EM, {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-        setupTrigger(Subchannel::EE, {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"});
+        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
+                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",});
+        setupTrigger(Subchannel::EM, Dataset::MuonEG,
+                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
+        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
+                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",});
     }
-
-    setupTrigger(Subchannel::None);
 
     LOG_FUNC << "End of Init";
 }
@@ -273,7 +284,6 @@ void Closure_MisId::printStuff()
     std::cout << "nbjet: " << jet.size(Level::Bottom) << std::endl;
     std::cout << "nlep: " << muon.size(Level::Tight) << " " << elec.size(Level::Tight) << std::endl;
     std::cout << "nlep loose: " << muon.size(Level::Fake) << " " << elec.size(Level::Fake) << std::endl;
-    std::cout << "lepVeto: " << muon.passZVeto() << " " << elec.passZVeto() << std::endl;
     std::cout << std::endl;
     LOG_FUNC << "End of printStuff";
 }

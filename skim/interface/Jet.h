@@ -15,7 +15,9 @@ public:
     void setup(TTreeReader& fReader);
 
     virtual float getScaleFactor() override;
-    float getTotalBTagWeight();
+    float getTotalBTagWeight(std::string btag_wp = "L");
+    float getBJetWeight(size_t idx, std::string lvl);
+    float getPileupIDWeight();
 
     float pt_(size_t idx) const override { return m_pt.at(idx)*m_jec->at(idx); }
     float nompt(size_t idx) const { return m_pt.at(idx); }
@@ -72,6 +74,9 @@ public:
     TRArray<Int_t> puId;
     TRVariable<Float_t> rho;
 
+    TRArray<Float_t> neHEF, neEmEF, muEF, chHEF, chEmEF;
+    TRArray<UChar_t> nConstituents;
+
 
     void setSyst(size_t syst) override;
     void setupJEC(GenericParticle& genJet);
@@ -93,6 +98,7 @@ public:
 
 private:
     int looseId = 0b11;
+    int tightId = 0b10;
     float jet_dr = 0.4;
     std::unordered_map<Systematic, std::unordered_map<eVar, std::vector<float>>> m_jet_scales;
 
@@ -132,7 +138,7 @@ private:
 
     std::random_device rd{};
     std::mt19937 gen{rd()};
-
+    std::unordered_map<std::string, float> bjet_cuts;
 
 };
 

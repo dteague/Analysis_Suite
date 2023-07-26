@@ -10,9 +10,6 @@ info = NtupleInfo(
     # Input files. Can be a single file or directory
     filename = user.hdfs_area / 'workspace/signal_region/{year}',
     trees = trees,
-    # Name associated with this ntuple info class (used in output)
-    # Don't use '_'in this name
-    region = 'Test-CR',
     # Any cut applied on the tree using the VarGetter class
     cut=lambda vg : vg['variable'] > 100
 )

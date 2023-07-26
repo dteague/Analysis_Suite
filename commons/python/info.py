@@ -14,6 +14,9 @@ class GroupInfo:
         self.group2color = group2color if group2color is not None else {}
         self.group2MemberMap = self.get_memberMap()
 
+    def get_groups(self):
+        return list(self.group2color.keys())
+
     def get_legend_name(self, group):
         if group in ginfo:
             return ginfo[group]["Name"]
@@ -47,7 +50,7 @@ class GroupInfo:
     def setup_groups(self, groups=None):
         if groups is None:
             groups = self.group2color.keys()
-        return dict(filter(lambda x: x[0] in groups, self.group2MemberMap.items()))
+        return {group : self.group2MemberMap[group] for group in groups}
 
     def setup_members(self, groups=None):
         groups = self.setup_groups(groups)
@@ -100,11 +103,19 @@ fileInfo = FileInfo()
 class NtupleInfo:
     filename: str
     trees: list
-    region: str = ""
+    color_by_group: dict
     cut : Callable[[object], bool] = None
     branches: list = None
     changes: dict = field(default_factory=dict)
-    exclusives: dict = field(default_factory=dict)
+    ignore: dict = field(default_factory=dict)
+
+    def get_info(self, remove=None, add=None):
+        color_by_group = self.color_by_group
+        if remove is not None:
+            color_by_group = {group: color for group, color in color_by_group.items() if group != remove}
+        if add is not None:
+            color_by_group = {**clr_by_group, **add}
+        return GroupInfo(color_by_group)
 
     def get_file(self, **kwargs):
         return Path(str(self.filename).format(**kwargs))
@@ -113,20 +124,24 @@ class NtupleInfo:
         if workdir is None:
             path = Path(str(self.filename).format(year=year, workdir=""))
             workdir = max([int(d.name) for d in path.glob("*") if d.name.isnumeric()])
-            print(f"Getting from workdir {workdir}")
+            logging.info(f"Getting from workdir {workdir}")
         return Path(str(self.filename).format(year=year, workdir=workdir))
 
     def add_change(self, tree, changes):
         self.changes[tree] = changes
+        for ignore in changes.values():
+            if ignore not in self.ignore:
+                self.ignore[ignore] = list()
+            self.ignore[ignore].append(tree)
 
-    def set_exclusive(self, tree, groups):
-        if isinstance(groups, str):
-            groups = [groups]
-        self.exclusives[tree] = groups
+    def set_ignore_trees(self, group, trees):
+        if isinstance(trees, str):
+            trees = [trees]
+        self.ignore[group] = trees
 
     def exclude(self, tree, group):
-        if tree in self.exclusives:
-            return group not in self.exclusives[tree]
+        if group in self.ignore:
+            return tree in self.ignore[group]
         return False
 
     def get_change(self, tree, member):
@@ -136,7 +151,7 @@ class NtupleInfo:
 
     def apply_cut(self, vg, *args):
         def cut_vg(vg, cut):
-            vg.cut(self.cut(vg))
+            vg.cut(cut)
             for name, part in vg.parts.items():
                 part.reset()
 
@@ -144,13 +159,9 @@ class NtupleInfo:
             return
         elif isinstance(self.cut, list):
             for cut in self.cut:
-                cut_vg(cut)
+                cut_vg(vg, cut)
         else:
-            cut_vg(self.cut)
-
-
-
-
+            cut_vg(vg, self.cut)
 
     def setup_branches(self, vg):
         if self.branches is None:

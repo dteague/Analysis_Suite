@@ -10,6 +10,7 @@ hdfs_area = Path(f'/hdfs/store/user/{lxplus_name}')
 hdfs_workspace = hdfs_area / 'workspace'
 
 submit_area = Path(f'/nfs_scratch/{user_name}')
+scratch_area = Path(f'/scratch/{user_name}')
 combine_area = submit_area / "CMSSW_10_2_13/src"
 
 analysis_area = Path(f'{__file__}').resolve().parents[2]

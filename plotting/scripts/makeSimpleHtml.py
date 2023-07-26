@@ -33,4 +33,4 @@ if __name__ == "__main__":
             writeOut(f[f.index("workspace"):], args.name)
     else:
         writeOut(args.path_to_files, args.name)
-
+    print(user.website+args.path_to_files)

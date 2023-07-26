@@ -1,52 +1,80 @@
 #!/usr/bin/env python3
-from analysis_suite.combine.systematics import Systematic
+from analysis_suite.commons.info import GroupInfo
+import numpy as np
+from mt2 import mt2
 
-pad = True
+pad = -1
+
+def mt2_l(vg):
+    l1_x = vg.TightLepton['pt', 0]*np.cos(vg.TightLepton['phi', 0])
+    l1_y = vg.TightLepton['pt', 0]*np.sin(vg.TightLepton['phi', 0])
+    l2_x = vg.TightLepton['pt', 1]*np.cos(vg.TightLepton['phi', 1])
+    l2_y = vg.TightLepton['pt', 1]*np.sin(vg.TightLepton['phi', 1])
+    mx = vg["Met"]*np.cos(vg["Met_phi"])
+    my = vg["Met"]*np.sin(vg["Met_phi"])
+    return mt2(np.abs(vg.TightLepton['mass', 0]), l1_x, l1_y,
+               np.abs(vg.TightLepton['mass', 1]), l2_x, l2_y,
+               mx, my, 0., 0.)
+
 
 # Variables used in Training
 allvar = {
     "NJets" :           lambda vg : vg.Jets.num(),
-    "NBJets":           lambda vg : vg.BJets.num(),
-    "NResolvedTops":    lambda vg : vg.Tops.num(),
-    "NlooseBJets":      lambda vg : vg['N_bloose'],
-    "NtightBJets":      lambda vg : vg['N_btight'],
-    "NlooseMuons":      lambda vg : vg['N_loose_muon'],
-    "NlooseElectrons":  lambda vg : vg['N_loose_elec'],
+    # "NResolvedTops":    lambda vg : vg.Tops.num(),
+    "NlooseBJets":      lambda vg : vg['NBjets_loose'],
+    "NmediumBJets":     lambda vg : vg['NBjets_medium'],
+    "NtightBJets":      lambda vg : vg['NBjets_tight'],
+
+    "NlooseMuons":      lambda vg : vg['N_loose_mu'],
+    "NlooseElectrons":  lambda vg : vg['N_loose_el'],
+    "NMuons":           lambda vg : vg.TightMuon.num(),
+    "NElectrons":       lambda vg : vg.TightElectron.num(),
+
     "HT":               lambda vg : vg['HT'],
     "HT_b":             lambda vg : vg['HT_b'],
     "Met":              lambda vg : vg['Met'],
     "centrality":       lambda vg : vg['Centrality'],
+    # "ZMass":            lambda vg : vg['Zmass'],
+
     "j1Pt":             lambda vg : vg.Jets['pt', 0, pad],
     "j2Pt":             lambda vg : vg.Jets['pt', 1, pad],
     "j3Pt":             lambda vg : vg.Jets['pt', 2, pad],
     "j4Pt":             lambda vg : vg.Jets['pt', 3, pad],
     "j5Pt":             lambda vg : vg.Jets['pt', 4, pad],
     "j6Pt":             lambda vg : vg.Jets['pt', 5, pad],
-    "j7Pt":             lambda vg : vg.Jets['pt', 6, pad],
-    "j8Pt":             lambda vg : vg.Jets['pt', 7, pad],
+    # "j7Pt":             lambda vg : vg.Jets['pt', 6, pad],
+    # "j8Pt":             lambda vg : vg.Jets['pt', 7, pad],
+
     "b1Pt":             lambda vg : vg.BJets['pt', 0, pad],
     "b2Pt":             lambda vg : vg.BJets['pt', 1, pad],
     "b3Pt":             lambda vg : vg.BJets['pt', 2, pad],
     "b4Pt":             lambda vg : vg.BJets['pt', 3, pad],
-    "l1Pt":             lambda vg : vg.TightLepton["pt", 0],
-    "l2Pt":             lambda vg : vg.TightLepton["pt", 1],
-    "lepMass" :         lambda vg : vg.mass("TightLepton", 0, "TightLepton", 1),
-    "lepDR" :           lambda vg : vg.dr("TightLepton", 0, "TightLepton", 1),
-    "jetDR" :           lambda vg : vg.dr("Jets", 0, "Jets", 1),
-    "jetMass" :         lambda vg : vg.mass("Jets", 0, "Jets", 1),
-    "LepCos" :          lambda vg : vg.cosDtheta("TightLepton", 0, "TightLepton", 1),
-    "JetLep1_Cos" :     lambda vg : vg.cosDtheta("TightLepton", 0, "Jets", 0),
-    "JetLep2_Cos" :     lambda vg : vg.cosDtheta("TightLepton", 1, "Jets", 0),
-    # "top_mass" :        lambda vg : vg.top_mass("TightLepton", "BJets"),
-    # "j1Disc":           Variable(vg.nth, ("Jets", "discriminator", 0)),
-    # "j2Disc":           Variable(vg.nth, ("Jets", "discriminator", 1)),
-    # "j3Disc":           Variable(vg.nth, ("Jets", "discriminator", 2)),
-    # "j4Disc":           Variable(vg.nth, ("Jets", "discriminator", 3)),
-    # "j5Disc":           Variable(vg.nth, ("Jets", "discriminator", 4)),
-    # "j6Disc":           Variable(vg.nth, ("Jets", "discriminator", 5)),
-    # "j7Disc":           Variable(vg.nth, ("Jets", "discriminator", 6)),
-    # "j8Disc":           Variable(vg.nth, ("Jets", "discriminator", 7)),
 
+    "l1Pt":              lambda vg : vg.TightLepton["pt", 0],
+    "l2Pt":              lambda vg : vg.TightLepton["pt", 1],
+
+    "lep_mass" :         lambda vg : vg.mass("TightLepton", 0, "TightLepton", 1),
+    # "lep_dphi" :         lambda vg : vg.dphi("TightLepton", 0, "TightLepton", 1),
+    # "lep_deta" :         lambda vg : vg.TightLepton['eta', 0] - vg.TightLepton['eta', 1],
+    # "lep_dr" :           lambda vg : vg.dr("TightLepton", 0, "TightLepton", 1),
+    "lep_mt":            lambda vg : vg.dipart_mt("TightLepton", 0, "TightLepton", 1),
+    "lep_cosTheta" :          lambda vg : vg.cosDtheta("TightLepton", 0, "TightLepton", 1),
+
+    "jet_dr" :           lambda vg : vg.dr("Jets", 0, "Jets", 1),
+    "jet_mass" :         lambda vg : vg.mass("Jets", 0, "Jets", 1),
+    # "jet_dphi" :         lambda vg : vg.dphi("Jets", 0, "Jets", 1),
+    # "jet_deta" :         lambda vg : vg.Jets['eta', 0] - vg.Jets['eta', 1],
+    "jet_mt":            lambda vg : vg.dipart_mt("Jets", 0, "Jets", 1),
+    "jet_cosTheta" :     lambda vg : vg.cosDtheta("Jets", 0, "Jets", 1),
+
+    # "JetLep1_Cos" :     lambda vg : vg.cosDtheta("TightLepton", 0, "Jets", 0),
+    # "JetLep2_Cos" :     lambda vg : vg.cosDtheta("TightLepton", 1, "Jets", 0),
+
+    "mT_1":             lambda vg : vg.TightLepton['mt', 0],
+    "mT_2":             lambda vg : vg.TightLepton['mt', 1],
+    "mT2_l" :           lambda vg : mt2_l(vg),
+    # "cosdphi_1":        lambda vg : np.cos(vg.TightLepton['phi', 0] - vg["Met_phi"]),
+    # "cosdphi_2":        lambda vg : np.cos(vg.TightLepton['phi', 1] - vg["Met_phi"]),
 }
 
 
@@ -57,13 +85,15 @@ usevars = list(allvar.keys())
 groups = {
     "Signal": ["ttt"],
     "Background": [
+        "tttt",
         "ttw", "ttz", "tth",
         "ttXY",
-        "vvv", "vv_inc", "xg",
-        "nonprompt", "charge_flip",
-        "tttt",
+        "rare", "xg",
     ],
-    "NotTrained": []
+    "NotTrained": [
+        "nonprompt", "charge_flip",
+        'data'],
+    "OnlyTrain": ['nonprompt_mc',]
 }
 
 
@@ -71,6 +101,7 @@ color_by_group = {
     "ttt": "crimson",
 
     'nonprompt': 'gray',
+    'nonprompt_mc': "blue",
     "xg": "indigo",
 
     "ttw": "olivedrab",
@@ -78,49 +109,52 @@ color_by_group = {
     "ttz": "steelblue",
 
     "ttXY": "teal",
-    "rare": "deeppink",
+
+    # "rare": "deeppink",
+    "rare_nowz": "deeppink",
+    "wz": 'slateblue',
+
     "tttt": "tomato",
     'charge_flip': 'mediumseagreen',
+    'data': 'black',
+
 }
 
-mc_samples = ['ttt', 'xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', 'tttt']
+remove = ['nonprompt_mc']
 
-systematics = [
-    Systematic("lumi", "lnN").add(1.012, groups=mc_samples, year=2016)
-                             .add(1.023, groups=mc_samples, year=2017)
-                             .add(1.025, groups=mc_samples, year=2018),
-    # Systematic("LHE_muF", "shape").add(1, groups=mc_samples),
-    # Systematic("LHE_muR", "shape").add(1, groups=mc_samples),
-    # Systematic("PDF_unc", "shape").add(1, groups=mc_samples),
-    # Systematic("PDF_alphaZ", "shape").add(1, groups=mc_samples),
-    # Systematic("PS_ISR", "shape").add(1, groups=mc_samples),
-    # Systematic("PS_FSR", "shape").add(1, groups=mc_samples),
+def wz_scale(vg, year):
+    import numpy as np
+    import pickle
 
-    # Systematic("BJet_BTagging", "shape").add(1, groups=mc_samples),
-    # Systematic("BJet_Eff", "shape").add(1, groups=mc_samples),
-    # Systematic("Muon_Scale", "shape").add(1, groups=mc_samples),
-    # Systematic("Electron_Scale", "shape").add(1, groups=mc_samples),
-    # Systematic("Pileup", "shape").add(1, groups=mc_samples),
-    # Systematic("Top_SF", "shape").add(1),
-    # Systematic("Jet_JER", "shape").add(1, groups=mc_samples),
-    # Systematic("Jet_JES", "shape").add(1, groups=mc_samples),
-    # Systematic("Jet_PUID", "shape").add(1, groups=mc_samples),
+    scale_file = workdir/f"wz_scale_factor.pickle"
+    with open(scale_file, "rb") as f:
+        scales = pickle.load(f)
+    jet_bin = np.digitize(vg["NJets"], np.arange(1, 6)) - 1
+    vg.scale = scales[year].vals
 
-    # Systematic("ChargeMisId_stat", "shape").add(1, 'charge_flip'),
-    # Systematic("Nonprompt_Mu_stat", "shape").add(1, 'nonprompt'),
-    # Systematic("Nonprompt_El_stat", "shape").add(1, 'nonprompt'),
+# scale = {}
+scale = {'wz': lambda vg: wz_scale(vg)}
 
-    # Systematic("CMS_norm_tttt", "lnN").add(1.5, groups="tttt"),
-    # Systematic("CMS_norm_ttw", "lnN").add(1.5, groups="ttw"),
-    # Systematic("CMS_norm_ttz", "lnN").add(1.5, groups="ttz"),
-    # Systematic("CMS_norm_tth", "lnN").add(1.5, groups="tth"),
-    # Systematic("CMS_norm_xg", "lnN").add(1.5, groups="xg"),
-    # Systematic("CMS_norm_rare", "lnN").add(1.5, groups="rare"),
-]
+def get_GroupInfo(region, remove=None, add=None, unblind=False):
+    if remove is None:
+        remove = list()
+    if add is None:
+        add = dict()
+    if region == "Signal" and not unblind:
+        remove.append("data")
+
+    clr_by_group = {group: color for group, color in color_by_group.items() if group not in remove}
+    clr_by_group = {**clr_by_group, **add}
+    return GroupInfo(clr_by_group)
+
+
+combine_regions = {
+    "Signal": "signal",
+    # "ttzCR": "njets"
+}
 
 # Variables needed in code for things to work
 assert "allvar" in locals()
 assert 'usevars' in locals()
 assert 'groups' in locals()
 assert 'color_by_group' in locals()
-assert "systematics" in locals()

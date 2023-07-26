@@ -10,32 +10,44 @@ fake_config = config["fake_rate"]
 # Stuff related to nonprompt fake rate
 rule nonprompt_sideband:
     output:
-        fake_dir+"/{area}/mc_scales_{year}.pickle"
+        pickle=fake_dir+"/{area}/mc_scales_{year}.pickle",
+        log=fake_dir+"/{area}/sideband_{year}.log"
     shell:
-        "calculate_fr.py -y {wildcards.year} -r sideband -d {wildcards.area} > {output}"
+        "calculate_fr.py -y {wildcards.year} -r sideband -d {wildcards.area} > {output.log}"
 
 rule nonprompt_measurement:
     input:
         fake_dir+"/{area}/mc_scales_{year}.pickle"
     output:
-        fake_dir+"/{area}/fr_{year}.pickle"
+        pickle=fake_dir+"/{area}/fr_{year}.pickle",
+        log=fake_dir+"/{area}/measurement_{year}.log"
     shell:
-        "calculate_fr.py -y {wildcards.year} -r measurement -d {wildcards.area} > {output}"
+        "calculate_fr.py -y {wildcards.year} -r measurement -d {wildcards.area} > {output.log}"
+
+rule nonprompt_closure:
+    input:
+        fake_dir+"/{area}/fr_{year}.pickle"
+    output:
+        log=fake_dir+"/{area}/closure_{year}.log"
+    shell:
+        "calculate_fr.py -y {wildcards.year} -r measurement -d {wildcards.area} > {output.log}"
 
 # Stuff related to charge misId
 rule misId_measurement:
     output:
-        misId_dir+"/{area}/charge_misid_rate_{year}.pickle"
+        log=misId_dir+"/{area}/measurement_{year}.log",
+        pickle=misId_dir+"/{area}/charge_misid_rate_{year}.pickle"
     shell:
-        "calculate_mis.py -y {wildcards.year} -r measurement -d {wildcards.area} > {output}"
+        "calculate_misId.py -y {wildcards.year} -r measurement -d {wildcards.area} > {output.log}"
 
 rule misId_closure:
     input:
         misId_dir+"/{area}/charge_misid_rate_{year}.pickle"
     output:
-        misId_dir+"/{area}/fr_{year}.pickle"
+        pickle=misId_dir+"/{area}/fr_{year}.pickle",
+        log=misId_dir+"/{area}/closure_{year}.log"
     shell:
-        "calculate_fr.py -y {wildcards.year} -r measurement -d {wildcards.area} > {output}"
+        "calculate_misId.py -y {wildcards.year} -r closure -d {wildcards.area} > {output.log}"
 
 # Final Fake Rates
 rule fake_rates:
@@ -46,7 +58,7 @@ rule fake_rates:
         "data/POG/USER/{year}_UL/fake_rates.json.gz"
     shell:
         expand(
-            "convert_fakerates.py -y {{wildcards.year}} --nonprompt {fake_area} --charge {misId_area} > {{output}}",
+            "convert_fakerates.py -y {{wildcards.year}} --nonprompt {fake_area} --charge {misId_area}",
             fake_area=fake_config["nonprompt_directory"],
             misId_area=fake_config["misId_directory"]
         )[0]
@@ -54,6 +66,14 @@ rule fake_rates:
 rule fake_rates_2016:
     input:
         "data/POG/USER/2016_UL/fake_rates.json.gz"
+
+rule fake_rates_2017:
+    input:
+        "data/POG/USER/2017_UL/fake_rates.json.gz"
+
+rule fake_rates_2018:
+    input:
+        "data/POG/USER/2018_UL/fake_rates.json.gz"
 
 rule fake_rates_all:
     input:
@@ -68,4 +88,4 @@ rule befficiency:
 
 rule befficiency_all:
     input:
-        expand("data/POG/USER/{years}_UL/beff.json.gz", year=UL_years)
+        expand("data/POG/USER/{years}_UL/beff.json.gz", years=UL_years)

@@ -4,22 +4,8 @@ import argparse
 import sys
 import numpy as np
 
-from analysis_suite.commons.user import workspace_area, combine_area
-
-def runCombine(command, output=True, error=subprocess.STDOUT):
-    cwd = getattr(runCombine, 'work_dir', ".")
-    setup = [
-        f"pushd {combine_area}/ &>/dev/null",
-        "eval $(scramv1 runtime -sh 2>/dev/null)",
-        "popd &>/dev/null",
-    ]
-    with subprocess.Popen([';'.join(setup+[command])], shell=True, stderr=error,
-                          cwd=cwd, stdout=subprocess.PIPE) as process:
-        for line in process.stdout:
-            if output:
-                print(line.decode('utf8'), end="")
-    if output:
-        print("\n")
+from analysis_suite.commons.user import workspace_area
+from analysis_suite.combine.combine_wrapper import runCombine
 
 def get_cli():
     parser = argparse.ArgumentParser(prog="main", description="")
@@ -29,10 +15,11 @@ def get_cli():
         return parser.parse_args()
     parser.add_argument("-d", "--workdir", required=True, type=lambda x : workspace_area/x/"combine",
                         help="Working Directory")
-    parser.add_argument("-f", "--fit_var", required=True,
-                        help="Variable used for fitting")
     parser.add_argument("-n", "--name", default="", help="Extra name to outfile")
-
+    parser.add_argument("-y", "--years", required=True,
+                        type=lambda x : ["2016", "2017", "2018"] if x == "all" \
+                                   else [i.strip() for i in x.split(',')],
+                        help="Year to use")
     blind_text = "--run blind" if sys.argv[1] == "asymptotic" else "-t -1"
     parser.add_argument("--blind", default="", action="store_const", const=blind_text)
     parser.add_argument("-r", default=1)
@@ -53,10 +40,10 @@ if __name__ == "__main__":
 
     runCombine.work_dir = args.workdir # same in all, so just set it
     for year in args.years:
-        card = f'{args.fit_var}_{year}_signal_card.root'
+        card = f'final_{year}_card.root'
         blindness = f'{args.blind} --expectSignal {args.r}'
-        name = f'{args.fit_var}_{year}{args.name}'
         if need_redo_t2w(args.workdir, card):
+            print("here")
             runCombine(f'text2workspace.py {card.replace("root", "txt")}', output=args.debug)
 
         if args.type == "impact":
@@ -113,4 +100,6 @@ if __name__ == "__main__":
             runCombine(f'combine -M HybridNew -H AsymptoticLimits {card} {blindness} --LHCmod LHC-limits --saveHybridResult')
             # runCombine(f'combine -M HybridNew {card} {blindness} --LHCmod LHC-limits --saveHybridResult --freezeNuisanceGroups "syst_error"')
         elif args.type == "fit":
-            runCombine(f'combine -M FitDiagnostics {card} {blindness} --rMin -20 --rMax 20')
+            runCombine(f'combine -M FitDiagnostics {card} {blindness} --rMin -20 --rMax 20 --saveShapes --saveWithUncertainties')
+            # runCombine(f'combine -M FitDiagnostics {card} {blindness} --rMin -20 --rMax 20')
+            # runCombine(f'combine -M FitDiagnostics -d {card} -v 3 --name  --robustHesse 1 --saveShapes --saveWithUncertainties --rMin -30 --rMax 30')

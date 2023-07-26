@@ -11,10 +11,10 @@ import correctionlib._core as core
 import analysis_suite.commons.user as user
 
 def get_sf(sf, syst):
-    val, err = sf.value, sf.variance
+    val, err = sf.value, np.sqrt(sf.variance)
     if syst == "up":
         val += err
-    elif syst == "up":
+    elif syst == "down":
         val -= err
     return val/(1-val)
 
@@ -66,9 +66,9 @@ if __name__ == "__main__":
     basePath = user.analysis_area / "data/POG/USER"
 
     for year in args.years:
-        with open(user.workspace_area/"charge_misId"/f"{args.charge}/charge_misid_rate_scaled_{year}.pickle", "rb") as f:
+        with open(user.workspace_area/"charge_misId"/f"{args.charge}/fr_{year}.pickle", "rb") as f:
             charge_fr = pickle.load(f)
-        with open(user.workspace_area/"fake_rate"/f"{args.nonprompt}/fr_{year}.pickle", "rb") as f:
+        with open(user.workspace_area/"fake_rate"/f"{args.nonprompt}/fr_bjet_{year}.pickle", "rb") as f:
             fake_rates = pickle.load(f)
             elec_nonprompt_fr = fake_rates["Electron"]["data_ewk"]
             muon_nonprompt_fr = fake_rates["Muon"]["data_ewk"]

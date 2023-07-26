@@ -19,7 +19,7 @@ def rOpen(filename, option=""):
     rootfile.Close()
 
 def get_shape_systs(addVar=False):
-    from analysis_suite.data.inputs import systematics
+    from analysis_suite.data.systs import systematics
     systs = [syst.name for syst in systematics if syst.syst_type == "shape"]
     if addVar:
         systs = [syst+"_up" for syst in systs] + [syst+"_down" for syst in systs ]
@@ -72,7 +72,7 @@ def getSumW(infiles):
 
 def get_info_local(filename):
     year="2016"
-    return {"year": year, "sampleName": "data", "selection": "test"}
+    return {"year": year, "sampleName": "data", "selection": "test", "dataset": "DoubleMuon"}
 
 def get_info_general(filename):
     sampleName = filename.split('/')
@@ -85,6 +85,14 @@ def get_info_general(filename):
                 "Run2017" : "2017",
                 "Run2018" : "2018",
                 }
+    data_regions = {
+        "DoubleMuon" : "DoubleMuon",
+        "MuonEG" : "MuonEG",
+        "DoubleEG": "DoubleEG",
+        "EGamma": "DoubleEG",
+        "SingleElectron": "DoubleEG"
+    }
+
     year = None
     for yearName, yearkey in yearDict.items():
         if yearName in filename:
@@ -94,9 +102,14 @@ def get_info_general(filename):
                 year = yearkey
             break
 
+    dataset = "None"
+    for dset, name in data_regions.items():
+        if dset in sampleName:
+            dataset = name
+            break
     isUL = "UL"  in filename
     return {"year": year, "selection": "From_DAS",
-            "sampleName": sampleName}
+            "sampleName": sampleName, "dataset": dataset}
 
 def run_multi(start, evts, files, inputs, selector):
     fChain = ROOT.TChain()
@@ -169,6 +182,7 @@ if __name__ == "__main__":
         "DAS_Name": '/'.join(details["sampleName"]),
         "Group": groupName,
         'Analysis': analysis,
+        'Dataset': details['dataset'],
         'Selection': details["selection"],
         'Year': details["year"],
         'Xsec': 1,
@@ -190,6 +204,8 @@ if __name__ == "__main__":
     for fname in files:
         fChain.Add(f"{fname}/Events")
 
+    import time
+    now = time.time()
     if args.cores == 1:
         selector = getattr(ROOT, analysis)()
         with rOpen(outputfile, "RECREATE") as rOutput:

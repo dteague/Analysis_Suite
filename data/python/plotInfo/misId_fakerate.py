@@ -5,7 +5,10 @@ import awkward as ak
 
 from analysis_suite.plotting.plotter import GraphInfo
 
-cm_ptbins = axis.Variable([15, 25, 35, 50, 70, 100])
+# cm_ptbins = axis.Variable([15, 20, 25, 35, 50, 70, 100])
+# cm_ptbins = axis.Variable([15, 20, 35, 40, 50, 70, 100, 150])
+cm_ptbins = axis.Variable([15, 25, 40, 55, 100, 150])
+# cm_ptbins = axis.Variable([15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 45, 50, 100, 150, 200])
 cm_etabins = axis.Variable([0.0, 1.1, 1.479, 1.653, 2.5])
 
 def fake_chargeMisId(vg):

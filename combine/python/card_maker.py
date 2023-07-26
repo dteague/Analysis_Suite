@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 import numpy as np
+import prettytable
 
 class Card_Maker:
     def __init__(self, path, year, cr, plot_groups, variable):
+        if 'data' in plot_groups:
+            plot_groups.remove('data')
         self.variable = variable
         self.path = path
         self.year = year
@@ -20,14 +23,14 @@ class Card_Maker:
         self.f.close()
 
     def tab_list(self, inlist):
-        return  "\t" + "\t".join(inlist.astype(str))
+        return '\t'+'\t'.join(inlist.astype(str))
 
     def write(self, line):
         self.f.write(line)
         self.f.write("\n")
 
     def end_section(self):
-        self.write("-"*20)
+        self.write("-"*50)
 
     def write_systematics(self, syst_list):
         # Specify numbers of groups
@@ -45,18 +48,27 @@ class Card_Maker:
         self.write("observation" + self.tab_list(-1*np.ones(self.nChans)))
         self.end_section()
 
+        table = prettytable.PrettyTable()
+        table.header=False
+        table.border=False
+        table.left_padding_width=0
+
         # Specify channel and plot names with MC counts
-        self.write("bin"+"".join([f"\t{chan}"*self.nGroups for chan in self.channels]))
-        self.write("process"+ self.tab_list(self.plot_groups)*self.nChans)
-        self.write("process"+ self.tab_list(np.arange(self.nGroups))*self.nChans)
-        self.write("rate" + self.tab_list(-1*np.ones(self.nChans*self.nGroups)))
+        table.add_column('', ['bin', "process", "process", "rate"])
+        for chan in self.channels:
+            for p in np.arange(self.nGroups):
+                table.add_column("", [chan, self.plot_groups[p], p, -1])
+        self.write(table.get_string(align='l'))
         self.end_section()
 
         # Specify systematics
+        table.clear()
         for syst in syst_list:
-            self.write(syst.output(self.plot_groups, [self.year]))
+            table.add_row(syst.output(self.plot_groups, [self.year]))
+        table.align='l'
+        self.write(table.get_string(align='l'))
         self.write("syst_error group = " + " ".join([syst.name for syst in syst_list]))
-        self.write("* autoMCStats 1")
+        self.write("* autoMCStats 0")
 
     def add_rateParam(self, group):
         self.write(f'rate_{group} rateParam * {group} 1.0')

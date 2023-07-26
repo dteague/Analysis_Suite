@@ -59,6 +59,15 @@ info ={
             "wzTo3lnu",
         ],
     },
+    "vv_nowz": {
+        "Name": "vv",
+        "Members": [
+            "vh2nonbb",
+            "zz4l",
+            "wpwpjj_ewk",
+            "ww_doubleScatter",
+        ],
+    },
     "vvv": {
         "Name": "vv",
         "Members": [
@@ -83,7 +92,7 @@ info ={
             'ttbar',
             "DYm50",
             "DYm10-50",
-            "wjets",
+            # "wjets",
             "tzq",
             # "ttjet"
         ]
@@ -103,9 +112,27 @@ info ={
         "Name": r"Rare",
         "Members": [
             "vvv",
-            "vv_inc",
+            "vv",
             "st_twll",
 	        "ggh2zz",
+            'tzq'
+        ]
+    },
+    "rare_nowz": {
+        "Composite": True,
+        "Name": r"Rare",
+        "Members": [
+            "vvv",
+            "vv_nowz",
+            "st_twll",
+	        "ggh2zz",
+            'tzq'
+        ]
+    },
+    'wz': {
+        "Name": r"WZ",
+        "Members": [
+            "wzTo3lnu",
         ]
     },
 
@@ -254,5 +281,24 @@ info ={
     'nonprompt': {
         "Name": r"Nonprompt",
         "Members": ["nonprompt"]
+    },
+    'nonprompt_mc': {
+        "Composite": True,
+        "Name": r'Nonprompt',
+        "Members": ['ttbar_lep', "wjet_ht"],
+    },
+    "all": {
+        "Composite": True,
+        "Name": "All",
+        "Members": [
+            "ttt",
+            "tttt",
+            "ttXY",
+            "ttX",
+            "xg",
+            "vv",
+            "vvv",
+            "other",
+        ],
     }
 }

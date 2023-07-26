@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from shutil import copy
+import time
 
 import analysis_suite.commons.user as user
 
@@ -30,10 +31,12 @@ def writeHTML(path, name, subdir=None):
     with open(f'{path}/extraInfo.json', 'w') as outjson:
         outjson.write(json.dumps(info))
 
-def get_plot_area(name, path=None):
-    www_path = user.www_area/name
+def get_plot_area(region, name, path=None):
+    www_path = user.www_area/region
     if path:
         www_path /= path.stem
+    if name is not None:
+        www_path /= name
     www_path /= time.strftime("%Y_%m_%d")
     return www_path
 

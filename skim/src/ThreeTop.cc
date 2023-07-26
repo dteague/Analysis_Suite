@@ -376,10 +376,22 @@ bool ThreeTop::charge_misid_cuts()
     return passCuts;
 }
 
-bool ThreeTop::opposite_sign()
-{
-    return true;
-}
+// bool ThreeTop::opposite_sign()
+// {
+//     LOG_FUNC << "Start of charge_misid_cuts";
+//     bool passCuts = true;
+//     CutInfo cuts;
+
+//     passCuts &= cuts.setCut("pass2Or3Leptons", nLeps(Level::Tight) >= 2);
+//     passCuts &= cuts.setCut("passVetoFakeLeptons", nLeps(Level::Tight) == nLeps(Level::Fake));
+//     passCuts &= cuts.setCut("passOppositeSign;", !isSameSign(Level::Tight));
+
+//     // Fill Cut flow
+//     fillCutFlow(Channel::OS_MisId, cuts);
+
+//     LOG_FUNC << "End of charge_misid_cuts";
+//     return passCuts;
+// }
 
 void ThreeTop::FillValues(const Bitmap& event_bitmap)
 {
@@ -405,8 +417,12 @@ void ThreeTop::FillValues(const Bitmap& event_bitmap)
         o_hltind_trilepton.push_back(*trig);
     }
 
-    for (size_t syst = 0; syst < numSystematics(); ++syst) {
-        setupSyst(syst);
+    for (size_t systNum = 0; systNum < numSystematics(); ++systNum) {
+        size_t syst = syst_to_index.at(systNum);
+        if (syst == 0 && systNum != 0) {
+            continue;
+        }
+        setupSyst(systNum);
 
         o_ht.push_back(jet.getHT(Level::Tight, syst));
         o_htb.push_back(jet.getHT(Level::Bottom, syst));

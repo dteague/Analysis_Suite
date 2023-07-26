@@ -28,8 +28,8 @@ def get_eta(part, flav, wp):
     return (abseta, scale)
 
 
-ptbins = bh.axis.Variable([25, 35, 50, 70, 90, 120, 150, 200])
-etabins = bh.axis.Regular(5, 0, 2.5)
+ptbins = bh.axis.Variable([25, 35, 50, 70, 90, 120, 150])
+etabins = bh.axis.Variable([0.0, 0.5, 0.8, 1.44, 1.57, 2.1,  2.4])
 ptetas = [
     # light Jets
     GraphInfo("udsg_all", "", (ptbins, etabins), lambda vg: get_pteta(vg.BJets, 0, 0)),

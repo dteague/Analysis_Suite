@@ -90,8 +90,38 @@ def measurement(workdir, ginfo, year, input_dir):
     filename = ntuple.get_filename(year=year, workdir=input_dir)
     plotter = Plotter(filename, groups, ntuple=ntuple, year=year)
     plotter.cut(lambda vg : vg["Met"] > 25)
-    plotter.cut(lambda vg : vg["Nloose_Mu"]+vg["Nloose_El"]==2)
+    plotter.cut(lambda vg : vg["Nloose_Muon"]+vg["Nloose_Electron"]==2)
     plotter.set_groups(bkg=bkg)
+
+    # pt_hist = np.zeros(11)
+    # err_hist = np.zeros(11)
+    # eta_hist = np.zeros(4)
+    # eta_err = np.zeros(4)
+    # for member, dfs in plotter.dfs.items():
+    #     for tree, df in dfs.items():
+    #         print(member)
+    #         mask = ak.flatten(df['TightElectron']['flip', -1] == 1)
+    #         pt = ak.flatten(df['TightElectron']['pt', -1])[mask]
+    #         eta = ak.flatten(df['TightElectron']['abseta', -1])[mask]
+    #         weight = ak.flatten(df['TightElectron'].scale(-1))[mask]
+    #         if len(weight) == 0:
+    #             continue
+    #         print(np.histogram(pt, bins=np.array([15, 20, 25, 30, 35, 40, 60, 80, 100, 150, 200, 500]), weights=weight)[0])
+    #         print(np.sqrt(np.histogram(pt, bins=np.array([15, 20, 25, 30, 35, 40, 60, 80, 100, 150, 200, 500]), weights=weight*weight)[0]))
+    #         print(np.histogram(eta, bins=np.array([0, 0.8, 1.479, 1.653, 2.5]), weights=weight)[0])
+    #         pt_hist += np.histogram(pt, bins=np.array([15, 20, 25, 30, 35, 40, 60, 80, 100, 150, 200, 500]), weights=weight)[0]
+    #         err_hist +=np.histogram(pt, bins=np.array([15, 20, 25, 30, 35, 40, 60, 80, 100, 150, 200, 500]), weights=weight*weight)[0]
+    #         eta_hist += np.histogram(eta, bins=np.array([0, 0.8, 1.479, 1.653, 2.5]), weights=weight)[0]
+    #         eta_err += np.histogram(eta, bins=np.array([0, 0.8, 1.479, 1.653, 2.5]), weights=weight*weight)[0]
+
+    # print("tot")
+    # print(pt_hist)
+    # print(np.sqrt(err_hist))
+    # print(np.sqrt(err_hist)/pt_hist)
+    # print()
+    # print(eta_hist)
+    # print(np.sqrt(eta_err)/eta_hist)
+    # exit()
 
     for chan in chans:
         latex = latex_chan[chan]
@@ -109,10 +139,16 @@ def measurement(workdir, ginfo, year, input_dir):
     flip_fr = plotter.get_sum(bkg, 'flip_fr')
     # all_pt = plotter.get_sum(bkg, 'pt_allq')
     # flip_pt = plotter.get_sum(bkg, 'pt_flipq')
+    # print(all_fr.project(0).vals)
+    # print(flip_fr.project(0).vals)
+    # print()
+    # print(all_fr.err)
+    # print(flip_fr.err)
+    # exit()
 
     fr = Histogram.efficiency(flip_fr, all_fr)
     # fr_pt = Histogram.efficiency(flip_pt, all_pt)
-    print(fr.vals)
+    # print(fr.vals)
     # print(fr_pt.vals)
     fr_plot(plot_dir/f'fr_{year}', fr, year)
     # plot_project(plot_dir/f'fr_pt_tight.png', flip_pt, all_pt, "$p_{{T}}(e)$", lumi[year])
@@ -133,24 +169,24 @@ def closure(workdir, ginfo, year, input_dir):
     groups = ginfo.setup_groups([ "data", "charge_flip"]+ mc_bkg)
     graphs = pinfo.charge_misId['Closure']
 
-    # Opposite sign region
-    ntuple_os = config.get_ntuple('charge_misId', 'closure_os')
-    filename = ntuple_os.get_filename(year=year, workdir=input_dir)
-    plotter_os = Plotter(filename, groups, ntuple=ntuple_os, year=year)
-    plotter_os.mask(lambda vg : vg["Met"] < 50, clear=False)
-    plotter_os.cut(lambda vg : vg["Nloose_Mu"]+vg["Nloose_El"]==2)
-    plotter_os.set_groups(bkg=mc_bkg)
+    # # Opposite sign region
+    # ntuple_os = config.get_ntuple('charge_misId', 'closure_os')
+    # filename = ntuple_os.get_filename(year=year, workdir=input_dir)
+    # plotter_os = Plotter(filename, groups, ntuple=ntuple_os, year=year)
+    # plotter_os.cut(lambda vg : vg["Met"] < 50)
+    # plotter_os.cut(lambda vg : vg["Nloose_Muon"]+vg["Nloose_Electron"]==2)
+    # plotter_os.set_groups(bkg=mc_bkg)
 
-    plotter_os.fill_hists(graphs, ginfo)
-    for graph in graphs:
-        plotter_os.plot_stack(graph.name, plot_dir/f'{graph.name}_OS.png', chan='ee', region="$OS({})$")
+    # plotter_os.fill_hists(graphs, ginfo)
+    # for graph in graphs:
+    #     plotter_os.plot_stack(graph.name, plot_dir/f'{graph.name}_OS.png', chan='ee', region="$OS({})$")
 
     # Same sign closure test
     ntuple_ss = config.get_ntuple('charge_misId', 'closure_ss')
     filename = ntuple_ss.get_filename(year=year, workdir=input_dir)
     plotter_ss = Plotter(filename, groups, ntuple=ntuple_ss, year=year)
     plotter_ss.cut(lambda vg : vg["Met"] < 50)
-    plotter_ss.cut(lambda vg : vg["Nloose_Mu"]+vg["Nloose_El"]==2)
+    plotter_ss.cut(lambda vg : vg["Nloose_Muon"]+vg["Nloose_Electron"]==2)
     plotter_ss.set_groups(bkg=mc_bkg)
 
     # Scale Fake Rate
@@ -161,6 +197,7 @@ def closure(workdir, ginfo, year, input_dir):
 
     # Get Scaling
     integrals = plotter_ss.get_integral()
+    print(integrals)
     data_tot = integrals.pop("data")
     flip_tot = integrals.pop("charge_flip")
     mc_tot = sum(integrals.values())

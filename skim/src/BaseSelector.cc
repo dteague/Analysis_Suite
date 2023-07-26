@@ -60,15 +60,16 @@ void BaseSelector::Init(TTree* tree)
                     continue;
                 // Add systematic to list used by selector as well as TList for writing out
                 systematics_.push_back(syst_by_name.at(systName));
+                size_t syst_start = 2*systematics_.size() - 3;
                 if (std::find(systs_that_change.begin(), systs_that_change.end(), systematics_.back()) != systs_that_change.end()) {
                     novel_systs.insert(novel_systs.end(), {syst_to_index.size(), syst_to_index.size()+1});
                     size_t start = novel_systs.size()-2;
                     syst_to_index.insert(syst_to_index.end(), {start, start+1});
-                    syst_index_list->Add(new TNamed(std::to_string(start), std::to_string(start)));
-                    syst_index_list->Add(new TNamed(std::to_string(start+1), std::to_string(start+1)));
+                    syst_index_list->Add(new TNamed(std::to_string(syst_start), std::to_string(start)));
+                    syst_index_list->Add(new TNamed(std::to_string(syst_start+1), std::to_string(start+1)));
                 } else {
-                    syst_index_list->Add(new TNamed("0", "0"));
-                    syst_index_list->Add(new TNamed("0", "0"));
+                    syst_index_list->Add(new TNamed(std::to_string(syst_start), "0"));
+                    syst_index_list->Add(new TNamed(std::to_string(syst_start+1), "0"));
                     syst_to_index.insert(syst_to_index.end(), {0, 0});
                 }
                 rootSystList->Add(new TNamed((systName + "_up").c_str(), systName.c_str()));
@@ -110,8 +111,8 @@ void BaseSelector::Init(TTree* tree)
 
     // Set output vector. Fixed to size of systematics (one per variation)
     o_weight.resize(numSystematics());
-    o_channels.resize(numSystematics());
-    o_pass_event.resize(numSystematics());
+    o_channels.resize(novel_systs.size());
+    o_pass_event.resize(novel_systs.size());
 
     // Setup particle branches
     sfMaker.init(fReader);
@@ -158,12 +159,15 @@ Bool_t BaseSelector::Process(Long64_t entry)
     for (auto it = syst_var_pair.begin(); it != syst_var_pair.end(); ++it) {
         Systematic syst = it->first;
         eVar var = it->second;
+        size_t systNum = std::distance(syst_var_pair.begin(), it);
         LOG_EVENT_IF(syst != Systematic::Nominal) << "Systematic is " << get_by_val(syst_by_name, syst)
                                                   << "| Variation is: " << varName_by_var.at(var);
-        SetupEvent(std::distance(syst_var_pair.begin(), it));
+        SetupEvent(systNum);
         // Add result of setting channel to vector used for writing out results
-        systPassSelection.push_back(getCutFlow());
-        passAny |= systPassSelection.back();
+        if (syst_to_index.at(systNum) > 0 || systNum == 0) {
+            systPassSelection.push_back(getCutFlow());
+            passAny |= systPassSelection.back();
+        }
     }
 
     if (systPassSelection.size() > 0 && systPassSelection[0]) {
@@ -177,7 +181,7 @@ Bool_t BaseSelector::Process(Long64_t entry)
     for (auto& [chan, tree] : trees) {
         bool passedChannel = false;
         Bitmap event_bitmap;
-        for (size_t syst = 0; syst < numSystematics(); ++syst) {
+        for (size_t syst = 0; syst < novel_systs.size(); ++syst) {
             o_pass_event[syst] = systPassSelection[syst] && chan == o_channels[syst];
             event_bitmap[syst] = o_pass_event[syst];
             passedChannel |= o_pass_event[syst];
@@ -205,33 +209,38 @@ void BaseSelector::SlaveTerminate()
 
 void BaseSelector::setupSyst(size_t systNum)
 {
+    size_t novelNum = syst_to_index.at(systNum);
     SystematicWeights::currentSyst = syst_var_pair.at(systNum).first;
     SystematicWeights::currentVar = syst_var_pair.at(systNum).second;
 
-    muon.setSyst(systNum);
-    elec.setSyst(systNum);
-    jet.setSyst(systNum);
+    muon.setSyst(novelNum);
+    elec.setSyst(novelNum);
+    jet.setSyst(novelNum);
     met.setSyst();
 }
 
 void BaseSelector::SetupEvent(size_t systNum)
 {
     LOG_FUNC << "Start of SetupEvent";
+    size_t novelNum = syst_to_index.at(systNum);
     setupSyst(systNum);
     weight = &o_weight[systNum];
-    currentChannel_ = &o_channels[systNum];
+    currentChannel_ = &o_channels[novelNum];
 
-    (*weight) = isMC_ ? *genWeight : 1.0;
+    (*weight) = 1.0;
 
-    met.setupMet(jet, *run, *PV_npvs);
-    // Setup good particle lists
-    muon.setGoodParticles(systNum, jet, rGen);
-    elec.setGoodParticles(systNum, jet, rGen);
-    jet.setGoodParticles(systNum);
-    // Class dependent setting up
-    setOtherGoodParticles(systNum);
+    if (novelNum > 0 || systNum == 0) {
+        met.setupMet(jet, *run, *PV_npvs);
+        // Setup good particle lists
+        muon.setGoodParticles(novelNum, jet, rGen);
+        elec.setGoodParticles(novelNum, jet, rGen);
+        jet.setGoodParticles(novelNum);
+        // Class dependent setting up
+        setOtherGoodParticles(novelNum);
+    }
 
     if (isMC_) {
+        (*weight) *= *genWeight;
         ApplyScaleFactors();
     }
     (*weight) *= muon.getRocCorrection(rGen);
@@ -258,7 +267,7 @@ void BaseSelector::setupSystematicInfo()
     std::string scaleDir = getenv("CMSSW_BASE");
     scaleDir += "/src/analysis_suite/data";
 
-    SystematicWeights::nSyst = numSystematics();
+    SystematicWeights::nSyst = novel_systs.size();
     SystematicWeights::year_ = year_;
     SystematicWeights::scaleDir_ = scaleDir;
     SystematicWeights::isMC = isMC_;

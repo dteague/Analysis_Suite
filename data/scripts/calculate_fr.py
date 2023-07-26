@@ -76,8 +76,15 @@ def scale_trigger(vg, chan, trig_scale, ptCut):
 
 def scale_fake(vg, chan, fakerate, i=0):
     part = vg[f'Fake{chan}']
+    fr = np.full(np.count_nonzero(part.num()>i), 0.12)
+
+    twolep_mask = (vg[f'Fake{chan}'].num()+vg[f'Tight{chan}'].num()) == 2
     fr = get_fake_rate(part, fakerate, i, chan)
+    # print(chan, np.sum(vg.scale[twolep_mask]))
+    # print(np.histogram(vg["HT"][twolep_mask], np.linspace(0, 600, 16), weights=vg.scale[twolep_mask])[0])
     vg.scale = (fr/(1-fr), part.num() > i)
+    # print(chan, np.sum(vg.scale[twolep_mask]))
+    # print(np.histogram(vg["HT"][twolep_mask], np.linspace(0, 600, 16), weights=vg.scale[twolep_mask])[0])
 
 def flip_fake(vg):
     vg.scale = (-1, vg['FakeLepton'].num() == 2)
@@ -94,7 +101,7 @@ def fix_negative(data_ewk, qcd):
     axes = data_ewk.axes
     for x in range(axes.size[0]):
         for y in range(axes.size[1]):
-            if data_ewk.hist[x, y].value < 0:
+            if data_ewk.hist[x, y].value <= 0:
                 data_ewk.hist[x, y] = qcd.hist[x, y]
 
 def conecorrection(workdir, ginfo, year, input_dir):
@@ -145,17 +152,18 @@ def conecorrection(workdir, ginfo, year, input_dir):
         print(" "*12 + f"'wgt': np.array({np.array2string(wgt, separator=',')}),")
         print(" "*8 + '}, ')
 
+
 def sideband(workdir, ginfo, year, input_dir):
     import operator
 
-    groups = ginfo.setup_groups(["data", "qcd", "ewk",])
+    groups = ginfo.setup_groups(["data" , "qcd", "ewk",])
     ntuple = config.get_ntuple('fake_rate', 'sideband')
     filename = ntuple.get_filename(year=year, workdir=input_dir)
     plotter = Plotter(filename, groups, ntuple=ntuple, year=year)
     # plotter = Plotter(filename, groups, ntuple=ntuple, year="2017_e")
     plotter.set_groups(bkg=['qcd', 'ewk'])
 
-    plotter.mask_part("AllLepton", "iso", lambda var: var < 0.2)
+    # plotter.mask_part("AllLepton", "iso", lambda var: var < 0.2)
 
     chans = ['Electron', 'Muon']
     trig_cuts = {"Muon": 20, "Electron": 25}
@@ -195,8 +203,12 @@ def sideband(workdir, ginfo, year, input_dir):
     else:
         plotter.cut(lambda vg : vg['TightLepton'].num() == 1, groups=['qcd'])
 
+    output = dict()
+
     for chan in chans:
+        output[chan] = dict()
         for reg, op in {"low": operator.le, "high": operator.gt}.items():
+            output[chan][reg] = dict()
             graphs = [graph for graph in pinfo.nonprompt['SideBand']
                       if ("mt" not in graph.name and "pt" not in graph.name) or reg in graph.name]
 
@@ -204,14 +216,15 @@ def sideband(workdir, ginfo, year, input_dir):
             plotter.mask(lambda vg : op(vg[chan]['rawPt', 0], trig_cuts[chan]), clear=False)
 
 
-            plotter.fill_hists(graphs, ginfo)
-            for graph in graphs:
-                plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{reg}_{chan}.png', chan=latex_chan[chan], region='$SB[{}]$')
+            # plotter.fill_hists(graphs, ginfo)
+            # for graph in graphs:
+            #     plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{reg}_{chan}.png', chan=latex_chan[chan], region='$SB[{}]$')
 
             plotter.mask(lambda vg : vg["LooseLepton"].num() == 0, clear=False)
 
             plotter.fill_hists(graphs, ginfo)
             for graph in graphs:
+                output[chan][reg][graph.name] = plotter.get_hists(graph.name)
                 plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{reg}_{chan}_veto.png', chan=latex_chan[chan], region='$SB[{}]$')
 
             # calculate templated fit
@@ -233,13 +246,19 @@ def sideband(workdir, ginfo, year, input_dir):
             plotter.scale_hists('qcd', qcd_f)
 
             for graph in graphs:
+                output[chan][reg][f"{graph.name}_scaled"] = plotter.get_hists(graph.name)
                 plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{reg}_{chan}_scaled.png', chan=latex_chan[chan], region='$SB[{}]$')
+
+    pickle_out = "hists.pickle"
 
     # Dump MC scale factors
     if fake_qcd:
         scale_file = f"mc_scales_fake_{year}.pickle"
     else:
         scale_file = f"mc_scales_{year}.pickle"
+
+    with open(workdir/pickle_out, "wb") as f:
+        pickle.dump(output, f)
 
     with open(workdir/scale_file, "wb") as f:
         pickle.dump(mc_scale_factors, f)
@@ -248,52 +267,79 @@ def mt_split(workdir, ginfo, year, input_dir):
     plot_dir = workdir / f'mt_split_{year}'
     plot_dir.mkdir(exist_ok=True)
 
+    bjet_cuts = {
+        "none": {"2016": -1, "2017": -1, "2018": -1},
+        "loose": {"2016": 0.05, "2017": 0.0532, "2018": 0.0490},
+        "medium": {"2016": 0.25, "2017": 0.3040, "2018": 0.2783},
+        "tight": {"2016": 0.64, "2017": 0.7476, "2018": 0.7100},
+    }
+
     mc = ['qcd', 'ewk']
     groups = ginfo.setup_groups(["data",] + mc)
     ntuple = config.get_ntuple('fake_rate', 'measurement')
     filename = ntuple.get_filename(year=year, workdir=input_dir)
     chans = ['Electron','Muon']
-    mt = [pinfo.mt]
+    mt = [pinfo.mt, pinfo.mt_tight]
 
+    # # Load MC scale factors
+    # with open(workdir/f"mc_scales_{year}.pickle", "rb") as f:
+    #     mc_scale_factors = pickle.load(f)
     # Load MC scale factors
-    with open(workdir/f"mc_scales_{year}.pickle", "rb") as f:
+    with open(workdir/f"mc_scales_bjet_{year}.pickle", "rb") as f:
         mc_scale_factors = pickle.load(f)
+        # print(mc_scale_factors)
 
     plotter = Plotter(filename, groups, ntuple=ntuple, year=year)
     
     plotter.set_groups(bkg=mc)
     for reg in mc:
-        plotter.scale(lambda vg : scale_trigger(vg, "Muon", mc_scale_factors["Muon"][reg], 20), groups=reg)
-        plotter.scale(lambda vg : scale_trigger(vg, "Electron", mc_scale_factors["Electron"][reg], 25), groups=reg)
+        # plotter.scale(lambda vg : scale_trigger(vg, "Muon", mc_scale_factors["Muon"][reg], 20), groups=reg)
+        # plotter.scale(lambda vg : scale_trigger(vg, "Electron", mc_scale_factors["Electron"][reg], 25), groups=reg)
+        plotter.scale(lambda vg : scale_trigger(vg, "Muon", mc_scale_factors["medium"]["Muon"][reg], 20), groups=reg)
+        plotter.scale(lambda vg : scale_trigger(vg, "Electron", mc_scale_factors['loose']["Electron"][reg], 25), groups=reg)
+
     trig_cuts = {"Muon": 20, "Electron": 25}
     fr_opt = {"cmap":'jet', "vmin": 0.0, "vmax":0.5}
 
-    pt_bins = [15, 20, 25, 35, 45, 60, 1000]
+    pt_bins = [15, 20, 25, 35, 1000]
     for chan in chans:
+        pt_bins = np.array(pinfo.np_ptbins[chan].edges, dtype=int)
+        pt_bins[-1] = 1000
+
+        cuts = bjet_cuts["loose"] if chan == "Electron" else bjet_cuts["tight"]
         latex = latex_chan[chan]
         for i in range(len(pt_bins)-1):
             print(chan, pt_bins[i])
             plotter.mask(lambda vg : vg[chan].num() == 1)
+            plotter.mask(lambda vg : vg["LooseLepton"].num() == 0, clear=False)
             plotter.mask(lambda vg : vg[chan]['pt', 0] > pt_bins[i], clear=False)
             plotter.mask(lambda vg : vg[chan]['pt', 0] < pt_bins[i+1], clear=False)
+            plotter.mask(lambda vg : vg["Jets"].num() == 1, clear=False)
+            plotter.mask(lambda vg : vg["Jets"]["discriminator", 0] > cuts[year], clear=False)
+
             plotter.fill_hists(mt, ginfo)
 
             loosemt = plotter.get_hists('mt')
+            tightmt = plotter.get_hists('mt_tight')
             pt_range = f'{pt_bins[i]}-{pt_bins[i+1]}'
-            plotter.plot_stack("mt", plot_dir/f'mt_tight_{pt_range}_{chan}.png', chan=latex, region=f'$MR[{latex}]$')
-
-            plotter.mask(lambda vg : vg[f'Tight{chan}'].num() == 1, clear=False)
-            plotter.fill_hists(mt, ginfo)
-            tightmt = plotter.get_hists('mt')
-            plotter.plot_stack("mt", plot_dir/f'mt_tight_{pt_range}_{chan}.png', chan=latex, region=f'$MR[{latex}]$')
+            for graph in mt:
+                plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{pt_range}_{chan}.png', chan=latex, region=f'$MR[{latex}]$')
 
             loosemt['data_ewk'] = loosemt['data'] - loosemt['ewk']
             tightmt['data_ewk'] = tightmt['data'] - tightmt['ewk']
+            # print("loose qcd", np.array2string(np.cumsum(loosemt['qcd'].vals), separator=','))
+            # print("loose ewk", np.array2string(np.cumsum(loosemt['ewk'].vals), separator=','))
+            # print("loose data", np.array2string(np.cumsum(loosemt['data'].vals), separator=','))
+            # print("tight qcd", np.array2string(np.cumsum(tightmt['qcd'].vals), separator=','))
+            # print("tight ewk", np.array2string(np.cumsum(tightmt['ewk'].vals), separator=','))
+            # print("tight data", np.array2string(np.cumsum(tightmt['data'].vals), separator=','))
+            print("loose", np.cumsum(loosemt["qcd"].vals)/np.cumsum(loosemt["ewk"].vals+loosemt["qcd"].vals))
+            print("tight", np.cumsum(tightmt["qcd"].vals)/np.cumsum(tightmt["ewk"].vals+tightmt['qcd'].vals))
             for key in tightmt.keys():
                 if key == "ewk" or key == "data":
                     continue
                 print(key, np.cumsum(tightmt[key].vals)/np.cumsum(loosemt[key].vals))
-
+            print()
 
 def measurement(workdir, ginfo, year, input_dir):
     plot_dir = workdir / f'MR_{year}'
@@ -315,8 +361,8 @@ def measurement(workdir, ginfo, year, input_dir):
         print(mc_scale_factors)
 
     plotter = Plotter(filename, groups, ntuple=ntuple, year=year)
-    plotter.mask_part("AllLepton", "iso", lambda var: var < 0.2)
-    plotter.mask_part("LooseLepton", "iso", lambda var: var < 0.2)
+    # plotter.mask_part("AllLepton", "iso", lambda var: var < 0.2)
+
     plotter.cut(lambda vg : vg["AllLepton"].num() >= 1)
     plotter.set_groups(bkg=['ewk', 'qcd'])
     for reg in mc:
@@ -325,8 +371,15 @@ def measurement(workdir, ginfo, year, input_dir):
     trig_cuts = {"Muon": 20, "Electron": 25}
     fr_opt = {"cmap":'jet', "vmin": 0.0, "vmax":0.5}
 
+    output = dict()
+
+    loo_bjet = {"2016": 0.05, "2017": 0.0532, "2018": 0.0490}
+    med_bjet = {"2016": 0.25, "2017": 0.3040, "2018": 0.2783}
+    tig_bjet = {"2016": 0.64, "2017": 0.7476, "2018": 0.7100}
+
     fake_rates = {chan: dict() for chan in chans}
     for chan in chans:
+        output[chan] = dict()
         print(chan)
         latex = latex_chan[chan]
         for i, graph in enumerate(graphs):
@@ -338,6 +391,9 @@ def measurement(workdir, ginfo, year, input_dir):
         plotter.mask(lambda vg : vg["LooseLepton"].num() == 0, clear=False)
         plotter.mask(lambda vg : vg[chan]['pt', 0] > 15, clear=False)
         plotter.mask(lambda vg : (vg[chan]['pt', 0] < 35) + (vg[chan]['mt', 0] < 55), clear=False)
+        plotter.mask(lambda vg : vg["Jets"].num() == 1, clear=False)
+        plotter.mask(lambda vg : vg["Jets"]["discriminator", 0] > med_bjet[year], clear=False)
+        # plotter.mask(lambda vg : vg["Jets"]["discriminator", 0] < 0.2783, clear=False)
 
         plotter.fill_hists(graphs, ginfo)
         loosefr = plotter.get_hists('fr')
@@ -357,11 +413,12 @@ def measurement(workdir, ginfo, year, input_dir):
         for key in tightfr.keys():
             fake_rates[chan][key] = Histogram.efficiency(tightfr[key], loosefr[key])
             if key == "qcd" or key == "data_ewk":
+                print(key, np.sum(tightfr[key].vals)/np.sum(loosefr[key].vals), np.sum(tightfr[key].vals), np.sum(loosefr[key].vals))
                 print(key, "fr", np.array2string(Histogram.efficiency(tightfr[key], loosefr[key]).vals, separator=','))
                 fr_plot(plot_dir/f"fr_{key}_{chan}.png", fake_rates[chan][key], chan, **fr_opt)
                 plot_project(plot_dir/f'fr_{key}_{chan}_pt.png', tightfr[key], loosefr[key], 0, f"$p_{{T}}({latex})$", lumi[year])
                 plot_project(plot_dir/f'fr_{key}_{chan}_eta.png', tightfr[key], loosefr[key], 1, f'$\eta({latex})$', lumi[year])
-
+    # exit()
     # Dump Fake rates
     if "Muon" in fake_rates and "Electron" in fake_rates:
         with open(workdir/f"fr_{year}.pickle", "wb") as f:
@@ -369,11 +426,12 @@ def measurement(workdir, ginfo, year, input_dir):
 
 
 def closure(workdir, ginfo, year, input_dir):
-    plot_dir = workdir / f'CR_{year}'
+    plot_dir = workdir / f'CR_fake_{year}'
     plot_dir.mkdir(exist_ok=True)
 
     mc_list = ["ttbar_lep", "wjet_ht",]
-    groups = ginfo.setup_groups(["data", 'nonprompt'] + mc_list)
+    groups = ginfo.setup_groups(["data", 'nonprompt'] +
+                                mc_list)
     chans = ['MM', 'EE', 'EM']
     graphs = pinfo.nonprompt['Closure']
 
@@ -381,32 +439,37 @@ def closure(workdir, ginfo, year, input_dir):
     # ntuple_tf = config.get_ntuple('fake_rate', 'closure_tf')
     # filename = ntuple_tf.get_filename(year=year, workdir=input_dir)
     # plotter_tf = Plotter(filename, groups, ntuple=ntuple_tf, year=year)
+    # for chan in chans:
+    #     plotter_tf.mask(lambda vg : vg["Muon"].num() == chan.count('M'))
+    #     plotter_tf.mask(lambda vg : vg["LooseLepton"].num() == 0, clear=False)
+    #     print(chan)
+    #     print("all")
+    #     plotter_tf.fill_hists(graphs, ginfo)
+    #     flav=plotter_tf.get_hists("flav_split")
+    #     for group, hist in flav.items():
+    #         print(group, hist.vals)
+    #     print("tight")
+    #     flav=plotter_tf.get_hists("flav_split_tight")
+    #     for group, hist in flav.items():
+    #         print(group, hist.vals)
 
-
-    # # for chan in chans:
-    # #     print(chan)
-    # #     for member, dfs in plotter_tf.dfs.items():
-    # #         for tree, df in dfs.items():
-    # #             print(member, np.mean(df["LooseMuon"].num()))
-    # #             df["LooseMuon"].mask_part("iso", lambda part : part < 0.1)
-    # #             print(member, np.mean(df["LooseMuon"].num()))
-
-
-    #     # plotter_tf.mask(lambda vg : vg["Muon"].num() == chan.count('M'))
-    #     # plotter_tf.mask(lambda vg : vg["LooseLepton"].num() == 2, clear=False)
-    #     # data = 0
-    #     # mc = 0
-    #     # for member, dfs in plotter_tf.dfs.items():
-    #     #     for tree, df in dfs.items():
-    #     #         if member == "data":
-    #     #             data += sum(df.scale)
-    #     #             print(tree, sum(df.scale))
-
-    #     #         else:
-    #     #             mc += sum(df.scale)
-    #     # print("mc", mc)
-    #     # print("diff:", abs(mc-data)/mc)
-    # exit()
+    #     print()
+    # for chan in chans:
+    #     print(chan)
+    #     plotter_tf.mask(lambda vg : vg["Muon"].num() == chan.count('M'))
+    #     plotter_tf.mask(lambda vg : vg["LooseLepton"].num() == 0, clear=False)
+    #     data = 0
+    #     mc = 0
+    #     for member, dfs in plotter_tf.dfs.items():
+    #         for tree, df in dfs.items():
+    #             if member == "data":
+    #                 data += sum(df.scale)
+    #                 print(tree, sum(df.scale))
+    #             else:
+    #                 mc += sum(df.scale)
+    #     print("mc", mc)
+    #     print("diff:", abs(mc-data)/mc)
+    # # exit()
 
     # plotter_tf.set_groups(bkg=mc_list)
     # for chan in chans:
@@ -419,8 +482,17 @@ def closure(workdir, ginfo, year, input_dir):
 
 
     # Load MC scale factors
-    with open(workdir/f"fr_{year}.pickle", "rb") as f:
-        fake_rates = pickle.load(f)
+    fake_rates = dict()
+    with open(workdir/f"fr_fake_bjet_{year}.pickle", "rb") as f:
+        fake_rates_bjet = pickle.load(f)
+        fake_rates["Muon"] = fake_rates_bjet["tight"]["Muon"]
+        fake_rates["Electron"] = fake_rates_bjet["loose"]["Electron"]
+        # print(fake_rates["Muon"]["qcd"].vals)
+        # print(fake_rates["Muon"]["data_ewk"].vals)
+        # print(fake_rates["Muon"]["qcd"].vals)
+        # print(fake_rates["Electron"]["qcd"].vals)
+        # print(fake_rates["Electron"]["qcd"].axes)
+        # print(fake_rates["Electron"]["qcd"].vals)
 
     # TT Setup
     ntuple_tt = config.get_ntuple('fake_rate', 'closure_tt')
@@ -428,17 +500,30 @@ def closure(workdir, ginfo, year, input_dir):
     plotter_tt = Plotter(filename, groups, ntuple=ntuple_tt, year=year)
     # plotter_tt.mask_part("AllLepton", "iso", lambda var: var < 0.3)
     plotter_tt.set_groups(bkg=mc_list, data='nonprompt')
+    # plotter_tt.cut(lambda vg : vg["HT"] > 100)
+    plotter_tt.cut(lambda vg : vg.Jets.num() >= 1)
 
     plotter_tt.mask(lambda vg: True)
+
     for chan in ["Muon", 'Electron']:
+    #     # df = plotter_tt.dfs['nonprompt']["Closure_TF"]
+    #     # facts = test[chan]
+        print(chan)
+    #     # print(ak.count_nonzero((df[f'Fake{chan}'].num() == 1)*(df[f'Fake{chan}']["jet_btag", 0, -1] > 0.2783)))
+    #     # print(ak.count_nonzero((df[f'Fake{chan}'].num() == 1)*(df[f'Fake{chan}']["jet_btag", 0, -1] < 0.2783)))
+    #     # df.scale = (facts[0]/(1-facts[0]), (df[f'Fake{chan}'].num() == 1)*(df[f'Fake{chan}']["jet_btag", 0, -1] > 0.2783))
+    #     # df.scale = (facts[1]/(1-facts[1]), (df[f'Fake{chan}'].num() == 1)*(df[f'Fake{chan}']["jet_btag", 0, -1] < 0.2783))
+    #     # mask*facts[0]/(1-facts[0])
         plotter_tt.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan]['data_ewk'].hist), groups='nonprompt')
         plotter_tt.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan]['data_ewk'].hist, i=1), groups='nonprompt')
+        # plotter_tt.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan]['qcd'].hist), groups='nonprompt')
+        # plotter_tt.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan]['qcd'].hist, i=1), groups='nonprompt')
     plotter_tt.scale(lambda vg : flip_fake(vg), groups='nonprompt')
-
+    # exit()
     for chan in chans:
         print(chan)
         plotter_tt.mask(lambda vg : vg["Muon"].num() == chan.count('M'))
-        plotter_tt.mask(lambda vg : vg["LooseLepton"].num() == 2, clear=False)
+        plotter_tt.mask(lambda vg : vg["LooseLepton"].num() == 0, clear=False)
         data = 0
         mc = 0
         for member, dfs in plotter_tt.dfs.items():
@@ -450,12 +535,22 @@ def closure(workdir, ginfo, year, input_dir):
                     mc += sum(df.scale)
         print("mc", mc)
         print("diff:", abs(mc-data)/mc)
-    exit()
+    # exit()
+    # for chan in chans:
+    #     plotter_tt.mask(lambda vg : vg["Muon"].num() == chan.count('M'))
+    #     plotter_tt.mask(lambda vg : vg["LooseLepton"].num() == 0, clear=False)
+
+    #     plotter_tt.fill_hists(graphs, ginfo)
+    #     flav=plotter_tt.get_hists("flav_split")
+    #     for group, hist in flav.items():
+    #         print(group, hist.vals)
+    return
     for chan in chans:
         plotter_tt.mask(lambda vg : vg["Muon"].num() == chan.count('M'))
-        plotter_tt.mask(lambda vg : vg["LooseLepton"].num() == 2, clear=False)
+        plotter_tt.mask(lambda vg : vg["LooseLepton"].num() == 0, clear=False)
 
         plotter_tt.fill_hists(graphs, ginfo)
+        print(chan)
         for graph in graphs:
             plotter_tt.plot_stack(graph.name, plot_dir/f'{graph.name}_TT_{chan}.png', chan=latex_chan[chan], region="$TT({})$")
 
@@ -557,6 +652,9 @@ if __name__ == "__main__":
         if 'sideband' in args.run:
             print("Side Band")
             sideband(workdir, ginfo, year, args.input_dir)
+        if 'sideband_bjet' in args.run:
+            print("Side Band")
+            sideband_bjet(workdir, ginfo, year, args.input_dir)
         if 'mt_split' in args.run:
             print("mt_split")
             mt_split(workdir, ginfo, year, args.input_dir)
@@ -564,6 +662,9 @@ if __name__ == "__main__":
         if 'measurement' in args.run:
             print("Measurement")
             measurement(workdir, ginfo, year, args.input_dir)
+        if 'measurement_bjet' in args.run:
+            print("Measurement")
+            measurement_bjet(workdir, ginfo, year, args.input_dir)
         if 'closure' in args.run:
             print("Closure")
             closure(workdir, ginfo, year, args.input_dir)

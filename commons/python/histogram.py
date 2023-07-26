@@ -16,7 +16,8 @@ class Histogram:
         self.color = kwargs.get('color', 'k')
         self.name = ""
         self.draw_sc = 1.
-        self.set_plot_details(kwargs.get('group_info'))
+        if "group_info" in kwargs:
+            self.set_plot_details(kwargs.get('group_info'))
 
     def __add__(self, right):
         hist = Histogram(self.group, self.axis)
@@ -25,8 +26,9 @@ class Histogram:
         return hist
 
     def __sub__(self, right):
+        right_hist = right.hist if isinstance(right, Histogram) else right
         hist = Histogram(self.group, self.axis)
-        hist.hist = self.hist + (-1)*right.hist
+        hist.hist = self.hist + (-1)*right_hist
         hist.set_metadata(self)
         return hist
 
@@ -132,13 +134,15 @@ class Histogram:
             self.hist[-1] += self.hist[bh.overflow]
             self.hist[bh.overflow] = (0, 0)
         else:
+            last_y = -1 if self.axes.size[1] > 1 else 0
+            last_x = -1 if self.axes.size[0] > 1 else 0
             for i in range(self.axes.size[0]):
-                self.hist[i, -1] += self.hist[i, bh.overflow]
+                self.hist[i, last_y] += self.hist[i, bh.overflow]
                 self.hist[i, bh.overflow] = (0, 0)
             for i  in range(self.axes.size[1]):
-                self.hist[-1, i] += self.hist[bh.overflow, i]
+                self.hist[last_x, i] += self.hist[bh.overflow, i]
                 self.hist[bh.overflow, i] = (0, 0)
-            self.hist[-1, -1] += self.hist[bh.overflow, bh.overflow]
+            self.hist[last_x, last_y] += self.hist[bh.overflow, bh.overflow]
             self.hist[bh.overflow, bh.overflow] = (0, 0)
 
     def set_metadata(self, other):
@@ -203,6 +207,7 @@ class Histogram:
                      markersize=4, **kwargs)
 
     def plot_2d(self, pad, **kwargs):
+        import matplotlib.patheffects as path_effects
         if not self or pad is None:
             return
 
@@ -228,6 +233,8 @@ class Histogram:
                 ytot = y - offset*min_ysize
                 val_str = f'{self.vals[i,j]:.3f}\n$\pm${self.err[i,j]:.3f}'
                 text = pad.text(x, ytot, val_str, fontsize='x-small', ha=ha, va='center')
+                # text.set_path_effects([path_effects.Stroke(linewidth=1, foreground='white'),
+                #        path_effects.Normal()])
         return color_plot
 
 

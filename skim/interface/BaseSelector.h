@@ -111,7 +111,6 @@ protected:
     // Systs that change stuff
     std::vector<size_t> syst_to_index = { 0 };
     std::vector<size_t> novel_systs = { 0 };
-    size_t n_novel_systs = 1;
 
     std::vector<Bool_t> o_pass_event;
 

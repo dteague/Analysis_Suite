@@ -14,15 +14,25 @@ class FlatGetter(BaseGetter):
         if member not in upfile:
             return
         self.arr = upfile[member].arrays()
+        self.syst_weights = upfile[f'weights/{member}'].arrays()
         self._base_mask = np.ones(len(self.arr), dtype=bool)
         self._mask = copy(self._base_mask)
-        self._scale = self.arr["scale_factor"]
+        self._scale = ak.to_numpy(self.arr["scale_factor"])
         self.branches = self.arr.fields
 
     def __getitem__(self, key):
         if key not in self.branches:
             raise AttributeError(f"{key} not found")
         return np.nan_to_num(self.arr[key][self.mask], nan=-10000)
+
+    def list_systs(self):
+        vals = self.syst_weights.fields
+        vals.remove("index")
+        return vals
+
+    def set_syst(self, syst):
+        if syst in self.syst_weights.fields:
+            self._scale = self.syst_weights[syst]
 
     @BaseGetter.mask.setter
     def mask(self, mask):

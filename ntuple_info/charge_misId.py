@@ -27,4 +27,3 @@ closure_ss = NtupleInfo(
     ]
 )
 closure_ss.add_change('OS_CR', {'charge_flip': 'data'})
-closure_ss.set_exclusive('OS_CR', "data")

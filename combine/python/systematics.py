@@ -8,22 +8,21 @@ class Systematic:
     systs: dict = field(default_factory=list)
 
     def __post_init__(self):
-        self.systs = {"2016": dict(), "2017": dict(), "2018": dict()}
+        self.systs = {"2016pre": dict(), "2016post": dict(), "2017": dict(), "2018": dict()}
 
     def output(self, group_list, years):
-        line=f"{self.name} {self.syst_type} "
+        line = [self.name, self.syst_type]
         for year in years:
             for group in group_list:
                 if group in self.systs[year]:
-                    line += str(self.systs[year][group])
+                    line.append(self.systs[year][group])
                 elif "all" in self.systs[year]:
-                    line += str(self.systs[year]["all"])
+                    line.append(str(self.systs[year]["all"]))
                 else:
-                    line += "-"
-                line += " "
+                    line.append('-')
         return line
 
-    def add(self, syst, groups="all", year=["2016", "2017", "2018"]):
+    def add(self, syst, groups="all", year=["2016pre", "2016post", "2017", "2018"]):
         if isinstance(year, list):
             for yr in year:
                 if isinstance(groups, list):

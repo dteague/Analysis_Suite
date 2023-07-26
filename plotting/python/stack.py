@@ -46,6 +46,7 @@ class Stack(Histogram):
             label=[h.name for h in self.stack],
             **self.options, **kwargs
         )
+
         # Apply patch to edge colors
         edgecolors = [self.darkenColor(h.color) for h in self.stack]
         for p, ec in zip(patches, edgecolors):

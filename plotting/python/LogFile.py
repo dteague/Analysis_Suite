@@ -76,7 +76,7 @@ class LogFile:
             Name used to label the singal
         """
         self.hists[SIGNAL] += signal.get_int_err()
-        integral, error = signal.get_int_err(False)
+        integral, error = signal.get_int_err(True)
         self.plotTable.add_row([signal.name, integral, error])
         self.hists[TOTAL] += self.hists[SIGNAL]
 
@@ -142,7 +142,7 @@ class LogFile:
             if self.hists[DATA].any():
                 out.write(f'Number of events in data {self.hists[DATA][0]} \n')
 
-            if self.breakTable.end is not None:
+            if True:
                 out.write('\n')
                 out.write(self.breakTable.get_latex_string() if isLatex else self.breakTable.get_string())
                 out.write('\n'*2)

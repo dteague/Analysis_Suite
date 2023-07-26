@@ -7,18 +7,19 @@ from dataclasses import dataclass, InitVar
 from sklearn.metrics import roc_auc_score, roc_curve, auc
 from sklearn.model_selection import ShuffleSplit, cross_val_score
 
-os.environ["KERAS_BACKEND"] = "tensorflow"
-import keras
+# os.environ["KERAS_BACKEND"] = "tensorflow"
+# import keras
+import tensorflow.keras as keras
 
 from .dataholder import MLHolder
 
 @dataclass
 class Params:
     shuffle: bool = True
-    initial_nodes: int = 10
+    initial_nodes: int = 60
     hidden_layers: int = 2
     node_pattern: str = "static"
-    learning_rate: float = 0.01
+    learning_rate: float = 0.002
     regulator: str = "dropout"
     activation: str = "elu"
     monitor: str = "loss"
@@ -27,9 +28,9 @@ class Params:
     period: int = 1
     save_best_only: bool = True
     save_weights_only: bool = False
-    epochs: int = 20
-    batch_power: int = 9
-    batch_size: int = 2**9
+    epochs: int = 200
+    batch_power: int = 14
+    batch_size: int = 2**14
     validation_split: float = 0.25
     verbose: bool = False
 
@@ -62,6 +63,7 @@ class KerasMaker(MLHolder):
 
 
     def build_model(self, input_size="auto"):
+        input_dim = len(self.all_vars) - len(self._drop_vars)
         node_lengths = self.build.initial_nodes * np.ones(
             self.build.hidden_layers, dtype=int
         )
@@ -69,13 +71,14 @@ class KerasMaker(MLHolder):
             partition = self.build.initial_nodes // self.build.hidden_layers
             node_lengths -= partition * np.arange(self.build.hidden_layers)
 
-        # input_dim = len(self.use_vars) if input_size == "auto" else input_size
         model = keras.models.Sequential()
+        model.add(keras.Input(input_dim))
+
         model.add(
-            keras.layers.core.Dense(
+            keras.layers.Dense(
                 self.build.initial_nodes,
                 kernel_initializer="glorot_normal",
-                input_dim=len(self.use_vars),
+                input_dim=input_dim,
                 activation=self.build.activation,
             )
         )
@@ -83,9 +86,9 @@ class KerasMaker(MLHolder):
         for nodes in node_lengths:
             model.add(keras.layers.BatchNormalization())
             if self.build.regulator == "dropout":
-                model.add(keras.layers.core.Dropout(0.5))
+                model.add(keras.layers.Dropout(0.5))
             model.add(
-                keras.layers.core.Dense(
+                keras.layers.Dense(
                     nodes,
                     kernel_initializer="glorot_normal",
                     activation=self.build.activation,
@@ -93,13 +96,12 @@ class KerasMaker(MLHolder):
             )
 
         # Final classification node
-        model.add(keras.layers.core.Dense(1, activation="sigmoid"))
+        model.add(keras.layers.Dense(1, activation="sigmoid"))
         model.compile(
             optimizer=keras.optimizers.Adam(lr=self.build.learning_rate),
             loss="binary_crossentropy",
-            metrics=["accuracy"],
+            metrics=["accuracy", "AUC"],
         )
-
         if self.build.verbose:
             model.summary()
         return model
@@ -110,7 +112,7 @@ class KerasMaker(MLHolder):
         x_train = shuf_train.drop(self._drop_vars, axis=1)
         w_train = shuf_train["train_weight"].to_numpy()
         y_train = shuf_train.classID
-        
+
         x_test = self.validation_set.drop(self._drop_vars, axis=1)
         y_test = self.validation_set.classID
 
@@ -137,9 +139,10 @@ class KerasMaker(MLHolder):
 
         # Test
         logging.info("\n>> Testing.")
-        loss, accuracy = fit_model.evaluate(x_test, y_test, verbose=1)
+        loss, accuracy, auc = fit_model.evaluate(x_test, y_test, verbose=1)
         logging.debug(f'loss: {loss}')
         logging.debug(f'accuracy: {accuracy}')
+        logging.debug(f'auc: {auc}')
 
         fit_model.save(outdir / 'model.h5')
 

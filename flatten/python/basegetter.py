@@ -12,7 +12,7 @@ class BaseGetter:
         self._scale = None
 
     def __bool__(self):
-        return self._mask is not None
+        return self._mask is not None and bool(ak.count_nonzero(self._mask))
 
     def __len__(self):
         return np.count_nonzero(self.mask)
@@ -117,5 +117,5 @@ class BaseGetter:
         tuple of (array, array)
         """
         if not hasattr(self, var):
-            raise AttributeError
+            raise AttributeError(f"Cannot find variable {var}")
         return self[var], self.scale

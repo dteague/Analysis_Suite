@@ -39,11 +39,9 @@ struct TriggerInfo {
     }
 
     bool pass_cut(Subchannel chan) {
-        if (trigs.find(chan) == trigs.end()) { // Not a valid chan (pass anyway)
-            return true;
-        } else if (!pass_dataset(chan)) { // Dataset correct for the channel
+        if (!pass_dataset(chan)) { // Dataset correct for the channel
             return false;
-        }
+         }
 
         for (auto trig : trigs[chan]) {
             if (*trig) return true;
@@ -52,9 +50,17 @@ struct TriggerInfo {
     }
 
     bool pass_cut_any(Subchannel chan) {
-        if (trigs.find(chan) == trigs.end()) { // Not a valid chan (pass anyway)
+        for (auto trig : trigs[chan]) {
+            if (*trig) return true;
+        }
+        return false;
+    }
+
+    bool dataset_or_trig(Subchannel chan) {
+        if (pass_dataset(chan)) { // Dataset correct for the channel
             return true;
         }
+
         for (auto trig : trigs[chan]) {
             if (*trig) return true;
         }

@@ -23,7 +23,8 @@ void Lepton::setup(std::string name, TTreeReader& fReader)
 
     isoCut = 0.1;
     ptRatioCut = 0.4;
-    mvaCut = 0.4;
+    mvaCut = 0.65;
+    // mvaCut = -2;
 
     GenericParticle::setup(name, fReader);
     setup_map(Level::Loose);
@@ -40,7 +41,6 @@ void Lepton::fillLepton(LeptonOut& output, Level level, const Bitmap& event_bitm
             output.flip.push_back(flips.at(idx));
         }
     }
-
 }
 
 void Lepton::fillLepton_Iso(LeptonOut_Fake& output, Jet& jet, Level level, const Bitmap& event_bitmap)

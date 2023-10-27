@@ -79,6 +79,7 @@ protected:
 
     // To be filled by Child class
     virtual void ApplyScaleFactors(){};
+    virtual void ApplyChannelScaleFactors(){};
     virtual void FillValues(const Bitmap& event_bitmap) {};
     virtual void setOtherGoodParticles(size_t syst) {};
     virtual bool getCutFlow() { return true; }
@@ -97,6 +98,7 @@ protected:
 
     Year year_;
     bool isMC_ = true;
+    std::string data_run = "";
     Subchannel subChannel_;
     Dataset dataset_ = Dataset::None;
 
@@ -127,7 +129,7 @@ protected:
     GenJet rGenJet;
     Met met;
 
-    MET_Type met_type = MET_Type::PF;
+    MET_Type met_type = MET_Type::PUPPI;
 
     TriggerInfo trig_cuts;
 

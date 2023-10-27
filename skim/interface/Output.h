@@ -38,14 +38,12 @@ struct ParticleOut {
 
 struct JetOut {
     PARTICLE_VARS;
-    std::vector<std::pair<Float_t, Float_t>> jer;
-    std::vector<std::pair<Float_t, Float_t>> jes;
+    std::vector<std::vector<Float_t>> jet_shifts;
     std::vector<Float_t> discriminator;
     std::vector<Int_t> pass_btag;
     void clear() {
         generic_clear(this);
-        jer.clear();
-        jes.clear();
+        jet_shifts.clear();
         discriminator.clear();
         pass_btag.clear();
     }
@@ -102,6 +100,30 @@ struct LeptonOut_Fake {
         jet_flav.clear();
     }
 };
+
+struct ElectronOut_Fake {
+    PARTICLE_VARS;
+    std::vector<Float_t> rawPt;
+    std::vector<Float_t> ptRatio;
+    std::vector<Float_t> ptRatio2;
+    std::vector<Float_t> old_mvaTTH;
+    std::vector<Float_t> mvaTTH;
+    std::vector<Float_t> iso;
+    std::vector<Float_t> jet_btag;
+    std::vector<Int_t> jet_flav;
+    void clear() {
+        generic_clear(this);
+        rawPt.clear();
+        ptRatio.clear();
+        ptRatio2.clear();
+        old_mvaTTH.clear();
+        mvaTTH.clear();
+        iso.clear();
+        jet_btag.clear();
+        jet_flav.clear();
+    }
+};
+
 
 struct BEffOut {
     PARTICLE_VARS;

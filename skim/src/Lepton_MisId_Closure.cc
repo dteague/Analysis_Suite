@@ -14,6 +14,8 @@ enum class Subchannel {
     MM,
     EM,
     EE,
+    Single_E,
+    Single_M,
     None,
 };
 
@@ -31,41 +33,7 @@ void Closure_MisId::Init(TTree* tree)
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
     }
 
-    if (year_ == Year::yr2016pre) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
-        setupTrigger(Subchannel::EM, Dataset::MuonEG,
-                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
-                      "HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL"});
-        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
-                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
-    } else if (year_ == Year::yr2016post) {
-        setupTrigger(Subchannel::MM,  Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
-        setupTrigger(Subchannel::EM, Dataset::MuonEG,
-                     {"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
-        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
-                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
-    } else if(year_ == Year::yr2017) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
-        setupTrigger(Subchannel::EM, Dataset::MuonEG,
-                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
-                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
-                      "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-    } else if (year_ == Year::yr2018) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",});
-        setupTrigger(Subchannel::EM, Dataset::MuonEG,
-                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
-                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",});
-    }
-
+#include "analysis_suite/skim/interface/trigger_template.h"
     LOG_FUNC << "End of Init";
 }
 
@@ -76,8 +44,6 @@ void Closure_MisId::SetupOutTreeBranches(TTree* tree)
     tree->Branch("TightMuon", "LeptonOut", &o_tightMuons);
     tree->Branch("TightElectron", "LeptonOut", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
-    tree->Branch("Nloose_Muon", &o_nlooseMu);
-    tree->Branch("Nloose_Electron", &o_nlooseEl);
 
     tree->Branch("HT", &o_ht);
     tree->Branch("HT_b", &o_htb);
@@ -98,8 +64,6 @@ void Closure_MisId::clearOutputs()
 {
     LOG_FUNC << "Start of clearOutputs";
     o_ht.clear();
-    o_nlooseEl.clear();
-    o_nlooseMu.clear();
     o_htb.clear();
     o_met.clear();
     o_metphi.clear();
@@ -116,7 +80,9 @@ void Closure_MisId::ApplyScaleFactors()
     (*weight) *= sfMaker.getLHEPdf();
     (*weight) *= sfMaker.getPrefire();
     (*weight) *= sfMaker.getPartonShower();
+    (*weight) *= sfMaker.getTriggerSF(elec, muon);
     (*weight) *= jet.getScaleFactor();
+    (*weight) *= jet.getTotalBTagWeight("M");
     (*weight) *= elec.getScaleFactor();
     (*weight) *= muon.getScaleFactor();
     LOG_FUNC << "End of ApplyScaleFactors";
@@ -154,7 +120,45 @@ void Closure_MisId::setSubChannel()
     LOG_FUNC << "End of setSubChannel";
 }
 
-
+bool Closure_MisId::getTriggerValue()
+{
+    if (subChannel_ == Subchannel::EE) {
+        if (isMC_) {
+            return (trig_cuts.pass_cut(Subchannel::EE)
+                    || trig_cuts.pass_cut(Subchannel::Single_E));
+        } else if (year_ == Year::yr2018) {
+            return (trig_cuts.pass_cut(Subchannel::EE)
+                    || trig_cuts.pass_cut(Subchannel::Single_E));
+        } else if (trig_cuts.dataset_or_trig(Subchannel::EE)) {
+            return trig_cuts.pass_cut(Subchannel::EE);
+        } else {
+            return trig_cuts.pass_cut(Subchannel::Single_E);
+        }
+    } else if (subChannel_ == Subchannel::MM) {
+        if (isMC_) {
+            return (trig_cuts.pass_cut(Subchannel::MM)
+                    || trig_cuts.pass_cut(Subchannel::Single_M));
+        } else if (trig_cuts.dataset_or_trig(Subchannel::MM)) {
+            return trig_cuts.pass_cut(Subchannel::MM);
+        } else {
+            return trig_cuts.pass_cut(Subchannel::Single_M);
+        }
+    } else if (subChannel_ == Subchannel::EM) {
+        if (isMC_) {
+            return (trig_cuts.pass_cut(Subchannel::EM)
+                    || trig_cuts.pass_cut(Subchannel::Single_M)
+                    || trig_cuts.pass_cut(Subchannel::Single_E));
+        } else if (trig_cuts.dataset_or_trig(Subchannel::EM)) {
+            return trig_cuts.pass_cut(Subchannel::EM);
+        } else if (trig_cuts.dataset_or_trig(Subchannel::Single_M)) {
+            return trig_cuts.pass_cut(Subchannel::Single_M);
+        } else {
+            return trig_cuts.pass_cut(Subchannel::Single_E);
+        }
+    } else {
+        return false;
+    }        
+}
 
 bool Closure_MisId::getCutFlow()
 {
@@ -182,10 +186,11 @@ bool Closure_MisId::closure_cuts() {
     passCuts &= cuts.setCut("passPreselection", true);
     passCuts &= cuts.setCut("passMETFilter", metfilters.pass());
     passCuts &= cuts.setCut("pass2Electrons", elec.size(Level::Tight) == 2);
+    passCuts &= cuts.setCut("pass2LooseLep", nLeps(Level::Loose) == 2);
 
     // Trigger Cuts
     passCuts &= cuts.setCut("passLeadPtCut", getLeadPt() > 25);
-    passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
+    passCuts &= cuts.setCut("passTrigger", getTriggerValue());
 
     float mass = get_mass();
     passCuts &= cuts.setCut("passZCut", mass > 70. && mass < 115);
@@ -213,10 +218,11 @@ bool Closure_MisId::measurement_cuts() {
     passCuts &= cuts.setCut("passPreselection", true);
     passCuts &= cuts.setCut("passMETFilter", metfilters.pass());
     passCuts &= cuts.setCut("pass2Leptons;", nLeps(Level::Tight) == 2);
+    passCuts &= cuts.setCut("pass2LooseLep", nLeps(Level::Loose) == 2);
 
     // Trigger Cuts
     passCuts &= cuts.setCut("passLeadPtCut", getLeadPt() > 25);
-    passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
+    passCuts &= cuts.setCut("passTrigger", getTriggerValue());
 
     passCuts &= cuts.setCut("passZCut", get_mass() > 50);
     // passCuts &= cuts.setCut("passOppositeSign", !isSameSign());
@@ -268,8 +274,6 @@ void Closure_MisId::FillValues(const Bitmap& event_bitmap)
         o_met.push_back(met.pt());
         o_metphi.push_back(met.phi());
         o_centrality.push_back(jet.getCentrality(Level::Tight, syst));
-        o_nlooseMu.push_back(muon.size(Level::Loose));
-        o_nlooseEl.push_back(elec.size(Level::Loose));
     }
     LOG_FUNC << "End of FillValues";
 }

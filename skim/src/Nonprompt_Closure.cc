@@ -15,6 +15,8 @@ enum class Subchannel {
     MM,
     EM,
     EE,
+    Single_E,
+    Single_M,
     None,
 };
 
@@ -55,44 +57,9 @@ void Nonprompt_Closure::Init(TTree* tree)
         sfMaker.setup_prescale();
     }
 
+    #include"analysis_suite/skim/interface/trigger_template.h"
 
-    // Dilepton triggers
-    if (year_ == Year::yr2016pre) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
-        setupTrigger(Subchannel::EM, Dataset::MuonEG,
-                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
-                      "HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL"});
-        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
-                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
-    } else if (year_ == Year::yr2016post) {
-        setupTrigger(Subchannel::MM,  Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
-        setupTrigger(Subchannel::EM, Dataset::MuonEG,
-                     {"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
-        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
-                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",});
-    } else if(year_ == Year::yr2017) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
-        setupTrigger(Subchannel::EM, Dataset::MuonEG,
-                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
-                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
-                      "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-    } else if (year_ == Year::yr2018) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",});
-        setupTrigger(Subchannel::EM, Dataset::MuonEG,
-                     {"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                      "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"});
-        setupTrigger(Subchannel::EE, Dataset::DoubleEG,
-                     {"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",});
-        }
-
-        LOG_FUNC << "End of Init";
+    LOG_FUNC << "End of Init";
 }
 
 void Nonprompt_Closure::SetupOutTreeBranches(TTree* tree)
@@ -140,22 +107,16 @@ void Nonprompt_Closure::ApplyScaleFactors()
 {
     LOG_FUNC << "Start of ApplyScaleFactors";
     LOG_EVENT << "weight: " << (*weight);
-    // std::cout << (*weight) << " ";
     (*weight) *= sfMaker.getPileupSF(*Pileup_nTrueInt);
-    // std::cout << (*weight) << " ";
     (*weight) *= sfMaker.getLHESF();
-    // std::cout << (*weight) << " ";
+    (*weight) *= sfMaker.getLHEPdf();
     (*weight) *= sfMaker.getPrefire();
-    // std::cout << (*weight) << " ";
     (*weight) *= sfMaker.getPartonShower();
-    // std::cout << (*weight) << " ";
+    (*weight) *= sfMaker.getTriggerSF(elec, muon);
     (*weight) *= jet.getPileupIDWeight();
     (*weight) *= jet.getTotalBTagWeight();
-    // std::cout << (*weight) << " ";
     (*weight) *= elec.getScaleFactor();
-    // std::cout << (*weight) << " ";
     (*weight) *= muon.getScaleFactor();
-    // std::cout << (*weight) << " " << "end" << std::endl;
     LOG_FUNC << "End of ApplyScaleFactors";
 }
 
@@ -206,6 +167,46 @@ bool Nonprompt_Closure::isSameSign()
     return abs(q_total) == 1 || abs(q_total) == 2;
 }
 
+bool Nonprompt_Closure::getTriggerValue()
+{
+    if (subChannel_ == Subchannel::EE) {
+        if (isMC_) {
+            return (trig_cuts.pass_cut(Subchannel::EE)
+                    || trig_cuts.pass_cut(Subchannel::Single_E));
+
+        } else if (year_ == Year::yr2018) {
+            return (trig_cuts.pass_cut(Subchannel::EE)
+                    || trig_cuts.pass_cut(Subchannel::Single_E));
+        } else if (trig_cuts.dataset_or_trig(Subchannel::EE)) {
+            return trig_cuts.pass_cut(Subchannel::EE);
+        } else {
+            return trig_cuts.pass_cut(Subchannel::Single_E);
+        }
+    } else if (subChannel_ == Subchannel::MM) {
+        if (isMC_) {
+            return (trig_cuts.pass_cut(Subchannel::MM)
+                    || trig_cuts.pass_cut(Subchannel::Single_M));
+        } else if (trig_cuts.dataset_or_trig(Subchannel::MM)) {
+            return trig_cuts.pass_cut(Subchannel::MM);
+        } else {
+            return trig_cuts.pass_cut(Subchannel::Single_M);
+        }
+    } else if (subChannel_ == Subchannel::EM) {
+        if (isMC_) {
+            return (trig_cuts.pass_cut(Subchannel::EM)
+                    || trig_cuts.pass_cut(Subchannel::Single_M)
+                    || trig_cuts.pass_cut(Subchannel::Single_E));
+        } else if (trig_cuts.dataset_or_trig(Subchannel::EM)) {
+            return trig_cuts.pass_cut(Subchannel::EM);
+        } else if (trig_cuts.dataset_or_trig(Subchannel::Single_M)) {
+            return trig_cuts.pass_cut(Subchannel::Single_M);
+        } else {
+            return trig_cuts.pass_cut(Subchannel::Single_E);
+        }
+    } else {
+        return false;
+    }
+}
 
 bool Nonprompt_Closure::getCutFlow()
 {

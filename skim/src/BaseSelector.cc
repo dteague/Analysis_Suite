@@ -33,6 +33,8 @@ void BaseSelector::Init(TTree* tree)
     syst_index_list->SetName("Syst_Index");
     syst_index_list->Add(new TNamed("0", "0"));
 
+    std::vector<Systematic> used_jec_systs;
+
     LOG_POST <<  "Start Reading python inputs";
     for (auto item : *fInput) {
         std::string itemName = item->GetName();
@@ -50,6 +52,8 @@ void BaseSelector::Init(TTree* tree)
                 } else if (dataName == "Dataset") {
                     std::cout << data->GetTitle() << std::endl;
                     dataset_ = dataset_name_to_enum.at(data->GetTitle());
+                } else if (dataName == "DataRun") {
+                    data_run = data->GetTitle();
                 }
             }
         } else if (itemName == "Systematics") {
@@ -59,7 +63,11 @@ void BaseSelector::Init(TTree* tree)
                 if (isMC_ != !data_syst)
                     continue;
                 // Add systematic to list used by selector as well as TList for writing out
-                systematics_.push_back(syst_by_name.at(systName));
+                auto cur_syst = syst_by_name.at(systName);
+                if (std::find(jec_systs.begin(), jec_systs.end(), cur_syst) != jec_systs.end()) {
+                    used_jec_systs.push_back(cur_syst);
+                }
+                systematics_.push_back(cur_syst);
                 size_t syst_start = 2*systematics_.size() - 3;
                 if (std::find(systs_that_change.begin(), systs_that_change.end(), systematics_.back()) != systs_that_change.end()) {
                     novel_systs.insert(novel_systs.end(), {syst_to_index.size(), syst_to_index.size()+1});
@@ -119,7 +127,7 @@ void BaseSelector::Init(TTree* tree)
     met.setup(fReader, met_type);
     muon.setup(fReader);
     elec.setup(fReader);
-    jet.setup(fReader);
+    jet.setup(fReader, used_jec_systs);
     if (isMC_) {
         rGen.setup(fReader);
         rGenJet.setup(fReader);
@@ -167,6 +175,9 @@ Bool_t BaseSelector::Process(Long64_t entry)
         if (syst_to_index.at(systNum) > 0 || systNum == 0) {
             systPassSelection.push_back(getCutFlow());
             passAny |= systPassSelection.back();
+        }
+        if (systPassSelection.back()) {
+            ApplyChannelScaleFactors();
         }
     }
 

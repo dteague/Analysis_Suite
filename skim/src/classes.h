@@ -7,6 +7,7 @@
 #include "analysis_suite/skim/interface/DY_test.h"
 #include "analysis_suite/skim/interface/SingleLep_Trigger.h"
 #include "analysis_suite/skim/interface/TwoLepton.h"
+#include "analysis_suite/skim/interface/TagProbe.h"
 
 namespace {
 namespace {
@@ -19,5 +20,6 @@ namespace {
     DY_test pDY_test;
     SingleLep_Trigger pSingleLep_Trigger;
     TwoLepton pTwoLepton;
+    TagProbe pTagProbe;
 } // namespace
 } // namespace

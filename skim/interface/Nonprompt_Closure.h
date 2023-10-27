@@ -25,6 +25,7 @@ private:
     bool dy_closure_cuts();
     float getLeadPt();
     bool isSameSign();
+    bool getTriggerValue();
 
     LeptonOut_Fake *o_looseMuons, *o_fakeMuons, *o_tightMuons;
     LeptonOut_Fake* o_looseElectrons, *o_fakeElectrons, *o_tightElectrons;

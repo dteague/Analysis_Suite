@@ -60,6 +60,7 @@ enum class Systematic {
     PDF_unc,
 
     Prefire,
+    TriggerSF,
 
     BJet_BTagging,
     BJet_Eff,
@@ -74,11 +75,25 @@ enum class Systematic {
 
     Muon_Scale,
     Electron_Scale,
+    Muon_tthMVA,
+    Electron_tthMVA,
     Top_SF,
     Pileup,
     Jet_JER,
     Jet_JES,
     Jet_PUID,
+
+    Jet_JEC_Absolute,
+    Jet_JEC_Absolute_corr,
+    Jet_JEC_BBEC1,
+    Jet_JEC_BBEC1_corr,
+    Jet_JEC_EC2,
+    Jet_JEC_EC2_corr,
+    Jet_JEC_HF,
+    Jet_JEC_HF_corr,
+    Jet_JEC_RelativeBal,
+    Jet_JEC_RelativeSample,
+    Jet_JEC_FlavorQCD,
 
     Electron_EScale,
     Electron_ESigma,
@@ -102,6 +117,7 @@ static const std::unordered_map<std::string, Systematic> syst_by_name = {
     { "PS_ISR", Systematic::PS_ISR },
     { "PS_FSR", Systematic::PS_FSR },
     { "Prefire", Systematic::Prefire },
+    { "TriggerSF" , Systematic::TriggerSF },
 
     { "BJet_BTagging", Systematic::BJet_BTagging },
     { "BJet_Eff", Systematic::BJet_Eff },
@@ -116,11 +132,25 @@ static const std::unordered_map<std::string, Systematic> syst_by_name = {
 
     { "Muon_Scale", Systematic::Muon_Scale },
     { "Electron_Scale", Systematic::Electron_Scale },
+    { "Muon_tthMVA", Systematic::Muon_tthMVA},
+    { "Electron_tthMVA", Systematic::Electron_tthMVA},
     { "Top_SF", Systematic::Top_SF },
     { "Pileup", Systematic::Pileup },
+    { "Jet_PUID", Systematic::Jet_PUID },
+
     { "Jet_JER", Systematic::Jet_JER },
     { "Jet_JES", Systematic::Jet_JES },
-    { "Jet_PUID", Systematic::Jet_PUID },
+    { "Jet_JEC_Absolute", Systematic::Jet_JEC_Absolute },
+    { "Jet_JEC_Absolute_corr", Systematic::Jet_JEC_Absolute_corr },
+    { "Jet_JEC_BBEC1", Systematic::Jet_JEC_BBEC1},
+    { "Jet_JEC_BBEC1_corr", Systematic::Jet_JEC_BBEC1_corr },
+    { "Jet_JEC_EC2", Systematic::Jet_JEC_EC2},
+    { "Jet_JEC_EC2_corr", Systematic::Jet_JEC_EC2_corr },
+    { "Jet_JEC_HF", Systematic::Jet_JEC_HF},
+    { "Jet_JEC_HF_corr", Systematic::Jet_JEC_HF_corr },
+    { "Jet_JEC_AbsoluteBal", Systematic::Jet_JEC_RelativeBal},
+    { "Jet_JEC_AbsoluteSample", Systematic::Jet_JEC_RelativeSample},
+    { "Jet_JEC_FlavorQCD", Systematic::Jet_JEC_FlavorQCD},
 
     { "ChargeMisId_stat", Systematic::ChargeMisId_stat },
     { "Nonprompt_Mu_stat", Systematic::Nonprompt_Mu_stat },
@@ -130,11 +160,33 @@ static const std::unordered_map<std::string, Systematic> syst_by_name = {
 static const std::vector<Systematic> systs_that_change = {
     Systematic::Jet_JER,
     Systematic::Jet_JES,
+    Systematic::Jet_JEC_Absolute,
+    Systematic::Jet_JEC_Absolute_corr,
+    Systematic::Jet_JEC_BBEC1,
+    Systematic::Jet_JEC_BBEC1_corr,
+    Systematic::Jet_JEC_EC2,
+    Systematic::Jet_JEC_EC2_corr,
+    Systematic::Jet_JEC_HF,
+    Systematic::Jet_JEC_HF_corr,
+    Systematic::Jet_JEC_RelativeBal,
+    Systematic::Jet_JEC_RelativeSample,
+    Systematic::Jet_JEC_FlavorQCD,
 };
 
 const std::vector<Systematic> jec_systs = {
     Systematic::Jet_JER,
     Systematic::Jet_JES,
+    Systematic::Jet_JEC_Absolute,
+    Systematic::Jet_JEC_Absolute_corr,
+    Systematic::Jet_JEC_BBEC1,
+    Systematic::Jet_JEC_BBEC1_corr,
+    Systematic::Jet_JEC_EC2,
+    Systematic::Jet_JEC_EC2_corr,
+    Systematic::Jet_JEC_HF,
+    Systematic::Jet_JEC_HF_corr,
+    Systematic::Jet_JEC_RelativeBal,
+    Systematic::Jet_JEC_RelativeSample,
+    Systematic::Jet_JEC_FlavorQCD,
 };
 
 const std::vector<std::string> data_systs = {
@@ -157,6 +209,8 @@ enum class Dataset {
     DoubleMuon,
     MuonEG,
     DoubleEG,
+    Single_E,
+    Single_M,
     Met,
     None,
 };
@@ -165,6 +219,8 @@ static const std::unordered_map<std::string, Dataset> dataset_name_to_enum {
     {"DoubleMuon", Dataset::DoubleMuon},
     {"MuonEG", Dataset::MuonEG},
     {"DoubleEG", Dataset::DoubleEG},
+    {"SingleElectron", Dataset::Single_E},
+    {"SingleMuon", Dataset::Single_M},
     {"Met", Dataset::Met},
     {"None", Dataset::None},
 };

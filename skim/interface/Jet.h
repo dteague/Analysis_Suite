@@ -12,10 +12,11 @@ enum PUID { PU_Tight = 0, PU_Medium = 1, PU_Loose = 2 };
 
 class Jet : public Particle {
 public:
-    void setup(TTreeReader& fReader);
+    void setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_);
 
     virtual float getScaleFactor() override;
     float getTotalBTagWeight(std::string btag_wp = "L");
+    float getTotalShapeWeight();
     float getBJetWeight(size_t idx, std::string lvl);
     float getPileupIDWeight();
 
@@ -54,10 +55,6 @@ public:
             for (auto& [var, scales] : var_scales) {
                 scales.clear();
             }
-        }
-        for (auto var : all_vars) {
-            jer[var].clear();
-            jes[var].clear();
         }
     }
 
@@ -102,10 +99,11 @@ private:
     float jet_dr = 0.4;
     std::unordered_map<Systematic, std::unordered_map<eVar, std::vector<float>>> m_jet_scales;
 
-    std::unordered_map<eVar, std::vector<float>> jer;
-    std::unordered_map<eVar, std::vector<float>> jes;
     void setup_jes(size_t i);
     void setup_jer(size_t i, GenericParticle& genJets);
+
+    std::pair<float, float> get_jec_unc(size_t i, correction::Correction::Ref& jec_unc);
+    std::vector<float> get_jer(size_t i, GenericParticle& genJets);
 
     std::vector<float>* m_jec;
 
@@ -130,11 +128,59 @@ private:
         {Year::yr2018, "Summer19UL18_JRV2_MC"},
     };
 
+    const std::unordered_map<Systematic, std::string> shape_by_syst = {
+        { Systematic::BJet_Shape_hf, "hf" },
+        { Systematic::BJet_Shape_hfstats1, "hfstats1" },
+        { Systematic::BJet_Shape_hfstats2, "hfstats2" },
+        { Systematic::BJet_Shape_lf, "lf" },
+        { Systematic::BJet_Shape_lfstats1, "lfstats1" },
+        { Systematic::BJet_Shape_lfstats2, "lfstats2" },
+        { Systematic::BJet_Shape_cferr1, "cferr1" },
+        { Systematic::BJet_Shape_cferr2, "cferr2" },
+    };
+
+    const std::unordered_map<Systematic, std::string> unc_by_syst = {
+        { Systematic::Jet_JES, "_Total" },
+        { Systematic::Jet_JEC_Absolute, "_Absolute_uncorr" },
+        { Systematic::Jet_JEC_Absolute_corr, "_Absolute" },
+        { Systematic::Jet_JEC_BBEC1, "_BBEC1_uncorr" },
+        { Systematic::Jet_JEC_BBEC1_corr, "_BBEC1" },
+        { Systematic::Jet_JEC_EC2, "_EC2_uncorr" },
+        { Systematic::Jet_JEC_EC2_corr, "_EC2" },
+        { Systematic::Jet_JEC_HF, "_HF_uncorr" },
+        { Systematic::Jet_JEC_HF_corr, "_HF" },
+        { Systematic::Jet_JEC_RelativeBal, "_RelativeBal" },
+        { Systematic::Jet_JEC_RelativeSample, "_RelativeSample_uncorr" },
+        { Systematic::Jet_JEC_FlavorQCD, "_FlavorQCD" },
+    };
+
+    std::unordered_map<Systematic, std::string> bjet_jec_syst = {
+        { Systematic::Jet_JEC_Absolute, "jesAbsolute_20" },
+        { Systematic::Jet_JEC_Absolute_corr, "jesAbsolute" },
+        { Systematic::Jet_JEC_BBEC1, "jesBBEC1_20" },
+        { Systematic::Jet_JEC_BBEC1_corr, "jesBBEC1" },
+        { Systematic::Jet_JEC_EC2, "jesEC2_20" },
+        { Systematic::Jet_JEC_EC2_corr, "jesEC2" },
+        { Systematic::Jet_JEC_HF, "jesHF_20" },
+        { Systematic::Jet_JEC_HF_corr, "jesHF" },
+        { Systematic::Jet_JEC_RelativeBal, "jesRelativeBal" },
+        { Systematic::Jet_JEC_RelativeSample, "jesRelativeSample_20" },
+        { Systematic::Jet_JEC_FlavorQCD, "jesFlavorQCD" },
+    };
+
+
+    const std::vector<Systematic> charm_systs = {
+        Systematic::BJet_Shape_cferr1,
+        Systematic::BJet_Shape_cferr2,
+    };
+
     WeightHolder jer_scale, jet_resolution, jes_scale;
     WeightHolder puid_scale;
-    WeightHolder btag_bc_scale, btag_udsg_scale, btag_eff;
+    WeightHolder btag_bc_scale, btag_udsg_scale, btag_eff, btag_shape_scale;
+    std::unordered_map<Systematic, correction::Correction::Ref> jec_unc_vec;
 
     bool use_shape_btag = false;
+    std::vector<Systematic> used_jec_systs;
 
     std::random_device rd{};
     std::mt19937 gen{rd()};

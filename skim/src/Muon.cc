@@ -27,14 +27,19 @@ void Muon::setup(TTreeReader& fReader)
         auto corr_set = getScaleFile("MUO", "muon_Z");
         muon_scale = WeightHolder(corr_set->at("NUM_MediumID_DEN_genTracks"), Systematic::Muon_Scale,
                                   {"sf", "systup", "systdown"});
+        muon_tthMVA = WeightHolder(corr_set->at("NUM_MediumID_DEN_genTracks"), Systematic::Muon_tthMVA,
+                                   {"sf", "systup", "systdown"});
     }
     std::string roccor_file = scaleDir_+"/POG/USER/"+yearMap.at(year_)+"_UL/RoccoR.txt";
     roc_corr.init(roccor_file);
 
-    if (year_ == Year::yr2016pre)        cone_correction = 0.750;
-    else if (year_ == Year::yr2016post)  cone_correction = 0.750;
-    else if (year_ == Year::yr2017)      cone_correction = 0.700;
-    else if (year_ == Year::yr2018)      cone_correction = 0.725;
+    // if (year_ == Year::yr2016pre)        cone_correction = 0.750;
+    // else if (year_ == Year::yr2016post)  cone_correction = 0.750;
+    // else if (year_ == Year::yr2017)      cone_correction = 0.700;
+    // else if (year_ == Year::yr2018)      cone_correction = 0.725;
+    if (year_ == Year::yr2016pre || year_ == Year::yr2016post) cone_correction = 0.775;
+    else if (year_ == Year::yr2017)                            cone_correction = 0.725;
+    else if (year_ == Year::yr2018)                            cone_correction = 0.75;
 }
 
 void Muon::createLooseList()
@@ -58,9 +63,8 @@ void Muon::createFakeList(Particle& jets)
             && tightCharge.at(i) == 2
             && mediumId.at(i)
             && sip3d.at(i) < 4
-            && (ptRatio(i) > ptRatioCut || mvaTTH.at(i) > mvaCut)
+            && (ptRatio(i) > ptRatioCut || passJetIsolation(i))
             && m_pt.at(i)*getFakePtFactor(i) > 15 // Total pt threshold
-            // && (m_pt.at(i) > 10 || passJetIsolation(i))
             )
             {
                 m_partList[Level::Fake]->push_back(i);

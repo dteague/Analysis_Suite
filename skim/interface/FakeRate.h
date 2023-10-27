@@ -25,8 +25,8 @@ private:
     bool sideband_cuts();
     bool single_lep_cuts(CutInfo& cuts);
 
-    LeptonOut_Fake *o_looseMuons, *o_fakeMuons, *o_tightMuons;
-    LeptonOut_Fake *o_looseElectrons, *o_fakeElectrons, *o_tightElectrons;
+    LeptonOut_Fake *o_fakeMuons, *o_tightMuons;
+    ElectronOut_Fake *o_fakeElectrons, *o_tightElectrons;
     JetOut* o_jets;
 
     TRVariable<Float_t> Pileup_nTrueInt;

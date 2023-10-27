@@ -61,14 +61,14 @@ void FakeRate::SetupOutTreeBranches(TTree* tree)
     tree->Branch("FakeMuon", "LeptonOut_Fake", &o_fakeMuons);
     tree->Branch("TightMuon", "LeptonOut_Fake", &o_tightMuons);
     // tree->Branch("LooseElectron", "LeptonOut_Fake", &o_looseElectrons);
-    tree->Branch("FakeElectron", "LeptonOut_Fake", &o_fakeElectrons);
-    tree->Branch("TightElectron", "LeptonOut_Fake", &o_tightElectrons);
+    tree->Branch("FakeElectron", "ElectronOut_Fake", &o_fakeElectrons);
+    tree->Branch("TightElectron", "ElectronOut_Fake", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
 
     tree->Branch("HT", &o_ht);
     tree->Branch("Met", &o_met);
     tree->Branch("Met_phi", &o_metphi);
-    tree->Branch("bjet_scale", &bjet_scales);
+    // tree->Branch("bjet_scale", &bjet_scales);
     tree->Branch("hlt_loPt_prescale", &hlt_loPt_prescale);
     tree->Branch("hlt_hiPt_prescale", &hlt_hiPt_prescale);
     LOG_FUNC << "End of SetupOutTreeBranches";
@@ -87,7 +87,7 @@ void FakeRate::clearOutputs()
     o_ht.clear();
     o_met.clear();
     o_metphi.clear();
-    bjet_scales.clear();
+    // bjet_scales.clear();
     LOG_FUNC << "End of clearOutputs";
 }
 
@@ -233,20 +233,20 @@ void FakeRate::FillValues(const Bitmap& event_bitmap)
     LOG_FUNC << "Start of FillValues";
     muon.fillLepton_Iso(*o_fakeMuons, jet, Level::FakeNotTight, event_bitmap);
     muon.fillLepton_Iso( *o_tightMuons, jet, Level::Tight, event_bitmap);
-    elec.fillLepton_Iso(*o_fakeElectrons, jet, Level::FakeNotTight, event_bitmap);
-    elec.fillLepton_Iso( *o_tightElectrons, jet, Level::Tight, event_bitmap);
+    elec.fillElectron_Iso(*o_fakeElectrons, jet, Level::FakeNotTight, event_bitmap);
+    elec.fillElectron_Iso( *o_tightElectrons, jet, Level::Tight, event_bitmap);
     jet.fillJet(*o_jets, Level::Tight, event_bitmap);
 
     if (isMC_) {
-        bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "L"));
-        bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "M"));
-        bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "T"));
+        // bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "L"));
+        // bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "M"));
+        // bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "T"));
         hlt_loPt_prescale = static_cast<int>(trig_cuts.pass_cut(subChannel_, 0));
         hlt_hiPt_prescale = static_cast<int>(trig_cuts.pass_cut(subChannel_, 1));
     } else {
-        bjet_scales.push_back(1.);
-        bjet_scales.push_back(1.);
-        bjet_scales.push_back(1.);
+        // bjet_scales.push_back(1.);
+        // bjet_scales.push_back(1.);
+        // bjet_scales.push_back(1.);
         hlt_loPt_prescale = sfMaker.getPrescale(*run, *lumiblock, trig_cuts.trig_name(subChannel_, 0)) * static_cast<int>(trig_cuts.pass_cut(subChannel_, 0));
         hlt_hiPt_prescale = sfMaker.getPrescale(*run, *lumiblock, trig_cuts.trig_name(subChannel_, 1)) * static_cast<int>(trig_cuts.pass_cut(subChannel_, 1));
     }

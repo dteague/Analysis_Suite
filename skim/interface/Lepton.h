@@ -18,7 +18,7 @@ public:
     bool isInMassRange(Level level, float low=ZMASS-ZWINDOW, float high=ZMASS+ZWINDOW);
     void setup(std::string name, TTreeReader& fReader);
     std::pair<size_t, float> getCloseJet(size_t lidx, const Particle& jet);
-    bool passJetIsolation(size_t idx) const;
+    virtual bool passJetIsolation(size_t idx) const;
     void fillFlippedCharge(GenParticle& gen);
     float getFakePtFactor(size_t idx) const;
 
@@ -78,11 +78,13 @@ public:
     void fillLepton(LeptonOut& output, Level level, const Bitmap& event_bitmap);
     void fillLepton_Iso(LeptonOut_Fake& output, Jet& jet, Level level, const Bitmap& event_bitmap);
 
-protected:
-    TRArray<Int_t> m_charge;
     TRArray<Float_t> dz;
     TRArray<Float_t> dxy;
     TRArray<Float_t> sip3d;
+
+protected:
+    TRArray<Int_t> m_charge;
+
     TRArray<Int_t> genPartIdx;
     TRArray<UChar_t> genPartFlav;
 

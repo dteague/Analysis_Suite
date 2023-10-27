@@ -2,6 +2,7 @@
 <use name="root"/>
 <use name="json"/>
 <use name="rootgraphics"/>
+<use name="roottmva"/>
 <use name="correctionlib"/>
 <use name="DataFormats/Math"/>
 <use name="CondFormats/BTauObjects"/>

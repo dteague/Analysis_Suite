@@ -12,8 +12,6 @@ enum class MET_Type {
 
 class Jet;
 
-typedef std::pair<TRVariable<float>, TRVariable<float>> Puppi_pair;
-
 class Met : SystematicWeights {
 public:
     float pt() { return *corr_pt; }
@@ -39,7 +37,7 @@ private:
     std::string name;
     bool ispuppi;
 
-    std::unordered_map<Systematic, Puppi_pair> m_puppi_pt_syst, m_puppi_phi_syst;
+    TRVariable<float> m_jer_pt_up, m_jer_pt_down, m_jer_phi_up, m_jer_phi_down;
 };
 
 

@@ -20,6 +20,14 @@ void ScaleFactors::init(TTreeReader& fReader)
         auto corr_set = getScaleFile("LUM", "puWeights");
         pu_scale = WeightHolder(corr_set->at("Collisions" + yearNum.at(year_)+ "_UltraLegacy_goldenJSON"),
                                 Systematic::Pileup, {"nominal", "up", "down"});
+        // Trigger Scale Factor
+        auto trig_set = getScaleFile("USER", "trigger_sf");
+        ee_scale = WeightHolder(trig_set->at("EE_TriggerSF"), Systematic::TriggerSF,
+                                {"nom", "up", "down"});
+        em_scale = WeightHolder(trig_set->at("EM_TriggerSF"), Systematic::TriggerSF,
+                                {"nom", "up", "down"});
+        mm_scale = WeightHolder(trig_set->at("MM_TriggerSF"), Systematic::TriggerSF,
+                                {"nom", "up", "down"});
     } else if (!isMC) {
         // Golden Json
         std::ifstream golden_json_file(scaleDir_ + "/golden_json/golden_json_" + yearMap.at(year_).substr(0,4) + ".json");
@@ -83,6 +91,19 @@ float ScaleFactors::getPrefire()
 float ScaleFactors::getPileupSF(int nPU)
 {
     return pu_scale.evaluate({static_cast<float>(nPU), systName(pu_scale)});
+}
+
+float ScaleFactors::getTriggerSF(Particle& elec, Particle& muon)
+{
+    if (elec.size(Level::Fake) + muon.size(Level::Fake) < 2) return 1.;
+
+    if (muon.size(Level::Fake) == 0)  {
+        return ee_scale.evaluate({systName(ee_scale), elec.pt(Level::Fake, 0), elec.pt(Level::Fake, 1)});
+    } else if (elec.size(Level::Fake) == 0) {
+        return mm_scale.evaluate({systName(mm_scale), muon.pt(Level::Fake, 0), muon.pt(Level::Fake, 1)});
+    } else {
+        return em_scale.evaluate({systName(em_scale), elec.pt(Level::Fake, 0), muon.pt(Level::Fake, 0)});
+    }
 }
 
 float ScaleFactors::getLHESF()

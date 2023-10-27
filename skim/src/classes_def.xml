@@ -8,4 +8,5 @@
   <class name="DY_test"/>
   <class name="SingleLep_Trigger"/>
   <class name="TwoLepton"/>
+  <class name="TagProbe"/>
 </lcgdict>

@@ -23,8 +23,7 @@ private:
     void setSubChannel();
     float getLeadPt();
     float get_mass();
-
-    TTree* treeFakeRate_;
+    bool getTriggerValue();
 
     LeptonOut* o_tightMuons;
     LeptonOut* o_tightElectrons;
@@ -32,10 +31,7 @@ private:
 
     TRVariable<Float_t> Pileup_nTrueInt;
 
-    size_t nLHE_leps;
-
     std::vector<Float_t> o_ht, o_htb, o_met, o_metphi, o_centrality;
-    std::vector<int> o_nlooseMu, o_nlooseEl;
 };
 
 #endif // LEPTON_MISID_CLOSURE_H_

@@ -23,8 +23,7 @@ public:
 
     RoccoR roc_corr;
 
-    WeightHolder muon_scale;
-
+    WeightHolder muon_scale, muon_tthMVA;
 };
 
 #endif // __MUON_H_

@@ -8,6 +8,7 @@
 
 #include "analysis_suite/skim/interface/Systematic.h"
 #include "analysis_suite/skim/interface/Variable.h"
+#include "analysis_suite/skim/interface/Particle.h"
 
 class ScaleFactors : public SystematicWeights {
 public:
@@ -23,6 +24,7 @@ public:
     float getLHEPdf();
     float getPartonShower();
     float getPrefire();
+    float getTriggerSF(Particle& elec, Particle& muon);
 
     size_t getPrescale(size_t run, size_t lumi, std::string trig);
 
@@ -52,6 +54,7 @@ private:
     };
 
     WeightHolder pu_scale;
+    WeightHolder ee_scale, em_scale, mm_scale;
     WeightHolder charge_misId, nonprompt_elec, nonprompt_muon;
 
     std::unordered_map<size_t, Prescale_Info> prescale_info;

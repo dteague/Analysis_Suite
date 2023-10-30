@@ -46,7 +46,7 @@ private:
     bool inCrack(size_t i);
 
     const float BARREL_ETA = 1.479;
-    WeightHolder electron_scale;
+    WeightHolder electron_scale, electron_tthMVA;
 
     TTH_MVA tth_mva;
     std::vector<float> tth_mva_vec;

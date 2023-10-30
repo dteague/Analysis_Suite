@@ -34,6 +34,9 @@ void Electron::setup(TTreeReader& fReader)
         dEscaleUp.setup(fReader, "Electron_dEscaleUp");
         dEsigmaDown.setup(fReader, "Electron_dEsigmaDown");
         dEsigmaUp.setup(fReader, "Electron_dEsigmaUp");
+        auto tth_set = getScaleFile("USER", "tthMVA_scales");
+        electron_tthMVA = WeightHolder(tth_set->at("NUM_mvaTTH_DEN_isElectron"), Systematic::Electron_tthMVA,
+                                       {"value", "systup", "systdown"});
     }
 
     std::string mva_xmlfile = scaleDir_+"/POG/USER/"+yearMap.at(year_)+"_UL/electron_tth_weights.xml";
@@ -152,8 +155,10 @@ float Electron::getScaleFactor()
 {
     float weight = 1.;
     std::string syst = systName(electron_scale);
+    std::string syst_mva = systName(electron_tthMVA);
     for (auto eidx : list(Level::Fake)) {
         weight *= electron_scale.evaluate({yearMap.at(year_), syst, "wp90noiso", fabs(eta(eidx)), pt(eidx)});
+        weight *= electron_tthMVA.evaluate({fabs(eta(eidx)), pt(eidx), syst_mva});
     }
     return weight;
 }

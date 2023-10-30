@@ -248,10 +248,9 @@ float Jet::getTotalBTagWeight(std::string btag_wp)
 
     if (shape_by_syst.find(currentSyst) != shape_by_syst.end()) {
         syst = ((currentVar == eVar::Up) ? "up_" : "down_") + shape_by_syst.at(currentSyst);
-    } else if (isJECSyst()) {
+    } else if (bjet_jec_syst.find(currentSyst) != bjet_jec_syst.end()) {
         syst = ((currentVar == eVar::Up) ? "up_" : "down_") + bjet_jec_syst.at(currentSyst);
     }
-
     for (auto i : list(Level::Loose)) {
         bool isCharm = hadronFlavour.at(i) == static_cast<Int_t>(PID::Charm);
         if (isCharm == charmSyst) {

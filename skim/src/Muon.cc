@@ -27,8 +27,9 @@ void Muon::setup(TTreeReader& fReader)
         auto corr_set = getScaleFile("MUO", "muon_Z");
         muon_scale = WeightHolder(corr_set->at("NUM_MediumID_DEN_genTracks"), Systematic::Muon_Scale,
                                   {"sf", "systup", "systdown"});
-        muon_tthMVA = WeightHolder(corr_set->at("NUM_MediumID_DEN_genTracks"), Systematic::Muon_tthMVA,
-                                   {"sf", "systup", "systdown"});
+        auto tth_set = getScaleFile("USER", "tthMVA_scales");
+        muon_tthMVA = WeightHolder(tth_set->at("NUM_mvaTTH_DEN_isMuon"), Systematic::Muon_tthMVA,
+                                   {"value", "systup", "systdown"});
     }
     std::string roccor_file = scaleDir_+"/POG/USER/"+yearMap.at(year_)+"_UL/RoccoR.txt";
     roc_corr.init(roccor_file);
@@ -84,16 +85,18 @@ void Muon::createTightList(Particle& jets)
             fakePtFactor[i] = getFakePtFactor(i);
         }
 
-    } 
+    }
 }
 
 float Muon::getScaleFactor()
 {
     float weight = 1.;
     std::string syst = systName(muon_scale);
+    std::string syst_mva = systName(muon_tthMVA);
     for (auto midx : list(Level::Fake)) {
         float pt = (m_pt.at(midx) > 15) ? m_pt.at(midx) : 15.;
         weight *= muon_scale.evaluate({yearMap.at(year_)+"_UL", fabs(eta(midx)), pt, syst});
+        weight *= muon_tthMVA.evaluate({fabs(eta(midx)), pt, syst_mva});
     }
     return weight;
 }

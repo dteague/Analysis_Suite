@@ -25,10 +25,16 @@ class FlatGetter(BaseGetter):
             raise AttributeError(f"{key} not found")
         return np.nan_to_num(self.arr[key][self.mask], nan=-10000)
 
-    def list_systs(self):
+    def includes_systs(self, syst):
+        return syst in self.syst_weights.fields
+
+    def list_systs(self, input_systs=None):
         vals = self.syst_weights.fields
         vals.remove("index")
-        return vals
+        if input_systs is None:
+            return vals
+        else:
+            return np.array(input_systs)[np.in1d(input_systs, vals)]
 
     def set_syst(self, syst):
         if syst in self.syst_weights.fields:

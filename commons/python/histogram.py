@@ -14,7 +14,7 @@ class Histogram:
         self.breakdown = dict()
         self.group = group
         self.color = kwargs.get('color', 'k')
-        self.name = ""
+        self.name = kwargs.get('name', "")
         self.draw_sc = 1.
         if "group_info" in kwargs:
             self.set_plot_details(kwargs.get('group_info'))
@@ -175,7 +175,9 @@ class Histogram:
             self.name = f'${name}$' if '\\' in name else name
             self.color = group_info.get_color(self.group)
 
-    def darkenColor(self, color):
+    def darkenColor(self, color=None):
+        if color is None:
+            color = self.color
         cvec = clr.to_rgb(color)
         dark = 0.3
         return [i - dark if i > dark else 0.0 for i in cvec]
@@ -256,7 +258,7 @@ class Histogram:
             return
         pad.hist(x=self.axis.centers, weights=self.draw_sc*self.vals, bins=self.axis.edges,
                  label=self.name, histtype="stepfilled", linewidth=1.5, density=True, alpha=0.5,
-                 hatch="///", color=self.color, edgecolor=self.darkenColor(self.color))
+                 hatch="///", color=self.color, edgecolor=self.darkenColor())
 
     def get_int_err(self, sqrt_err=False, roundDigit=2):
         tot = self.hist.sum()

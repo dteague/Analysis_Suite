@@ -12,46 +12,52 @@ class NtupleGetter(BaseGetter):
 
     single_branch = ["run", "event", "luminosityBlock", "bjet_scale"]
 
-    def __init__(self, filename, treename, group, xsec, syst=0, novel=0, systName=""):
+    def __init__(self, filename, treename, group, xsec, systName=""):
         super().__init__()
-        self.syst = novel
-        self.syst_bit = 2**self.syst
-        self.systName = ""
+        self.systName = systName
         self.part_name = []
         self.arr = dict()
         self.parts = dict()
         self.branches = []
-        self.sw_idx = 0
-        self.sf_fact = 1.
+        self.xsec = xsec
 
         f = uproot.open(filename)
         if group not in f or treename not in f[group]:
             return
-        self.systNames = self._getSystNames(f[group], novel)
+        systNames = [name.member("fName") for name in f[group]["Systematics"]]
+        if self.systName not in systNames:
+            return
+        self.syst_unique = systNames.index(systName)
+        if "Syst_Index" in f[group]:
+            indices = {int(name.member("fName")): int(name.member('fTitle')) for name in f[group]["Syst_Index"]}
+            self.syst = indices[self.syst_unique]
+            self.systNames = [(s, systNames[s]) for s, n in indices.items() if n == self.syst]
+        else:
+            self.systNames = []
+            self.syst = self.syst_unique
+
+        self.sumw_hist, _ = f[group]["sumweight"].to_numpy()
+        self.syst_bit = 2**self.syst
         self.tree = f[group][treename]
-        self.branches = [
-            key for key, array in self.tree.items() if len(array.keys()) == 0
-        ]
+        self.branches = [key for key, arr in self.tree.items() if len(arr.keys()) == 0]
         self.part_name = np.unique(
             [br.split("/")[0] for br in self.branches if "/" in br]
         )
         self._base_mask = ak.to_numpy(self._get_var("PassEvent"))
         self._mask = copy(self._base_mask)
-        self._scale = ak.to_numpy(self.tree['weight'].array()[:, syst])
-        self._setSyst(systName)
+        self._scale = ak.to_numpy(self.tree['weight'].array()[:, self.syst_unique])
+        self._setSyst()
 
         if group == "data":
             # Remove duplicates
-            _, idx = np.unique(np.array([self["run"], self['luminosityBlock'], self["event"]]).T,
-                               return_index=True, axis=0)
-            dup_mask = np.array([i in idx for i in np.arange(len(self._base_mask))])
-            self._base_mask = np.all([self._base_mask, dup_mask], axis=0)
-            self.clear_mask()
+            pass
+            # _, idx = np.unique(np.array([self["run"], self['luminosityBlock'], self["event"]]).T,
+            #                    return_index=True, axis=0)
+            # dup_mask = np.array([i in idx for i in np.arange(len(self._base_mask))])
+            # self._base_mask = np.all([self._base_mask, dup_mask], axis=0)
+            # self.clear_mask()
         elif "sumweight" in f[group]:
-            sumw_hist, _ = f[group]["sumweight"].to_numpy()
-            sumw = sumw_hist[self.sw_idx] if sumw_hist[self.sw_idx]/sumw_hist[0] > 0.1 else sumw_hist[0]
-            self.sf_fact = xsec / sumw
-            self._scale = self.sf_fact * self._scale
+            self._scale = self.get_sf(self.systName) * self._scale
         else:
             print(f"Problem with group {group}")
             self._mask = None
@@ -77,27 +83,28 @@ class NtupleGetter(BaseGetter):
                 self.arr[key] = self._get_var(key)
         return self.arr[key][self.mask]
 
-    def _setSyst(self, systName):
-        if systName in ["JES", "JER"]:
-            jec = systName.lower().split("_")
+    def _setSyst(self):
+        if self.systName in ["JES", "JER"]:
+            jec = self.systName.lower().split("_")
             updown = {"down": "first", "up": "second"}
             self.jec_var = f"jec/{jec[1]}.{updown[jec[2]]}"
         else:
             self.jec_var = ""
 
+    def get_sf(self, systName):
+        if self.xsec == 1:
+            return 1.
         sumweight_change = {"LHE_muR_down": 2, "LHE_muF_down": 4, "LHE_muF_up": 6, "LHE_muR_up": 8,
                             "PDF_unc_down": 10, "PDF_unc_up": 11, "PDF_alphaZ_down": 12, "PDF_alphaZ_up": 13}
-        self.sw_idx = sumweight_change.get(systName, 0)
-
-    def _getSystNames(self, f, syst):
-        all_systs = [name.member("fName") for name in f['Systematics']]
-        syst_index = {int(name.member("fName")) for name in f["Syst_Index"] if int(name.member("fTitle")) == syst}
-        return [(s, all_systs[s]) for s in syst_index]
+        sw_idx = sumweight_change.get(systName, 0)
+        sumw = self.sumw_hist[sw_idx] if self.sumw_hist[sw_idx]/self.sumw_hist[0] > 0.1 else self.sumw_hist[0]
+        return self.xsec/sumw
 
     def get_all_weights(self):
         all_weights = {}
         for i, systName in self.systNames:
-            scale = self.sf_fact*ak.to_numpy(self.tree['weight'].array()[:, i])
+            base_wgt = ak.to_numpy(self.tree['weight'].array()[:, i])
+            scale = self.get_sf(systName)*base_wgt
             all_weights[systName] = scale[self.mask]
         return all_weights
 

@@ -80,14 +80,12 @@ def run(groupDict, usevars, workdir, model, train, years, region, systName, save
             ml_runner.overtrain_test(workdir, year)
 
     for year in years:
-        print("here")
         if not train:
             ml_runner.read_in_file(workdir, year, rerun)
             if not ml_runner: return
         # Apply to test sets and save
         ml_runner.apply_model(workdir, year, get_auc=(systName=="Nominal"))
         ml_runner.output(workdir, year)
-
 
 def cleanup(cli_args):
     return

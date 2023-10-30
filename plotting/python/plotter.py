@@ -9,6 +9,7 @@ from scipy.stats import kurtosis
 from copy import copy
 from prettytable import PrettyTable
 from pathlib import Path
+import warnings
 
 import analysis_suite.flatten as getter
 from analysis_suite.commons.histogram import Histogram
@@ -99,9 +100,6 @@ class Plotter:
         root_files = filenames.glob("*.root") if filenames.is_dir() else [filenames]
         self.ginfo = ntuple.get_info()
         for root_file in root_files:
-            novel, syst = get_syst_index(root_file, systName)
-            if syst == None:
-                continue
             for group, members in self.groups.items():
                 for member in members:
                     xsec = 1. if fileInfo.is_data(member) else fileInfo.get_xsec(member)*self.lumi*1000
@@ -109,9 +107,10 @@ class Plotter:
                         if ntuple.exclude(tree, group):
                             continue
                         tuple_name = ntuple.get_change(tree, member)
-                        vg = getter.NtupleGetter(root_file, tree, tuple_name, xsec, syst, novel, systName)
+                        vg = getter.NtupleGetter(root_file, tree, tuple_name, xsec, systName=systName)
                         if not vg:
                             continue
+
                         ntuple.setup_branches(vg)
                         ntuple.apply_cut(vg)
                         if vg:
@@ -363,6 +362,7 @@ class Plotter:
                 # sig_scale = int(sig_scale//rounder*rounder)
                 sig_scale = 750
                 signal.scale(sig_scale, changeName=True, forPlot=True)
+
             stack.plot_stack(pad)
             signal.plot_points(pad)
             data.plot_points(pad)
@@ -375,7 +375,9 @@ class Plotter:
             ratio.plot_points(subpad)
             band.plot_band(subpad)
 
-            hep.cms.label(ax=pad, lumi=self.lumi, data=data)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                hep.cms.label(ax=pad, lumi=self.lumi, data=data)
 
 
     def get_sum(self, groups, graph, details=None):

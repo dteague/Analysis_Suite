@@ -95,6 +95,8 @@ closure_tt.add_change('Closure_TF', {'nonprompt': 'data'})
 closure_tt.set_ignore_trees("ttbar_lep", ["Closure_FF", "Closure_TF"])
 closure_tt.set_ignore_trees("wjet_ht", ["Closure_FF", "Closure_TF"])
 
+
+
 dy_fake = NtupleInfo(
     filename = user.hdfs_workspace / 'fake_rate_closure/{year}/{workdir}/',
     trees = ["DY_Fake",],
@@ -106,8 +108,6 @@ dy_fake = NtupleInfo(
     ],
     color_by_group = color_by_group,
 )
-
-
 
 dy_tight = NtupleInfo(
     filename = user.hdfs_workspace / 'fake_rate_closure/{year}/{workdir}/',

@@ -16,6 +16,7 @@ def get_cli():
     parser.add_argument("-d", "--workdir", required=True, type=lambda x : workspace_area/x/"combine",
                         help="Working Directory")
     parser.add_argument("-n", "--name", default="", help="Extra name to outfile")
+    parser.add_argument("-t", '--extra_text', default="")
     parser.add_argument("-y", "--years", required=True,
                         type=lambda x : ["2016", "2017", "2018"] if x == "all" \
                                    else [i.strip() for i in x.split(',')],
@@ -38,13 +39,15 @@ if __name__ == "__main__":
         runCombine("combine --help")
         exit()
 
-    runCombine.work_dir = args.workdir # same in all, so just set it
+    workdir = args.workdir/args.extra_text
+    runCombine.work_dir = workdir # same in all, so just set it
     for year in args.years:
         card = f'final_{year}_card.root'
         blindness = f'{args.blind} --expectSignal {args.r}'
-        if need_redo_t2w(args.workdir, card):
-            print("here")
-            runCombine(f'text2workspace.py {card.replace("root", "txt")}', output=args.debug)
+        # if need_redo_t2w(args.workdir, card):
+        #     print("here")
+        #     runCombine(f'text2workspace.py {card.replace("root", "txt")}', output=args.debug)
+        runCombine(f'text2workspace.py {card.replace("root", "txt")}', output=args.debug)
 
         if args.type == "impact":
             runCombine(f'combineTool.py -M Impacts -d {card} -m 125 --doInitialFit --robustFit 1 --rMin -20 --rMax 20')
@@ -53,8 +56,8 @@ if __name__ == "__main__":
             runCombine(f'plotImpacts.py -i impacts.json -o impacts')
 
         elif args.type == "sig":
-            runCombine(f'combine -M Significance {card} {blindness} --toysFrequentist --freezeParameters allConstrainedNuisances')
-            runCombine(f'combine -M Significance {card} {blindness} --toysFrequentist --freezeNuisanceGroups "syst_error"')
+            # runCombine(f'combine -M Significance {card} {blindness} --toysFrequentist --freezeParameters allConstrainedNuisances')
+            # runCombine(f'combine -M Significance {card} {blindness} --toysFrequentist --freezeNuisanceGroups "syst_error"')
             runCombine(f'combine -M Significance {card} {blindness} --toysFrequentist ')
 
         elif args.type == "sig_scan":
@@ -68,8 +71,8 @@ if __name__ == "__main__":
 
             # Combine all together
             for sig_type in ["all"]:
-                sig_files = list(args.workdir.glob(f"higgsCombine_scan_{sig_type}*Significance*root"))
-                subprocess.run(["hadd", "-f", args.workdir / f"significance_{sig_type}_{args.name}.root"] + sig_files)
+                sig_files = list(workdir.glob(f"higgsCombine_scan_{sig_type}*Significance*root"))
+                subprocess.run(["hadd", "-f", workdir / f"significance_{sig_type}_{args.name}.root"] + sig_files)
                 for sig_file in sig_files:
                     sig_file.unlink()
 
@@ -87,8 +90,8 @@ if __name__ == "__main__":
 
             # Combine all together
             for sig_type in ["all"]:
-                sig_files = list(args.workdir.glob(f"higgsCombine_scan_{sig_type}*Hybrid*root"))
-                subprocess.run(["hadd", "-f", args.workdir / f"hybrid_limit_{sig_type}_{args.name}.root"] + sig_files)
+                sig_files = list(workdir.glob(f"higgsCombine_scan_{sig_type}*Hybrid*root"))
+                subprocess.run(["hadd", "-f", workdir / f"hybrid_limit_{sig_type}_{args.name}.root"] + sig_files)
                 for sig_file in sig_files:
                     sig_file.unlink()
 

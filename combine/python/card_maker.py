@@ -3,7 +3,7 @@ import numpy as np
 import prettytable
 
 class Card_Maker:
-    def __init__(self, path, year, cr, plot_groups, variable):
+    def __init__(self, path, year, cr, signals, plot_groups, variable):
         if 'data' in plot_groups:
             plot_groups.remove('data')
         self.variable = variable
@@ -11,9 +11,8 @@ class Card_Maker:
         self.year = year
         self.cr = cr
         self.channels = np.array([cr])
+        self.signals = signals
         self.plot_groups = np.array(plot_groups)
-        self.nChans = len(self.channels)
-        self.nGroups = len(self.plot_groups)
 
     def __enter__(self):
         self.f = open(f"{self.path}/{self.variable}_{self.year}_{self.cr}_card.txt", 'w')
@@ -22,8 +21,8 @@ class Card_Maker:
     def __exit__(self, type, value, traceback):
         self.f.close()
 
-    def tab_list(self, inlist):
-        return '\t'+'\t'.join(inlist.astype(str))
+    def _tab(self, arr, sep=" "):
+        return sep.join(arr.astype(str))
 
     def write(self, line):
         self.f.write(line)
@@ -32,11 +31,11 @@ class Card_Maker:
     def end_section(self):
         self.write("-"*50)
 
-    def write_systematics(self, syst_list):
+    def write_preamble(self):
         # Specify numbers of groups
-        self.write(f"imax {self.nChans}  number of channels")
-        self.write(f"jmax {self.nGroups - 1}  number of backgrounds plus signals minus 1")
-        self.write(f"kmax {len(syst_list)} number of nuisance parameters (sources of systematical uncertainties)")
+        self.write(f"imax *  number of channels")
+        self.write(f"jmax *  number of backgrounds plus signals minus 1")
+        self.write(f"kmax *  number of nuisance parameters (sources of systematical uncertainties)")
         self.end_section()
 
         # Specify shape locations
@@ -44,8 +43,8 @@ class Card_Maker:
         self.end_section()
 
         # Specify channels and number of events
-        self.write("bin" + self.tab_list(self.channels))
-        self.write("observation" + self.tab_list(-1*np.ones(self.nChans)))
+        self.write("bin " + " ".join(self.channels))
+        self.write("observation " + self._tab(np.full(len(self.channels), -1)))
         self.end_section()
 
         table = prettytable.PrettyTable()
@@ -56,19 +55,32 @@ class Card_Maker:
         # Specify channel and plot names with MC counts
         table.add_column('', ['bin', "process", "process", "rate"])
         for chan in self.channels:
-            for p in np.arange(self.nGroups):
-                table.add_column("", [chan, self.plot_groups[p], p, -1])
+            for p in np.arange(0, -len(self.signals), -1):
+                table.add_column("", [chan, self.signals[abs(p)], p, -1])
+            for p in np.arange(len(self.plot_groups)):
+                table.add_column("", [chan, self.plot_groups[p], p+1, -1])
         self.write(table.get_string(align='l'))
         self.end_section()
 
+
+    def write_systematics(self, syst_list):
+        all_groups = np.concatenate((self.signals, self.plot_groups))
+        syst_list = list(filter(lambda x: x.good_syst(all_groups, self.year), syst_list))
+
+        table = prettytable.PrettyTable()
+        table.header=False
+        table.border=False
+        table.left_padding_width=0
+
         # Specify systematics
-        table.clear()
         for syst in syst_list:
-            table.add_row(syst.output(self.plot_groups, [self.year]))
+            table.add_row(syst.output(all_groups, self.year))
         table.align='l'
         self.write(table.get_string(align='l'))
-        self.write("syst_error group = " + " ".join([syst.name for syst in syst_list]))
-        self.write("* autoMCStats 0")
+        self.write("syst_error group = " + " ".join([syst.get_name(self.year) for syst in syst_list]))
 
     def add_rateParam(self, group):
         self.write(f'rate_{group} rateParam * {group} 1.0')
+
+    def add_stats(self, autoStats=0):
+        self.write(f"* autoMCStats {autoStats}")

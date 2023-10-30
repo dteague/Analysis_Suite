@@ -111,8 +111,10 @@ class NtupleInfo:
 
     def get_info(self, remove=None, add=None):
         color_by_group = self.color_by_group
+        if not isinstance(remove, list):
+            remove = [remove]
         if remove is not None:
-            color_by_group = {group: color for group, color in color_by_group.items() if group != remove}
+            color_by_group = {group: color for group, color in color_by_group.items() if group not in remove}
         if add is not None:
             color_by_group = {**clr_by_group, **add}
         return GroupInfo(color_by_group)

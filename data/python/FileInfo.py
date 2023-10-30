@@ -15,7 +15,7 @@ info = {
 
     # TTTT
     "tttt" : {
-        "cross_section" : 0.001197,
+        "cross_section" : 11.97e-3,
         "Level": "NLO",
         "Source of cross section" : "arXiv:1711.02116",
         "DAS": 'TTTT_Tune.*',
@@ -330,6 +330,22 @@ info = {
         "kfactor": 1.23,
         "DAS" : "DYJetsToLL_M-50_HT-2500toInf_Tune.*",
     },
+    "DY_0J" : {
+        "cross_section": 5090.0,
+        "kfactor": 1.23,
+        "DAS" : "DYJetsToLL_0J_Tune.*",
+    },
+    "DY_1J" : {
+        "cross_section": 983.5,
+        "kfactor": 1.23,
+        "DAS" : "DYJetsToLL_1J_Tune.*",
+    },
+    "DY_2J" : {
+        "cross_section": 353.6,
+        "kfactor": 1.23,
+        "DAS" : "DYJetsToLL_2J_Tune.*",
+    },
+
 
     # W + Jets
     "wjets_ht70-100" : {

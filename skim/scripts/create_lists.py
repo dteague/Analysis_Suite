@@ -52,23 +52,21 @@ condition_dict = {
 
 dataset_dict = {
     "data" : {
-        "MM" : {
-            '2016' : "DoubleMuon",
-            '2017' : "DoubleMuon",
-            '2018' : "DoubleMuon",
-        },
-        "EM" : {
-            '2016' : "MuonEG",
-            '2017' : "MuonEG",
-            '2018' : "MuonEG",
-        },
+        "MM" : ["DoubleMuon", "SingleMuon"],
+        "EM" : ["MuonEG"],
         "EE" : {
-            '2016' : "DoubleEG",
-            '2017' : "DoubleEG",
+            '2016' : ["DoubleEG", "SingleElectron"],
+            '2017' : ["DoubleEG", "SingleElectron"],
             '2018' : "EGamma",
         },
         "E" : {
             '2016' : 'DoubleEG',
+            '2017' : 'SingleElectron',
+            '2018' : 'EGamma',
+        },
+        "singleM": ["SingleMuon"],
+        "singleE" : {
+            '2016' : 'SingleElectron',
             '2017' : 'SingleElectron',
             '2018' : 'EGamma',
         },
@@ -138,11 +136,14 @@ dataset_dict = {
             'TTToHadronic_TuneCP5_13TeV*',
         ],
         'dy' : [
-            'DYJetsToLL_M-10to50_TuneCP5*',
+            'DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8',
             'DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8',
         ],
         'dy_ht' : [
             "DYJetsToLL_M-50_HT-*_TuneCP5*13TeV-madgraphMLM-pythia8",
+        ],
+        'dy_j' : [
+            'DYJetsToLL_*J_TuneCP5_13TeV-amcatnloFXFX-pythia8',
         ],
         'wjet' : [
             'WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8',
@@ -178,6 +179,8 @@ def get_dataset(data_type, groups, year):
             raise Exception(f'{group} not found in dataset! Please add or amend. Avaliable are {dataset_dict[data_type].keys()}')
         if isinstance(dataset_dict[data_type][group], list):
             final_set += dataset_dict[data_type][group]
+        elif isinstance(dataset_dict[data_type][group][year], list):
+            final_set += dataset_dict[data_type][group][year]
         else:
             final_set.append(dataset_dict[data_type][group][year])
     return final_set

@@ -16,6 +16,15 @@ info ={
         "Name": r"t\bar{t}t\bar{t}",
         "Members": ["tttt",]
     },
+    "tttj": {
+        "Name": r"t\bar{t}tj",
+        "Members": ["tttj",]
+    },
+
+    "tttw": {
+        "Name": r"t\bar{t}tW",
+        "Members": ["tttw",]
+    },
 
     "ttw": {
         "Name": r"t\bar{t}W", 

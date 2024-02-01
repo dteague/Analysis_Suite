@@ -33,6 +33,7 @@ info = {
         "Level": "NLO",
         "Source of cross section" : "arXiv:1610.07922",
         "DAS": 'TTHH_Tune.*',
+        "ISR": "QCD"
     },
     "ttwh" : {
         "cross_section" : 0.001582,

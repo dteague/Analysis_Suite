@@ -11,9 +11,13 @@ def runCombine(command, output=True, error=subprocess.STDOUT):
         "popd &>/dev/null",
     ]
     was_output = False
+    was_error = False
     with subprocess.Popen([';'.join(setup+[command])], shell=True, stderr=error,
                           cwd=cwd, stdout=subprocess.PIPE) as process:
-        if output:
+        process.wait()
+        was_error = process.returncode
+
+        if output or was_error:
             was_output = bool(process.stdout.peek())
             for line in process.stdout:
                 print(line.decode('utf8'), end="")
@@ -22,3 +26,5 @@ def runCombine(command, output=True, error=subprocess.STDOUT):
         else:
             for line in process.stdout:
                 pass
+    if was_error:
+        raise Exception("Error in combine code!!")

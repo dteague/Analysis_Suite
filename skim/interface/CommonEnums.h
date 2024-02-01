@@ -211,7 +211,8 @@ enum class Dataset {
     DoubleEG,
     Single_E,
     Single_M,
-    Met,
+    MET,
+    MHT,
     None,
 };
 
@@ -221,7 +222,8 @@ static const std::unordered_map<std::string, Dataset> dataset_name_to_enum {
     {"DoubleEG", Dataset::DoubleEG},
     {"SingleElectron", Dataset::Single_E},
     {"SingleMuon", Dataset::Single_M},
-    {"Met", Dataset::Met},
+    {"MET", Dataset::MET},
+    {"MHT", Dataset::MHT},
     {"None", Dataset::None},
 };
 

@@ -85,7 +85,7 @@ usevars = list(allvar.keys())
 groups = {
     "Signal": ["ttt"],
     "Background": [
-        "tttt",
+        "4top",
         "ttw", "ttz", "tth",
         "ttXY",
         "rare", "xg",
@@ -96,29 +96,6 @@ groups = {
     "OnlyTrain": ['nonprompt_mc',]
 }
 
-
-color_by_group = {
-    "ttt": "crimson",
-
-    'nonprompt': 'gray',
-    'nonprompt_mc': "blue",
-    "xg": "indigo",
-
-    "ttw": "olivedrab",
-    "tth": "goldenrod",
-    "ttz": "steelblue",
-
-    "ttXY": "teal",
-
-    # "rare": "deeppink",
-    "rare_nowz": "deeppink",
-    "wz": 'slateblue',
-
-    "tttt": "tomato",
-    'charge_flip': 'mediumseagreen',
-    'data': 'black',
-
-}
 
 remove = ['nonprompt_mc']
 
@@ -135,26 +112,7 @@ def wz_scale(vg, year):
 # scale = {}
 scale = {'wz': lambda vg: wz_scale(vg)}
 
-def get_GroupInfo(region, remove=None, add=None, unblind=False):
-    if remove is None:
-        remove = list()
-    if add is None:
-        add = dict()
-    if region == "Signal" and not unblind:
-        remove.append("data")
-
-    clr_by_group = {group: color for group, color in color_by_group.items() if group not in remove}
-    clr_by_group = {**clr_by_group, **add}
-    return GroupInfo(clr_by_group)
-
-
-combine_regions = {
-    "Signal": "signal",
-    # "ttzCR": "njets"
-}
-
 # Variables needed in code for things to work
 assert "allvar" in locals()
 assert 'usevars' in locals()
 assert 'groups' in locals()
-assert 'color_by_group' in locals()

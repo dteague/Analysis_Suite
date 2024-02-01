@@ -1,17 +1,8 @@
 #include "analysis_suite/skim/interface/CommonFuncs.h"
+#include <DataFormats/Math/interface/deltaPhi.h>
 
 #include <math.h>
 
-float deltaPhi(float phi1, float phi2)
-{
-    float dphi = phi1 - phi2;
-    if ( dphi > M_PI )
-        dphi -= 2.0*M_PI;
-    else if ( dphi <= -M_PI ) {
-        dphi += 2.0*M_PI;
-    }
-    return dphi;
-}
 
 float deltaR(float eta1, float eta2, float phi1, float phi2)
 {

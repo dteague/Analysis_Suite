@@ -108,6 +108,7 @@ class NtupleInfo:
     branches: list = None
     changes: dict = field(default_factory=dict)
     ignore: dict = field(default_factory=dict)
+    part_cut: list = None
 
     def get_info(self, remove=None, add=None):
         color_by_group = self.color_by_group
@@ -150,6 +151,13 @@ class NtupleInfo:
         if tree in self.changes and member in self.changes[tree]:
             return self.changes[tree][member]
         return member
+
+    def apply_part_cut(self, vg):
+        if self.part_cut is None:
+            return
+        for cut in self.part_cut:
+            vg[cut[0]].mask_part(cut[1], cut[2])
+
 
     def apply_cut(self, vg, *args):
         def cut_vg(vg, cut):

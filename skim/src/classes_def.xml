@@ -9,4 +9,5 @@
   <class name="SingleLep_Trigger"/>
   <class name="TwoLepton"/>
   <class name="TagProbe"/>
+  <class name="Trigger_Eff"/>
 </lcgdict>

@@ -8,6 +8,7 @@
 #include "analysis_suite/skim/interface/SingleLep_Trigger.h"
 #include "analysis_suite/skim/interface/TwoLepton.h"
 #include "analysis_suite/skim/interface/TagProbe.h"
+#include "analysis_suite/skim/interface/trigger_eff.h"
 
 namespace {
 namespace {
@@ -21,5 +22,6 @@ namespace {
     SingleLep_Trigger pSingleLep_Trigger;
     TwoLepton pTwoLepton;
     TagProbe pTagProbe;
+    Trigger_Eff pTrigger_Eff;
 } // namespace
 } // namespace

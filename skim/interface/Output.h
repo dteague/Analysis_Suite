@@ -79,6 +79,28 @@ struct ElectronOut {
     }
 };
 
+struct ElectronOut_Endcap {
+    PARTICLE_VARS;
+    std::vector<Float_t> dxy;
+    std::vector<Float_t> dz;
+    std::vector<Bool_t> convVeto;
+    std::vector<UChar_t> lostHits;
+    std::vector<Float_t> sip3d;
+    std::vector<Float_t> mvaTTH;
+    std::vector<UChar_t> truth;
+    void clear() {
+        generic_clear(this);
+        dxy.clear();
+        dz.clear();
+        convVeto.clear();
+        lostHits.clear();
+        sip3d.clear();
+        mvaTTH.clear();
+        truth.clear();
+    }
+};
+
+
 
 struct LeptonOut_Fake {
     PARTICLE_VARS;

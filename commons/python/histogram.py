@@ -202,9 +202,10 @@ class Histogram:
     def plot_points(self, pad, **kwargs):
         if not self or pad is None:
             return
-        pad.errorbar(x=self.axis.centers, xerr= self.axis.widths/2,
-                     y=self.draw_sc*self.vals, ecolor=self.color,
-                     yerr=self.draw_sc*self.err, fmt='o',
+        mask = self.vals > 0.
+        pad.errorbar(x=self.axis.centers[mask], xerr=self.axis.widths[mask]/2,
+                     y=self.draw_sc*self.vals[mask], ecolor=self.color,
+                     yerr=self.draw_sc*self.err[mask], fmt='o',
                      color=self.color, barsabove=True, label=self.name,
                      markersize=4, **kwargs)
 
@@ -215,7 +216,9 @@ class Histogram:
 
         xx = np.tile(self.axes[0].edges, (len(self.axes[1])+1, 1))
         yy = np.tile(self.axes[1].edges, (len(self.axes[0])+1, 1)).T
-        color_plot = pad.pcolormesh(xx, yy, self.vals.T, shading='flat', **kwargs)
+        vals = self.vals.T
+        vals_masked = np.ma.masked_where(vals < 1e-5, vals)
+        color_plot = pad.pcolormesh(xx, yy, vals_masked, shading='flat', **kwargs)
 
         xstart, xend = self.get_xrange()
         min_size = (xend-xstart)/9
@@ -224,15 +227,19 @@ class Histogram:
         for j, y in enumerate(self.axes[1].centers):
             offset = False
             for i, x in enumerate(self.axes[0].centers):
-                ha = 'center' if i != 0 else 'left'
-                if i == 0:
-                    x = xstart
-                elif offset:
+                ha = 'center'
+                # ha = 'center' if i != 0 else 'left'
+                # if i == 0:
+                #     x = xstart
+                # el
+                if offset:
                     offset = False
                 elif self.axis.widths[i-1] < min_size and self.axis.widths[i] < min_size:
                     offset = True
 
                 ytot = y - offset*min_ysize
+                if self.vals[i,j] < 1e-5:
+                    continue
                 val_str = f'{self.vals[i,j]:.3f}\n$\pm${self.err[i,j]:.3f}'
                 text = pad.text(x, ytot, val_str, fontsize='x-small', ha=ha, va='center')
                 # text.set_path_effects([path_effects.Stroke(linewidth=1, foreground='white'),

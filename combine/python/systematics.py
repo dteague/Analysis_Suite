@@ -12,24 +12,28 @@ year_convert = {
 @dataclass
 class Systematic:
     name: str
-    syst_type: str
+    syst_type: str = 'shape'
     corr : bool = False
     dan_name: str = None
-    systs: dict = field(default_factory=list)
+    systs: dict = field(default_factory=dict)
+    default_groups: list = None
 
     def __post_init__(self):
         self.systs = {year: dict() for year in all_eras}
         self.dan_name = self.name
 
-    def output(self, group_list, year):
-        name = self.get_name(year)
-        systs = self.systs[year]
-        line = [name, self.syst_type]
+    def output(self, group_list, year, chan='all'):
+        if chan in self.systs[year]:
+             syst = self.systs[year][chan]
+        elif 'all' in self.systs[year]:
+             syst = self.systs[year]['all']
+        else:
+            return None
+
+        line = [self.get_name(year), self.syst_type]
         for group in group_list:
-            if group in systs:
-                line.append(systs[group])
-            elif "all" in systs:
-                line.append(systs["all"])
+            if any([g in self.systs[year]['groups'] for g in [group, 'all']]):
+                line.append(syst)
             else:
                 line.append('-')
         return line
@@ -41,12 +45,16 @@ class Systematic:
                 return True
         return False
 
-    def add(self, syst, groups="all", year=all_eras):
-        syst_dict = {group: syst for group in groups} if isinstance(groups, list) else {groups: syst}
+    def add(self, syst=1, groups=None, year=all_eras, chan='all'):
+        groups = groups if groups is not None else Systematic.default_groups
         year = [year] if isinstance(year, str) else year
-        for yr in year:
-            self.systs[yr].update(syst_dict)
+        chans = [chan] if isinstance(chan, str) else chan
 
+        for yr in year:
+            if not self.systs[yr]:
+                self.systs[yr] = {'groups': groups}
+            for chan in chans:
+                self.systs[yr][chan] = syst
         return self
 
     def get_name(self, year):

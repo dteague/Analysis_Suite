@@ -10,108 +10,86 @@ ratio = {
 }
 
 mc_samples = ['ttt', 'xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top', 'tttj', 'tttw']
+qcd = ['tth', 'ttz', '4top', 'ttXY']
+ewk = ['ttw', 'xg', 'rare', 'tttw', 'rare']
+Systematic.default_groups = mc_samples
+
 
 systematics = [
-    Systematic("LUMI_RUN2", "lnN", True).add(1+0.006, groups=mc_samples, year="2016pre") \
-                                        .add(1+0.006, groups=mc_samples, year="2016post") \
-                                        .add(1+0.009, groups=mc_samples, year="2017")    \
-                                        .add(1+0.020, groups=mc_samples, year="2018"),
-    Systematic("LUMI_17_18", "lnN", True).add(1+0.006, groups=mc_samples, year="2017") \
-                                         .add(1+0.002, groups=mc_samples, year="2018"),
-    Systematic("LUMI_", "lnN").add(1+0.010, groups=mc_samples, year="2016pre") \
-                             .add(1+0.010, groups=mc_samples, year="2016post") \
-                             .add(1+0.020, groups=mc_samples, year="2017")    \
-                             .add(1+0.015, groups=mc_samples, year="2018"),
+    Systematic("LUMI_RUN2", "lnN", True).add(1.006, groups=mc_samples, year="2016pre") \
+                                        .add(1.006, groups=mc_samples, year="2016post") \
+                                        .add(1.009, groups=mc_samples, year="2017")    \
+                                        .add(1.020, groups=mc_samples, year="2018"),
+    Systematic("LUMI_17_18", "lnN", True).add(1.006, groups=mc_samples, year="2017") \
+                                         .add(1.002, groups=mc_samples, year="2018"),
+    Systematic("LUMI_", "lnN").add(1.010, groups=mc_samples, year="2016pre") \
+                              .add(1.010, groups=mc_samples, year="2016post") \
+                              .add(1.020, groups=mc_samples, year="2017")    \
+                              .add(1.015, groups=mc_samples, year="2018"),
 
     #### Theory systs
-    Systematic("LHE_muF", "shape", True).add(1, groups=mc_samples) \
-                                        .dname("MUF"),
-    Systematic("LHE_muR", "shape", True).add(1, groups=mc_samples) \
-                                        .dname("MUR"),
-    Systematic("PDF_unc", "shape", True).add(1, groups=mc_samples) \
-                                        .dname("PDF"),
-    Systematic("PDF_alphaZ", "shape", True).add(1, groups=mc_samples)
-                                           .dname("ALPHAS"),
-    Systematic("PS_ISR", "shape", True).add(1, groups=mc_samples)
-                                       .dname("ISR"),
-    Systematic("PS_FSR", "shape", True).add(1, groups=mc_samples)
-                                       .dname("FSR"),
+    Systematic("PDF_unc", corr=True).add().dname("PDF"),
+    Systematic("PDF_alphaZ", corr=True).add().dname("ALPHAS"),
+    Systematic("PS_FSR", corr=True).add().dname("FSR"),
+
+    Systematic("LHE_muF", corr=True).add(groups=qcd).dname("MUF_QCD"),
+    Systematic("LHE_muF", corr=True).add(groups=ewk).dname("MUF_EWK"),
+    Systematic("LHE_muR", corr=True).add(groups=qcd).dname("MUR_QCD"),
+    Systematic("LHE_muR", corr=True).add(groups=ewk).dname("MUR_EWK"),
+    Systematic("PS_ISR", corr=True).add(groups=qcd).dname("ISR_QCD"),
+    Systematic("PS_ISR", corr=True).add(groups=ewk).dname("ISR_EWK"),
 
     ### BTagging scales
-    Systematic("BJet_Shape_lf", "shape", True).add(1, groups=mc_samples) \
-                                        .dname("LF"),
-    Systematic("BJet_Shape_lfstats1", "shape").add(1, groups=mc_samples) \
-                                                    .dname("LFSTATS1"),
-    Systematic("BJet_Shape_lfstats2", "shape").add(1, groups=mc_samples) \
-                                                    .dname("LFSTATS2"),
-    Systematic("BJet_Shape_hf", "shape", True).add(1, groups=mc_samples) \
-                                        .dname("HF"),
-    Systematic("BJet_Shape_hfstats1", "shape").add(1, groups=mc_samples) \
-                                                    .dname("HFSTATS1"),
-    Systematic("BJet_Shape_hfstats2", "shape").add(1, groups=mc_samples) \
-                                                    .dname("HFSTATS2"),
-    Systematic("BJet_Shape_cferr1", "shape", True).add(1, groups=mc_samples) \
-                                            .dname("CFERR1"),
-    Systematic("BJet_Shape_cferr2", "shape", True).add(1, groups=mc_samples)
-                                            .dname("CFERR2"),
+    Systematic("BJet_Shape_lf", corr=True).add().dname("LF"),
+    Systematic("BJet_Shape_lfstats1").add().dname("LFSTATS1"),
+    Systematic("BJet_Shape_lfstats2").add().dname("LFSTATS2"),
+    Systematic("BJet_Shape_hf", corr=True).add().dname("HF"),
+    Systematic("BJet_Shape_hfstats1").add().dname("HFSTATS1"),
+    Systematic("BJet_Shape_hfstats2").add().dname("HFSTATS2"),
+    Systematic("BJet_Shape_cferr1", corr=True).add().dname("CFERR1"),
+    Systematic("BJet_Shape_cferr2", corr=True).add().dname("CFERR2"),
 
     #### Lepton/Jet ID stuff
-    Systematic("Muon_Scale", "shape").add(1, groups=mc_samples) \
-                                     .dname("ID_MU_"),
-    Systematic("Electron_Scale", "shape").add(1, groups=mc_samples) \
-                                         .dname("ID_EL_"),
-    Systematic("Muon_tthMVA", "shape").add(1, groups=mc_samples),
-    Systematic("Electron_tthMVA", "shape").add(1, groups=mc_samples),
-    Systematic("Jet_PUID", "shape", True).add(1, groups=mc_samples) \
-                                         .dname("PILEUPJETID"),
+    Systematic("Muon_Scale").add().dname("ID_MU_"),
+    Systematic("Electron_Scale").add().dname("ID_EL_"),
+    Systematic("Lepton_tthMVA", "lnN").add(1.04, chan='Dilepton') # 1.02**2 \
+                                      .add(1.061, chan=['Multi', 'ttzCR']), # 1.02**3
+    Systematic("TriggerSF", 'lnN').add(1.03),
+    Systematic("Jet_PUID", corr=True).add().dname("PILEUPJETID"),
 
     #### JEC stuff
-    Systematic("Jet_JER", "shape").add(1, groups=mc_samples) \
-                                  .dname("JER"),
-    Systematic("Jet_JEC_Absolute", "shape").add(1, groups=mc_samples) \
-                                           .dname("JECABSOLUTE"),
-    Systematic("Jet_JEC_Absolute_corr", "shape", True).add(1, groups=mc_samples) \
-                                                      .dname("JECABSOLUTE"),
-    Systematic("Jet_JEC_BBEC1", "shape").add(1, groups=mc_samples) \
-                                        .dname("JECBBEC1"),
-    Systematic("Jet_JEC_BBEC1_corr", "shape", True).add(1, groups=mc_samples) \
-                                                   .dname("JECBBEC1"),
-    Systematic("Jet_JEC_EC2", "shape").add(1, groups=mc_samples) \
-                                      .dname("JECEC2"),
-    Systematic("Jet_JEC_EC2_corr", "shape", True).add(1, groups=mc_samples) \
-                                                 .dname("JECEC2"),
-    Systematic("Jet_JEC_HF", "shape").add(1, groups=mc_samples) \
-                                     .dname("JECHF"),
-    Systematic("Jet_JEC_HF_corr", "shape", True).add(1, groups=mc_samples) \
-                                                .dname("JECHF"),
-    Systematic("Jet_JEC_AbsoluteBal", "shape", True).add(1, groups=mc_samples) \
-                                                    .dname("JECRELATIVEBAL"),
-    Systematic("Jet_JEC_AbsoluteSample", "shape").add(1, groups=mc_samples) \
-                                                 .dname("JECRELATIVESAMPLE"),
-    Systematic("Jet_JEC_FlavorQCD", "shape", True).add(1, groups=mc_samples) \
-                                                  .dname("JECFLAVORQCD"),
+    Systematic("Jet_JER").add().dname("JER"),
+    Systematic("Jet_JEC_Absolute").add().dname("JECABSOLUTE"),
+    Systematic("Jet_JEC_Absolute_corr", corr=True).add().dname("JECABSOLUTE"),
+    Systematic("Jet_JEC_BBEC1").add().dname("JECBBEC1"),
+    Systematic("Jet_JEC_BBEC1_corr", corr=True).add().dname("JECBBEC1"),
+    Systematic("Jet_JEC_EC2").add().dname("JECEC2"),
+    Systematic("Jet_JEC_EC2_corr", corr=True).add().dname("JECEC2"),
+    Systematic("Jet_JEC_HF").add().dname("JECHF"),
+    Systematic("Jet_JEC_HF_corr", corr=True).add().dname("JECHF"),
+    Systematic("Jet_JEC_AbsoluteBal", corr=True).add().dname("JECRELATIVEBAL"),
+    Systematic("Jet_JEC_AbsoluteSample").add().dname("JECRELATIVESAMPLE"),
+    Systematic("Jet_JEC_FlavorQCD", corr=True).add().dname("JECFLAVORQCD"),
 
     ##### Other
-    Systematic("Prefire", "shape").add(1, groups=mc_samples) \
-                                  .dname("PREFIRE"),
-    Systematic("TriggerSF", "shape").add(1, groups=mc_samples),
-    Systematic("Pileup", "shape", True).add(1, groups=mc_samples) \
-                                       .dname("PILEUP"),
+    Systematic("Prefire").add().dname("PREFIRE"),
+    Systematic("Pileup", corr=True).add().dname("PILEUP"),
 
     ## Fake Rate stuff
-    Systematic("ChargeMisId_stat", "shape").add(1, 'charge_flip'),
-    Systematic("Nonprompt_Mu_stat", "shape").add(1, 'nonprompt'),
-    Systematic("Nonprompt_El_stat", "shape").add(1, 'nonprompt'),
+    Systematic("ChargeMisId_stat").add(groups='charge_flip', chan=['Dilepton', "ttzCR"]),
+    Systematic("ChargeMisId_closure", 'lnN').add(1.2, groups="charge_flip", chan=['Dilepton', "ttzCR"]),
+
+    Systematic("Nonprompt_Mu_stat").add(groups='nonprompt'),
+    Systematic("Nonprompt_El_stat").add(groups='nonprompt'),
     Systematic("Nonprompt_closure", 'lnN').add(1.3, groups="nonprompt"),
-    Systematic("ChargeMisId_closure", 'lnN').add(1.2, groups="charge_flip"),
 
     # Normalization stuff
-    # Systematic("CMS_norm_tttt", "lnN").add(1.2, groups="tttt"),
-    # Systematic("CMS_norm_ttw", "lnN").add(1.5, groups="ttw"),
-    # Systematic("CMS_norm_ttz", "lnN").add(1.5, groups="ttz"),
-    # Systematic("CMS_norm_tth", "lnN").add(1.5, groups="tth"),
-    # Systematic("CMS_norm_xg", "lnN").add(1.5, groups="xg"),
-    # Systematic("CMS_norm_rare", "lnN").add(1.5, groups="rare"),
+    Systematic("CMS_norm_tttt", "lnN").add(1.2, groups="tttt"),
+    Systematic("CMS_norm_ttw", "lnN").add(1.5, groups="ttw"),
+    Systematic("CMS_norm_ttz", "lnN").add(1.5, groups="ttz"),
+    Systematic("CMS_norm_tth", "lnN").add(1.5, groups="tth"),
+    Systematic("CMS_norm_xg", "lnN").add(1.5, groups="xg"),
+    Systematic("CMS_norm_rare", "lnN").add(1.5, groups="rare"),
 
     ##### Not used any more
     # # Systematic("Top_SF", "shape").add(1),
@@ -126,3 +104,4 @@ def get_shape_systs(year):
     systs = [(syst.name, syst.get_name(year)) for syst in systematics if syst.syst_type == "shape"]
     systs = np.vstack((np.char.add(systs, "_up"), np.char.add(systs, "_down")))
     return np.concatenate((systs, [["Nominal", "Nominal"]]))
+

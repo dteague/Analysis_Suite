@@ -22,8 +22,7 @@ class SingleLep_Trigger : public BaseSelector {
     void setSubChannel();
     bool measurement_cuts();
 
-    LeptonOut_Fake *o_fakeMuons, *o_tightMuons;
-    ElectronOut_Fake *o_fakeElectrons, *o_tightElectrons;
+    LeptonOut_small *o_fakeElectrons, *o_fakeMuons;
     JetOut* o_jets;
 
     TRVariable<Float_t> Pileup_nTrueInt;

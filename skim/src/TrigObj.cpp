@@ -61,7 +61,7 @@ void TrigObj::match_muon(Muon& muon)
         }
         if (minDr < 0.01
             && muon.tightCharge.at(minIdx) == 2
-            && muon.tid.at(minIdx)) {
+            && muon.sip3d.at(minIdx) < 4) {
             muon_match.insert(minIdx);
             // muon_match[i] = minIdx;
                 // std::cout << "Muon: " << muon.pt(minIdx) << " " << bits << " " << filterBits.at(i) << " " << *hlt_isomu << " " << *hlt_mu50 << " " << *hlt_dimu << std::endl;
@@ -102,9 +102,10 @@ void TrigObj::match_electron(Electron& elec)
             }
         }
         if (minDr < 0.01
-            && elec.mva_80.at(minIdx)
             && elec.lostHits.at(minIdx) == 0
-            && elec.tightCharge.at(minIdx) == 2) {
+            && elec.tightCharge.at(minIdx) == 2
+            && elec.sip3d.at(minIdx) < 4
+            && elec.passTriggerRequirements(minIdx)) {
             elec_match.insert(minIdx);
             // elec_match.push_back(std::make_pair(i, minIdx));
                 // std::cout << "Electron: " << elec.pt(minIdx) << " " <<  bits << " " << filterBits.at(i) << " " << *hlt_el << std::endl;

@@ -18,7 +18,6 @@ public:
     float getTotalBTagWeight(std::string btag_wp = "L");
     float getTotalShapeWeight();
     float getBJetWeight(size_t idx, std::string lvl);
-    float getPileupIDWeight();
 
     float pt_(size_t idx) const override { return m_pt.at(idx)*m_jec->at(idx); }
     float nompt(size_t idx) const { return m_pt.at(idx); }
@@ -26,6 +25,7 @@ public:
 
     float getHT(Level level, size_t syst) { return getHT(list(level, syst)); };
     float getHT(Level level) { return getHT(list(level)); };
+    float getMHT();
 
     float getCentrality(Level level, size_t syst) { return getCentrality(list(level, syst)); };
     float getCentrality(Level level) { return getCentrality(list(level)); };

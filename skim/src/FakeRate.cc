@@ -25,8 +25,6 @@ void FakeRate::Init(TTree* tree)
 
     muon.setup_map(Level::FakeNotTight);
     elec.setup_map(Level::FakeNotTight);
-    muon.setup_map(Level::LooseNotFake);
-    elec.setup_map(Level::LooseNotFake);
 
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
@@ -34,21 +32,27 @@ void FakeRate::Init(TTree* tree)
         sfMaker.setup_prescale();
     }
 
+    auto egamma_dataset = (year_ == Year::yr2017) ? Dataset::Single_E : Dataset::DoubleEG;
+    highpt_e_dataset = (year_ == Year::yr2018) ? Dataset::DoubleEG : Dataset::Single_E;
 
     // Single Lepton Triggers
-    setupTrigger(Subchannel::M, Dataset::DoubleMuon,
-                 {"HLT_Mu8_TrkIsoVVL",
-                  "HLT_Mu17_TrkIsoVVL",
-                                 // "HLT_Mu8",
-                                 // "HLT_Mu17"
-        });
-    setupTrigger(Subchannel::E, Dataset::DoubleEG,
-                 {"HLT_Ele12_CaloIdL_TrackIdL_IsoVL_PFJet30", // Was 12, changed to 8
-                  "HLT_Ele23_CaloIdL_TrackIdL_IsoVL_PFJet30", // was 23, changed to 17
-                  // "HLT_Ele8_CaloIdM_TrackIdM_PFJet30",
-                  // "HLT_Ele17_CaloIdM_TrackIdM_PFJet30"
-                 });
+    std::vector<std::string> mu_list = {"HLT_Mu8_TrkIsoVVL",
+                                        "HLT_Mu17_TrkIsoVVL",};
+    std::vector<std::string> el_list = {"HLT_Ele12_CaloIdL_TrackIdL_IsoVL_PFJet30",
+                                        "HLT_Ele23_CaloIdL_TrackIdL_IsoVL_PFJet30",};
 
+    // if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
+    //     mu_list.push_back("HLT_IsoMu24");
+    //     el_list.push_back("HLT_Ele27_WPTight_Gsf");
+    // } else if (year_ == Year::yr2017) {
+    //     mu_list.push_back("HLT_IsoMu27");
+    //     el_list.push_back("HLT_Ele35_WPTight_Gsf");
+    // } else {
+    //     mu_list.push_back("HLT_IsoMu24");
+    //     el_list.push_back("HLT_Ele32_WPTight_Gsf");
+    // }
+    setupTrigger(Subchannel::M, Dataset::DoubleMuon, mu_list);
+    setupTrigger(Subchannel::E, egamma_dataset, el_list);
 
     LOG_FUNC << "End of Init";
 }
@@ -69,8 +73,7 @@ void FakeRate::SetupOutTreeBranches(TTree* tree)
     tree->Branch("Met", &o_met);
     tree->Branch("Met_phi", &o_metphi);
     // tree->Branch("bjet_scale", &bjet_scales);
-    tree->Branch("hlt_loPt_prescale", &hlt_loPt_prescale);
-    tree->Branch("hlt_hiPt_prescale", &hlt_hiPt_prescale);
+
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
 
@@ -100,18 +103,51 @@ void FakeRate::ApplyScaleFactors()
     (*weight) *= sfMaker.getPrefire();
     (*weight) *= sfMaker.getPartonShower();
     (*weight) *= jet.getScaleFactor();
+    (*weight) *= jet.getTotalBTagWeight("M");
     (*weight) *= elec.getScaleFactor();
     (*weight) *= muon.getScaleFactor();
     LOG_FUNC << "End of ApplyScaleFactors";
 }
 
+size_t FakeRate::get_trigger()
+{
+    if (subChannel_ == Subchannel::E) {
+        float pt = elec.rawpt(Level::Fake, 0);
+        if (pt > 40) return 1;
+        else if (pt > 25) return 1;
+        else return 0;
+    } else {
+        float pt = muon.rawpt(Level::Fake, 0);
+        if (pt > 30) return 1;
+        else if (pt > 20) return 1;
+        else return 0;
+    }
+}
+
+bool FakeRate::apply_trigger() {
+    if (subChannel_ == Subchannel::None) {
+        return false;
+    }
+    size_t trig_idx = get_trigger();
+    if (subChannel_ == Subchannel::M && trig_idx == 2) {
+        return ((Dataset::Single_M == dataset_ ||
+                 dataset_ == Dataset::None)
+                && *trig_cuts.trigs[subChannel_].at(trig_idx));
+    } else if (subChannel_ == Subchannel::E && trig_idx == 2) {
+        return ((highpt_e_dataset == dataset_ ||
+                 dataset_ == Dataset::None)
+                && *trig_cuts.trigs[subChannel_].at(trig_idx));
+    } else {
+        return trig_cuts.pass_cut(subChannel_, trig_idx);
+    }
+}
+
 void FakeRate::ApplyDataSpecifics()
 {
-    if ((*currentChannel_) == Channel::Measurement) {
-        size_t trigIdx = 0;
-        if (subChannel_ == Subchannel::E && elec.rawpt(Level::Fake, 0) > 25) trigIdx = 1;
-        else if (subChannel_ == Subchannel::M && muon.rawpt(Level::Fake, 0) > 20) trigIdx = 1;
-
+    if ((*currentChannel_) != Channel::None) {
+        size_t trigIdx = get_trigger();
+        if (trigIdx > 1)
+            return;
         (*weight) *= sfMaker.getPrescale(*run, *lumiblock, trig_cuts.trig_name(subChannel_, trigIdx));
     }
 }
@@ -121,8 +157,6 @@ void FakeRate::setOtherGoodParticles(size_t syst)
     LOG_FUNC << "Start of setOtherGoodParticles";
     muon.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
     elec.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
-    muon.xorLevel(Level::Loose, Level::Fake, Level::LooseNotFake);
-    elec.xorLevel(Level::Loose, Level::Fake, Level::LooseNotFake);
     LOG_FUNC << "End of setOtherGoodParticles";
 }
 
@@ -170,7 +204,7 @@ bool FakeRate::single_lep_cuts(CutInfo& cuts)
     passCuts &= cuts.setCut("pass0LooseLep", nLeps(Level::Loose) == 1);
     // TriggerCuts
 
-    passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
+    passCuts &= cuts.setCut("passTrigger", apply_trigger());
     passCuts &= cuts.setCut("pass1Jet", jet.size(Level::Tight) == 1);
 
     bool hasFarJet = false;
@@ -195,14 +229,7 @@ bool FakeRate::measurement_cuts()
 
     passCuts &= single_lep_cuts(cuts);
     // Split the trigger cuts
-    bool trig_match = false;
-    if (subChannel_ != Subchannel::None) {
-        size_t trig_idx = 0;
-        if (subChannel_ == Subchannel::E && elec.rawpt(Level::Fake, 0) > 25) trig_idx = 1;
-        else if (subChannel_ == Subchannel::M && muon.rawpt(Level::Fake, 0) > 20) trig_idx = 1;
-        trig_match = trig_cuts.pass_cut(subChannel_, trig_idx);
-    }
-    passCuts &= cuts.setCut("passSplitTrigger", trig_match);
+    passCuts &= cuts.setCut("passSplitTrigger", apply_trigger());
     passCuts &= cuts.setCut("passMetCut", met.pt() < 30);
 
     // Fill Cut flow
@@ -236,21 +263,6 @@ void FakeRate::FillValues(const Bitmap& event_bitmap)
     elec.fillElectron_Iso(*o_fakeElectrons, jet, Level::FakeNotTight, event_bitmap);
     elec.fillElectron_Iso( *o_tightElectrons, jet, Level::Tight, event_bitmap);
     jet.fillJet(*o_jets, Level::Tight, event_bitmap);
-
-    if (isMC_) {
-        // bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "L"));
-        // bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "M"));
-        // bjet_scales.push_back(jet.getBJetWeight(jet.idx(Level::Tight, 0), "T"));
-        hlt_loPt_prescale = static_cast<int>(trig_cuts.pass_cut(subChannel_, 0));
-        hlt_hiPt_prescale = static_cast<int>(trig_cuts.pass_cut(subChannel_, 1));
-    } else {
-        // bjet_scales.push_back(1.);
-        // bjet_scales.push_back(1.);
-        // bjet_scales.push_back(1.);
-        hlt_loPt_prescale = sfMaker.getPrescale(*run, *lumiblock, trig_cuts.trig_name(subChannel_, 0)) * static_cast<int>(trig_cuts.pass_cut(subChannel_, 0));
-        hlt_hiPt_prescale = sfMaker.getPrescale(*run, *lumiblock, trig_cuts.trig_name(subChannel_, 1)) * static_cast<int>(trig_cuts.pass_cut(subChannel_, 1));
-    }
-
 
     for (size_t syst = 0; syst < numSystematics(); ++syst) {
         setupSyst(syst);

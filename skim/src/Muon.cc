@@ -43,6 +43,24 @@ void Muon::setup(TTreeReader& fReader)
     else if (year_ == Year::yr2018)                            cone_correction = 0.75;
 }
 
+void Muon::fillMuon_small(LeptonOut_small& output, Level level, const Bitmap& event_bitmap)
+{
+    output.clear();
+    for (size_t idx = 0; idx < size(); ++idx) {
+        setSyst(0); // Fill values with nominal values and corrections done on top
+        Bitmap final_bitmap = bitmap(level).at(idx) & event_bitmap;
+        if (final_bitmap.any()) {
+            output.syst_bitMap.push_back(final_bitmap.to_ulong());
+            output.rawPt.push_back(m_pt.at(idx));
+            output.ptRatio.push_back(ptRatio(idx));
+            output.mvaTTH.push_back(mvaTTH.at(idx));
+        } else {
+            continue;
+        }
+    }
+}
+
+
 void Muon::createLooseList()
 {
     for (size_t i = 0; i < size(); i++) {
@@ -65,7 +83,7 @@ void Muon::createFakeList(Particle& jets)
             && mediumId.at(i)
             && sip3d.at(i) < 4
             && (ptRatio(i) > ptRatioCut || passJetIsolation(i))
-            && m_pt.at(i)*getFakePtFactor(i) > 15 // Total pt threshold
+            && m_pt.at(i)*getFakePtFactor(i) > 20 // Total pt threshold
             )
             {
                 m_partList[Level::Fake]->push_back(i);
@@ -74,10 +92,12 @@ void Muon::createFakeList(Particle& jets)
     }
 }
 
+
+
 void Muon::createTightList(Particle& jets)
 {
     for (auto i : list(Level::Fake)) {
-        if (pt(i) > 15
+        if (pt(i) > 20
             && passJetIsolation(i)
             ) {
             m_partList[Level::Tight]->push_back(i);
@@ -94,7 +114,7 @@ float Muon::getScaleFactor()
     std::string syst = systName(muon_scale);
     std::string syst_mva = systName(muon_tthMVA);
     for (auto midx : list(Level::Fake)) {
-        float pt = (m_pt.at(midx) > 15) ? m_pt.at(midx) : 15.;
+        float pt = (m_pt.at(midx) >= 20) ? m_pt.at(midx) : 20.;
         weight *= muon_scale.evaluate({yearMap.at(year_)+"_UL", fabs(eta(midx)), pt, syst});
         weight *= muon_tthMVA.evaluate({fabs(eta(midx)), pt, syst_mva});
     }
@@ -105,16 +125,17 @@ float Muon::getRocCorrection(GenParticle& gen)
 {
     float weight = 1.;
     for (auto i : list(Level::Fake)) {
+        float pt = (m_pt.at(i) > 15) ? m_pt.at(i) : 15.;
         if (isMC) {
             if (genPartIdx.at(i) != -1) { //(recommended), MC scale and resolution correction when matched gen muon is available
-                float genPt = gen.pt(genPartIdx.at(i));
-                weight *= roc_corr.kSpreadMC(charge(i), pt(i), eta(i), phi(i), genPt, eDefault, 0);
+                float genPt = (gen.pt(genPartIdx.at(i)) < 15) ? 15 : gen.pt(genPartIdx.at(i));
+                weight *= roc_corr.kSpreadMC(charge(i), pt, eta(i), phi(i), genPt, eDefault, 0);
             } else { //MC scale and extra smearing when matched gen muon is not available
                 float rand_uniform = static_cast<float>(rand())/static_cast <float>(RAND_MAX);
-                weight *= roc_corr.kSmearMC(charge(i), pt(i), eta(i), phi(i), nTrackerLayers.at(i), rand_uniform, eDefault, 0);
+                weight *= roc_corr.kSmearMC(charge(i), pt, eta(i), phi(i), nTrackerLayers.at(i), rand_uniform, eDefault, 0);
             }
         } else { //data
-            weight *= roc_corr.kScaleDT(charge(i), pt(i), eta(i), phi(i), eDefault, 0);
+            weight *= roc_corr.kScaleDT(charge(i), pt, eta(i), phi(i), eDefault, 0);
         }
     }
     return weight;

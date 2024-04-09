@@ -31,11 +31,12 @@ private:
     TrigObj trigobj;
 
     TRVariable<Float_t> Pileup_nTrueInt;
+    TRVariable<Bool_t> trig_mm, trig_ee;
 
     Float_t tag_pt, tag_abseta, tag_iso, probe_pt, probe_fakept, probe_abseta, probe_iso, probe_mva;
     Float_t mass_fake, mass, wgt;
     Int_t  njets;
-    bool isMuon;
+    bool isMuon, tag_tight, probe_tight, pass_mm, pass_ee;
 
     Subchannel file_chan;
     TTree* final_tree;

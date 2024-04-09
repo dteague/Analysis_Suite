@@ -7,6 +7,8 @@
 class Muon : public Lepton {
 public:
     void setup(TTreeReader& fReader);
+    void fillMuon_small(LeptonOut_small& output, Level level, const Bitmap& event_bitmap);
+
     virtual void createLooseList() override;
     virtual void createFakeList(Particle& jets) override;
     virtual void createTightList(Particle& jets) override;

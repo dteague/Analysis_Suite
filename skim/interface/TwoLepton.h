@@ -1,27 +1,21 @@
 #ifndef TWOLEPTON_H_
 #define TWOLEPTON_H_
 
-#include "analysis_suite/skim/interface/BaseSelector.h"
+#include "analysis_suite/skim/interface/DileptonBase.h"
 #include "analysis_suite/skim/interface/Output.h"
 
 #include <set>
 
-class TwoLepton : public BaseSelector {
+class TwoLepton : public DileptonBase {
 public:
     virtual void Init(TTree* tree) override;
     virtual bool getCutFlow() override;
-    virtual void FillValues(const Bitmap& event_bitmap) override;
-    virtual void SetupOutTreeBranches(TTree* tree) override;
     virtual void ApplyScaleFactors() override;
-    virtual void clearParticles() override;
-    virtual void clearOutputs() override;
-    virtual void setOtherGoodParticles(size_t syst) override;
     ClassDefOverride(TwoLepton, 0);
 
+
 private:
-    void setSubChannel();
     bool measurement_cuts();
-    float getLeadPt();
 
     LeptonOut_Fake *o_fakeMuons, *o_tightMuons;
     LeptonOut_Fake *o_fakeElectrons, *o_tightElectrons;

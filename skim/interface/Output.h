@@ -100,6 +100,19 @@ struct ElectronOut_Endcap {
     }
 };
 
+struct LeptonOut_small {
+    std::vector<Float_t> rawPt;
+    std::vector<Float_t> ptRatio;
+    std::vector<Float_t> mvaTTH;
+    std::vector<Int_t> syst_bitMap;
+
+    void clear() {
+        rawPt.clear();
+        ptRatio.clear();
+        mvaTTH.clear();
+        syst_bitMap.clear();
+    }
+};
 
 
 struct LeptonOut_Fake {

@@ -175,7 +175,7 @@ void ThreeTop::setSubChannel()
     if(nLeps(Level::Fake) >= 2) {
         if (muon.size(Level::Fake) * elec.size(Level::Fake) > 0) {
             subChannel_ = Subchannel::EM;
-        } else if (elec.size(Level::Fake) > 2) {
+        } else if (elec.size(Level::Fake) >= 2) {
             subChannel_ = Subchannel::EE;
         }  else {
             subChannel_ = Subchannel::MM;

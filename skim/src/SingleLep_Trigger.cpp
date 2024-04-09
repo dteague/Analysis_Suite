@@ -20,18 +20,18 @@ void SingleLep_Trigger::Init(TTree* tree)
 
     createTree("Measurement", Channel::Measurement);
 
-    muon.setup_map(Level::FakeNotTight);
-    elec.setup_map(Level::FakeNotTight);
+    // muon.setup_map(Level::FakeNotTight);
+    // elec.setup_map(Level::FakeNotTight);
 
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
     } else {
         sfMaker.setup_prescale();
     }
-    hlt_lo_mu.setup(fReader, "HLT_Mu8_TrkIsoVVL");
-    hlt_hi_mu.setup(fReader, "HLT_Mu17_TrkIsoVVL");
-    hlt_lo_el.setup(fReader, "HLT_Ele12_CaloIdL_TrackIdL_IsoVL_PFJet30");
-    hlt_hi_el.setup(fReader, "HLT_Ele23_CaloIdL_TrackIdL_IsoVL_PFJet30");
+    // hlt_lo_mu.setup(fReader, "HLT_Mu8_TrkIsoVVL");
+    // hlt_hi_mu.setup(fReader, "HLT_Mu17_TrkIsoVVL");
+    // hlt_lo_el.setup(fReader, "HLT_Ele12_CaloIdL_TrackIdL_IsoVL_PFJet30");
+    // hlt_hi_el.setup(fReader, "HLT_Ele23_CaloIdL_TrackIdL_IsoVL_PFJet30");
 
 
     // Single Lepton Triggers
@@ -51,7 +51,8 @@ void SingleLep_Trigger::Init(TTree* tree)
     // // Single Lepton Triggers
     // setupTrigger(Subchannel::Met, Dataset::Met,
     //              {"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight",});
-
+    muon.mvaCut = 2;
+    elec.mvaCut = 2;
     LOG_FUNC << "End of Init";
 }
 
@@ -59,19 +60,19 @@ void SingleLep_Trigger::SetupOutTreeBranches(TTree* tree)
 {
     LOG_FUNC << "Start of SetupOutTreeBranches";
     BaseSelector::SetupOutTreeBranches(tree);
-    tree->Branch("FakeMuon", "LeptonOut_Fake", &o_fakeMuons);
-    tree->Branch("TightMuon", "LeptonOut_Fake", &o_tightMuons);
-    tree->Branch("FakeElectron", "ElectronOut_Fake", &o_fakeElectrons);
-    tree->Branch("TightElectron", "ElectronOut_Fake", &o_tightElectrons);
-    tree->Branch("Jets", "JetOut", &o_jets);
+    tree->Branch("FakeMuon", "LeptonOut_small", &o_fakeMuons);
+    // tree->Branch("TightMuon", "LeptonOut_Fake", &o_tightMuons);
+    tree->Branch("FakeElectron", "LeptonOut_small", &o_fakeElectrons);
+    // tree->Branch("TightElectron", "ElectronOut_Fake", &o_tightElectrons);
+    // tree->Branch("Jets", "JetOut", &o_jets);
 
-    tree->Branch("HT", &o_ht);
-    tree->Branch("Met", &o_met);
-    tree->Branch("Met_phi", &o_metphi);
-    tree->Branch("hlt_low_mu", &o_hlt_lo_mu);
-    tree->Branch("hlt_high_mu", &o_hlt_hi_mu);
-    tree->Branch("hlt_low_el", &o_hlt_lo_el);
-    tree->Branch("hlt_high_el", &o_hlt_hi_el);
+    // tree->Branch("HT", &o_ht);
+    // tree->Branch("Met", &o_met);
+    // tree->Branch("Met_phi", &o_metphi);
+    // tree->Branch("hlt_low_mu", &o_hlt_lo_mu);
+    // tree->Branch("hlt_high_mu", &o_hlt_hi_mu);
+    // tree->Branch("hlt_low_el", &o_hlt_lo_el);
+    // tree->Branch("hlt_high_el", &o_hlt_hi_el);
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
 
@@ -99,17 +100,17 @@ void SingleLep_Trigger::ApplyScaleFactors()
     (*weight) *= sfMaker.getLHESF();
     (*weight) *= sfMaker.getPrefire();
     (*weight) *= sfMaker.getPartonShower();
-    (*weight) *= jet.getScaleFactor();
-    (*weight) *= elec.getScaleFactor();
-    (*weight) *= muon.getScaleFactor();
+    // (*weight) *= jet.getScaleFactor();
+    // (*weight) *= elec.getScaleFactor();
+    // (*weight) *= muon.getScaleFactor();
     LOG_FUNC << "End of ApplyScaleFactors";
 }
 
 void SingleLep_Trigger::setOtherGoodParticles(size_t syst)
 {
     LOG_FUNC << "Start of setOtherGoodParticles";
-    muon.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
-    elec.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
+    // muon.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
+    // elec.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
     LOG_FUNC << "End of setOtherGoodParticles";
 }
 
@@ -129,6 +130,7 @@ bool SingleLep_Trigger::getCutFlow()
 {
     LOG_FUNC << "Start of passSelection";
     (*currentChannel_) = Channel::None;
+    setSubChannel();
 
     if (measurement_cuts()) (*currentChannel_) = Channel::Measurement;
 
@@ -149,7 +151,7 @@ bool SingleLep_Trigger::measurement_cuts()
     passCuts &= cuts.setCut("passMETFilter", metfilters.pass());
     passCuts &= cuts.setCut("pass1FakeLep", nLeps(Level::Fake) == 1);
     passCuts &= cuts.setCut("pass0LooseLep", nLeps(Level::Loose) == 1);
-    // passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
+    passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
 
     // auto met_vec = std::polar(met.pt(), met.phi());
     // float ht = jet.getHT(Level::Tight);
@@ -168,22 +170,23 @@ bool SingleLep_Trigger::measurement_cuts()
 void SingleLep_Trigger::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
-    muon.fillLepton_Iso(*o_fakeMuons, jet, Level::FakeNotTight, event_bitmap);
-    muon.fillLepton_Iso( *o_tightMuons, jet, Level::Tight, event_bitmap);
-    elec.fillElectron_Iso(*o_fakeElectrons, jet, Level::FakeNotTight, event_bitmap);
-    elec.fillElectron_Iso( *o_tightElectrons, jet, Level::Tight, event_bitmap);
-    jet.fillJet(*o_jets, Level::Tight, event_bitmap);
+    muon.fillMuon_small(*o_fakeMuons, Level::Fake, event_bitmap);
+    // muon.fillLepton_Iso( *o_tightMuons, jet, Level::Tight, event_bitmap);
+    elec.fillElectron_small(*o_fakeElectrons, Level::Fake, event_bitmap);
+    // elec.fillElectron_Iso( *o_tightElectrons, jet, Level::Tight, event_bitmap);
+    // jet.fillJet(*o_jets, Level::Tight, event_bitmap);
 
-    o_hlt_lo_mu = *trig_cuts.trigs[Subchannel::M].at(0);
-    o_hlt_hi_mu = *trig_cuts.trigs[Subchannel::M].at(1);
-    o_hlt_lo_el = *trig_cuts.trigs[Subchannel::E].at(0);
-    o_hlt_hi_el = *trig_cuts.trigs[Subchannel::E].at(1);
+    // o_hlt_lo_mu = *trig_cuts.trigs[Subchannel::M].at(0);
+    // o_hlt_hi_mu = *trig_cuts.trigs[Subchannel::M].at(1);
+    // o_hlt_lo_el = *trig_cuts.trigs[Subchannel::E].at(0);
+    // o_hlt_hi_el = *trig_cuts.trigs[Subchannel::E].at(1);
+
     for (size_t syst = 0; syst < numSystematics(); ++syst) {
         setupSyst(syst);
 
-        o_ht.push_back(jet.getHT(Level::Tight, syst));
-        o_met.push_back(met.pt());
-        o_metphi.push_back(met.phi());
+        // o_ht.push_back(jet.getHT(Level::Tight, syst));
+        // o_met.push_back(met.pt());
+        // o_metphi.push_back(met.phi());
     }
     LOG_FUNC << "End of FillValues";
 }

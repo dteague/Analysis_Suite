@@ -186,15 +186,13 @@ float Jet::getHT(const std::vector<size_t>& jet_list)
     return ht;
 }
 
-float Jet::getScaleFactor()
+float Jet::getMHT()
 {
-    float weight = 1.;
-    std::string syst = systName(puid_scale);
-    for (auto idx : list(Level::Loose)) {
-        if (pt(idx) < 50)
-            weight *= puid_scale.evaluate({eta(idx), pt(idx), syst, "M"});
+    auto mht = std::polar(0, 0);
+    for (size_t idx = 0; idx < size(); ++idx) {
+        mht -= std::polar(pt(idx), phi(idx));
     }
-    return weight;
+    return std::abs(mht);
 }
 
 float Jet::getCentrality(const std::vector<size_t>& jet_list)
@@ -217,7 +215,7 @@ void Jet::setSyst(size_t syst)
     }
 }
 
-float Jet::getPileupIDWeight()
+float Jet::getScaleFactor()
 {
     float weight = 1;
     std::string syst = systName(puid_scale);

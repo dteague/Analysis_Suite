@@ -21,12 +21,19 @@ void ScaleFactors::init(TTreeReader& fReader)
         pu_scale = WeightHolder(corr_set->at("Collisions" + yearNum.at(year_)+ "_UltraLegacy_goldenJSON"),
                                 Systematic::Pileup, {"nominal", "up", "down"});
         // Trigger Scale Factor
-        auto trig_set = getScaleFile("USER", "trigger_sf");
-        ee_scale = WeightHolder(trig_set->at("EE_TriggerSF"), Systematic::TriggerSF,
+        // auto trig_set = getScaleFile("USER", "trigger_sf");
+        // ee_scale = WeightHolder(trig_set->at("EE_TriggerSF"), Systematic::TriggerSF,
+        //                         {"nom", "up", "down"});
+        // em_scale = WeightHolder(trig_set->at("EM_TriggerSF"), Systematic::TriggerSF,
+        //                         {"nom", "up", "down"});
+        // mm_scale = WeightHolder(trig_set->at("MM_TriggerSF"), Systematic::TriggerSF,
+        //                         {"nom", "up", "down"});
+        auto trig_set = getScaleFile("USER", "my_trigger_sf");
+        ee_scale = WeightHolder(trig_set->at("EE"), Systematic::TriggerSF,
                                 {"nom", "up", "down"});
-        em_scale = WeightHolder(trig_set->at("EM_TriggerSF"), Systematic::TriggerSF,
+        em_scale = WeightHolder(trig_set->at("EM"), Systematic::TriggerSF,
                                 {"nom", "up", "down"});
-        mm_scale = WeightHolder(trig_set->at("MM_TriggerSF"), Systematic::TriggerSF,
+        mm_scale = WeightHolder(trig_set->at("MM"), Systematic::TriggerSF,
                                 {"nom", "up", "down"});
     } else if (!isMC) {
         // Golden Json
@@ -98,11 +105,17 @@ float ScaleFactors::getTriggerSF(Particle& elec, Particle& muon)
     if (elec.size(Level::Fake) + muon.size(Level::Fake) < 2) return 1.;
 
     if (muon.size(Level::Fake) == 0)  {
-        return ee_scale.evaluate({systName(ee_scale), elec.pt(Level::Fake, 0), elec.pt(Level::Fake, 1)});
+        float pt1 = (elec.pt(Level::Fake, 0) < 20) ? 20 : elec.pt(Level::Fake, 0);
+        float pt2 = (elec.pt(Level::Fake, 1) < 20) ? 20 : elec.pt(Level::Fake, 1);
+        return ee_scale.evaluate({pt1, pt2});
     } else if (elec.size(Level::Fake) == 0) {
-        return mm_scale.evaluate({systName(mm_scale), muon.pt(Level::Fake, 0), muon.pt(Level::Fake, 1)});
+        float pt1 = (muon.pt(Level::Fake, 0) < 20) ? 20 : muon.pt(Level::Fake, 0);
+        float pt2 = (muon.pt(Level::Fake, 1) < 20) ? 20 : muon.pt(Level::Fake, 1);
+        return mm_scale.evaluate({pt1, pt2});
     } else {
-        return em_scale.evaluate({systName(em_scale), elec.pt(Level::Fake, 0), muon.pt(Level::Fake, 0)});
+        float pte = (elec.pt(Level::Fake, 0) < 20) ? 20 : elec.pt(Level::Fake, 0);
+        float ptm = (muon.pt(Level::Fake, 0) < 20) ? 20 : muon.pt(Level::Fake, 0);
+        return em_scale.evaluate({pte, ptm});
     }
 }
 
@@ -187,11 +200,13 @@ bool ScaleFactors::inGoldenLumi(UInt_t run, UInt_t lumi)
 float ScaleFactors::getChargeMisIdFR(float eta, float pt)
 {
     std::string syst = systName(charge_misId);
+    if (pt < 20) pt = 20;
     return charge_misId.evaluate({syst, fabs(eta), pt});
 }
 
 float ScaleFactors::getNonpromptFR(float eta, float pt, PID pid)
 {
+    if (pt < 20) pt = 20;
     if (pid == PID::Muon) {
         std::string syst = systName(nonprompt_muon);
         return nonprompt_muon.evaluate({syst, fabs(eta), pt});

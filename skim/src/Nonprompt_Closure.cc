@@ -113,7 +113,7 @@ void Nonprompt_Closure::ApplyScaleFactors()
     (*weight) *= sfMaker.getPrefire();
     (*weight) *= sfMaker.getPartonShower();
     (*weight) *= sfMaker.getTriggerSF(elec, muon);
-    (*weight) *= jet.getPileupIDWeight();
+    (*weight) *= jet.getScaleFactor();
     (*weight) *= jet.getTotalBTagWeight();
     (*weight) *= elec.getScaleFactor();
     (*weight) *= muon.getScaleFactor();
@@ -173,8 +173,7 @@ bool Nonprompt_Closure::getTriggerValue()
         if (isMC_) {
             return (trig_cuts.pass_cut(Subchannel::EE)
                     || trig_cuts.pass_cut(Subchannel::Single_E));
-
-        } else if (year_ == Year::yr2018) {
+        } else if (year_ == Year::yr2018) { // 2018 uses just EGamma not double vs single EG datasets
             return (trig_cuts.pass_cut(Subchannel::EE)
                     || trig_cuts.pass_cut(Subchannel::Single_E));
         } else if (trig_cuts.dataset_or_trig(Subchannel::EE)) {

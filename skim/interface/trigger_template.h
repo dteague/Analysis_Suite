@@ -1,6 +1,7 @@
 #ifndef TRIGGER_TEMPLATE_H_
 #define TRIGGER_TEMPLATE_H_
 
+
 if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
     setupTrigger(Subchannel::Single_M, Dataset::Single_M,
                  {"HLT_IsoMu24", "HLT_IsoTkMu24"});
@@ -25,11 +26,9 @@ if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
 
     setupTrigger(Subchannel::EE, Dataset::DoubleEG, {
             "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-            "HLT_DoubleEle33_CaloIdL_MW",
-            "HLT_DoubleEle33_CaloIdL_GsfTrkIdVL",
-            "HLT_Ele27_WPTight_Gsf",
+            "HLT_DoubleEle33_CaloIdL_GsfTrkIdVL_MW",
         });
-} else if (year_ == Year::yr2017) {
+ } else if (year_ == Year::yr2017) {
     setupTrigger(Subchannel::Single_M, Dataset::Single_M,
                  {"HLT_IsoMu27",});
     setupTrigger(Subchannel::Single_E, Dataset::Single_E,
@@ -55,7 +54,6 @@ if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
             "HLT_IsoMu24"});
     setupTrigger(Subchannel::Single_E, Dataset::DoubleEG, {
             "HLT_Ele32_WPTight_Gsf",});
-
     setupTrigger(Subchannel::MM, Dataset::DoubleMuon, {
             "HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",});
     setupTrigger(Subchannel::EM, Dataset::MuonEG, {
@@ -63,9 +61,9 @@ if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
             "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",});
     setupTrigger(Subchannel::EE, Dataset::DoubleEG, {
             "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-            "HLT_DoubleEle25_CaloIdL_MW",
-            "HLT_Ele32_WPTight_Gsf",});
+            "HLT_DoubleEle25_CaloIdL_MW",});
 
  }
 setupTrigger(Subchannel::None, Dataset::None, {});
+
 #endif // TRIGGER_TEMPLATE_H_

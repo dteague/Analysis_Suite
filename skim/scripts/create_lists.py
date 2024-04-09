@@ -59,6 +59,7 @@ dataset_dict = {
             '2017' : ["DoubleEG", "SingleElectron"],
             '2018' : "EGamma",
         },
+        "M" : ["DoubleMuon"],
         "E" : {
             '2016' : 'DoubleEG',
             '2017' : 'SingleElectron',
@@ -147,6 +148,9 @@ dataset_dict = {
         ],
         'wjet' : [
             'WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8',
+        ],
+        'wjet_mcm' : [
+            'WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8'
         ],
         'wjet_ht' : [
             'WJetsToLNu_HT-*_TuneCP5_13TeV-madgraphMLM-pythia8'

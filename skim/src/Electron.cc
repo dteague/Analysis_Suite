@@ -11,6 +11,7 @@ void Electron::setup(TTreeReader& fReader)
     hoe.setup(fReader, "Electron_hoe");
     eInvMinusPInv.setup(fReader, "Electron_eInvMinusPInv");
     tightCharge.setup(fReader, "Electron_tightCharge");
+    sc_delta.setup(fReader, "Electron_deltaEtaSC");
 
     ecalSumEt.setup(fReader, "Electron_dr03EcalRecHitSumEt");
     hcalSumEt.setup(fReader, "Electron_dr03HcalDepth1TowerSumEt");
@@ -34,6 +35,7 @@ void Electron::setup(TTreeReader& fReader)
         dEscaleUp.setup(fReader, "Electron_dEscaleUp");
         dEsigmaDown.setup(fReader, "Electron_dEsigmaDown");
         dEsigmaUp.setup(fReader, "Electron_dEsigmaUp");
+        genPartFlav.setup(fReader, "Electron_genPartFlav");
         auto tth_set = getScaleFile("USER", "tthMVA_scales");
         electron_tthMVA = WeightHolder(tth_set->at("NUM_mvaTTH_DEN_isElectron"), Systematic::Electron_tthMVA,
                                        {"value", "systup", "systdown"});
@@ -65,6 +67,23 @@ void Electron::fillElectron(ElectronOut& output, Level level, const Bitmap& even
     }
 }
 
+void Electron::fillElectron_Endcap(ElectronOut_Endcap& output, Level level, const Bitmap& event_bitmap)
+{
+    output.clear();
+    for (size_t idx = 0; idx < size(); ++idx) {
+        bool pass = fillParticle(output, level, idx, event_bitmap);
+        if (pass) {
+            output.dxy.push_back(fabs(dxy.at(idx)));
+            output.dz.push_back(fabs(dz.at(idx)));
+            output.convVeto.push_back(convVeto.at(idx));
+            output.lostHits.push_back(lostHits.at(idx));
+            output.sip3d.push_back(sip3d.at(idx));
+            output.mvaTTH.push_back(tth_mva_vec[idx]);
+            output.truth.push_back(genPartFlav.at(idx));
+        }
+    }
+}
+
 void Electron::fillElectron_Iso(ElectronOut_Fake& output, Jet& jet, Level level, const Bitmap& event_bitmap)
 {
     output.clear();
@@ -89,9 +108,27 @@ void Electron::fillElectron_Iso(ElectronOut_Fake& output, Jet& jet, Level level,
     }
 }
 
+void Electron::fillElectron_small(LeptonOut_small& output, Level level, const Bitmap& event_bitmap)
+{
+    output.clear();
+    for (size_t idx = 0; idx < size(); ++idx) {
+        setSyst(0); // Fill values with nominal values and corrections done on top
+        Bitmap final_bitmap = bitmap(level).at(idx) & event_bitmap;
+        if (final_bitmap.any()) {
+            output.syst_bitMap.push_back(final_bitmap.to_ulong());
+            output.rawPt.push_back(m_pt.at(idx));
+            output.ptRatio.push_back(ptRatio(idx));
+            output.mvaTTH.push_back(tth_mva_vec[idx]);
+        } else {
+            continue;
+        }
+    }
+}
+
 bool Electron::inCrack(size_t i)
 {
-    return fabs(eta(i)) > 1.444 && fabs(eta(i)) < 1.566;
+    float abseta = fabs(eta(i)+sc_delta.at(i));
+    return abseta > 1.444 && abseta < 1.566;
 }
 
 void Electron::createLooseList()
@@ -126,7 +163,7 @@ void Electron::createFakeList(Particle& jets)
             && lostHits.at(i) == 0
             && tightCharge.at(i) == 2
             && passTriggerRequirements(i) // Nonmva
-            && getFakePtFactor(i)*m_pt.at(i) > 15
+            && m_pt.at(i)*getFakePtFactor(i) > 20
             && (ptRatio(i) > ptRatioCut || passJetIsolation(i)) // MVA
             )
             {
@@ -140,8 +177,7 @@ void Electron::createFakeList(Particle& jets)
 void Electron::createTightList(Particle& jets)
 {
     for (auto i : list(Level::Fake)) {
-        if (// pt(i) > 15
-            // &&
+        if (pt(i) > 20 &&
             passJetIsolation(i))
             {
                 m_partList[Level::Tight]->push_back(i);
@@ -157,8 +193,9 @@ float Electron::getScaleFactor()
     std::string syst = systName(electron_scale);
     std::string syst_mva = systName(electron_tthMVA);
     for (auto eidx : list(Level::Fake)) {
-        weight *= electron_scale.evaluate({yearMap.at(year_), syst, "wp90noiso", fabs(eta(eidx)), pt(eidx)});
-        weight *= electron_tthMVA.evaluate({fabs(eta(eidx)), pt(eidx), syst_mva});
+        float pt = (m_pt.at(eidx) >= 20) ? m_pt.at(eidx) : 20.;
+        weight *= electron_scale.evaluate({yearMap.at(year_), syst, "wp90noiso", fabs(eta(eidx)), pt});
+        weight *= electron_tthMVA.evaluate({fabs(eta(eidx)), pt, syst_mva});
     }
     return weight;
 }

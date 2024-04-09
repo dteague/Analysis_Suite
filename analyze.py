@@ -18,12 +18,10 @@ def rOpen(filename, option=""):
     yield rootfile
     rootfile.Close()
 
-def get_shape_systs(addVar=False):
+def get_shape_systs():
     from analysis_suite.data.systs import systematics
     systs = [syst.name for syst in systematics if syst.syst_type == "shape"]
-    if addVar:
-        systs = [syst+"_up" for syst in systs] + [syst+"_down" for syst in systs ]
-    return systs
+    return list(dict.fromkeys(systs))
 
 def setInputs(inputs):
     root_inputs = ROOT.TList()
@@ -72,7 +70,8 @@ def getSumW(infiles):
 
 def get_info_local(filename):
     year="2016"
-    return {"year": year, "sampleName": "data", "selection": "test", "dataset": "DoubleMuon"}
+    return {"year": year, "sampleName": "data", "selection": "test", "dataset": "DoubleMuon",
+            "run": ""}
 
 def get_info_general(filename):
     sampleName = filename.split('/')
@@ -87,10 +86,13 @@ def get_info_general(filename):
                 }
     data_regions = {
         "DoubleMuon" : "DoubleMuon",
+        "SingleMuon" : "SingleMuon",
+
         "MuonEG" : "MuonEG",
+
         "DoubleEG": "DoubleEG",
         "EGamma": "DoubleEG",
-        "SingleElectron": "DoubleEG"
+        "SingleElectron": "SingleElectron",
     }
 
     year = None
@@ -107,8 +109,12 @@ def get_info_general(filename):
         if dset in sampleName:
             dataset = name
             break
+    run = ""
+    if "Run201" in filename:
+        i = filename.index("Run201")+7
+        run = filename[i:i+1]
     isUL = "UL"  in filename
-    return {"year": year, "selection": "From_DAS",
+    return {"year": year, "selection": "From_DAS", 'run': run,
             "sampleName": sampleName, "dataset": dataset}
 
 def run_multi(start, evts, files, inputs, selector):
@@ -175,6 +181,7 @@ if __name__ == "__main__":
     else:
         with open(user.analysis_area/"data/.analyze_info") as f:
             analysis = f.readline().strip()
+    get_shapes = analysis == "ThreeTop" and not args.no_syst
 
     # Setup inputs
     inputs = dict()
@@ -187,12 +194,13 @@ if __name__ == "__main__":
         'Year': details["year"],
         'Xsec': 1,
         'isData': True,
+        'DataRun': details['run']
     }
     if not args.local:
         inputs['MetaData'].update({'Xsec': fileInfo.get_xsec(groupName), 'isData': fileInfo.is_data(groupName)})
     inputs["Verbosity"] = args.verbose
     inputs["NEvents"] = args.number_events
-    inputs["Systematics"] = get_shape_systs() if not args.no_syst else []
+    inputs["Systematics"] = get_shape_systs() if get_shapes else []
 
     # Possibly need to fix for fakefactor stuff
     rInputs = setInputs(inputs)

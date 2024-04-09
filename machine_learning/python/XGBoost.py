@@ -5,6 +5,7 @@
 """
 import numpy as np
 import xgboost as xgb
+import warnings
 from dataclasses import dataclass, InitVar, asdict
 
 from .dataholder import MLHolder
@@ -13,10 +14,13 @@ from .dataholder import MLHolder
 def fom_metric(y_pred, dtrain):
     prev = fom_metric.prev
     nbins = 20
-    bins = np.linspace(0, 1, nbins+1)
-
     y_true = dtrain.get_label()
-    y_pred = 1/(1+np.exp(-y_pred))
+    if len(y_pred.shape) > 1:
+        y_pred = 1/(1+np.exp(-y_pred.T[1]))
+    else:
+        y_pred = 1/(1+np.exp(-y_pred))
+
+    bins = np.linspace(np.min(y_pred), np.max(y_pred), nbins+1)
     weight = dtrain.get_weight()
     b = np.histogram(y_pred[y_true==0], bins, weights=weight[y_true==0])[0]
     s = np.histogram(y_pred[y_true==1], bins, weights=weight[y_true==1])[0]
@@ -48,6 +52,8 @@ class Params:
     # max_delta_step: int = 0
     objective: str = 'binary:logistic'
     eval_metric: str = "logloss"
+    use_label_encoder: bool = False
+    # num_class: int = 2
 
     params: InitVar = None
 
@@ -73,7 +79,7 @@ class XGBoostMaker(MLHolder):
     def update_params(self, params):
         self.param = Params(params=params)
 
-    def train(self, outdir):
+    def train(self):
         """**Train for multiclass BDT**
 
         Does final weighting of the data (normalize all groups total
@@ -84,8 +90,7 @@ class XGBoostMaker(MLHolder):
           xgboost.XGBClassifer: XGBoost model that was just trained
 
         """
-
-        x_train = self.train_set.drop(self._drop_vars, axis=1)
+        x_train = self.train_set[self.use_vars]
         # w_train = self.train_set.train_weight.copy()
         w_train = self.train_set.split_weight.copy()
         w_train2 = abs(self.train_set.scale_factor.to_numpy())
@@ -102,12 +107,17 @@ class XGBoostMaker(MLHolder):
         # print(cv_train.to_string())
         # exit()
 
-        x_test = self.validation_set.drop(self._drop_vars, axis=1)
+        x_test = self.validation_set[self.use_vars]
         y_test = self.validation_set.classID
         w_test = abs(self.validation_set.scale_factor.to_numpy())
         # w_test = self.validation_set.scale_factor
 
         _, group_tot = np.unique(y_train, return_counts=True)
+        print()
+        print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
+        print(group_tot)
+        w_train[y_train==1] *= np.sum(w_train[y_train!=1])/np.sum(w_train[y_train==1])
+        print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
         # w_train[y_train == 0] /= np.sum(w_train[y_train == 0])
         # w_test = self.validation_set.scale_factor.copy()
         # w_train[y_train == 1] /= np.sum(w_train[y_train == 1])
@@ -116,33 +126,40 @@ class XGBoostMaker(MLHolder):
         # w_test[y_test == 1] /= np.sum(w_test[y_test == 1])
 
         # w_train[self.train_set["classID"] == 0] *= max(group_tot)/group_tot[0]
-        # w_train[self.train_set["classID"] == 1] *= max(group_tot)/group_tot[1]
+
+        if len(np.unique(y_test)) > 2:
+            self.param.objective = 'multi:softprob'
+            self.param.num_class = len(np.unique(y_test))
+            self.param.eval_metric = 'mlogloss'
 
         fit_model = xgb.XGBClassifier(**asdict(self.param))
         fit_model.fit(x_train, y_train, sample_weight=w_train,
-                      eval_metric=fom_metric,
+                      # eval_metric=fom_metric,
                       eval_set=[(x_train, y_train), (x_test, y_test)],
                       sample_weight_eval_set=[w_train2, w_test],
                       early_stopping_rounds=1500, verbose=20)
         self.results = fit_model.evals_result()
 
         self.best_iter = fit_model.get_booster().best_iteration
-        fit_model.save_model(f'{outdir}/model.bin')
+        fit_model.save_model(f'{self.outdir}/model.bin')
 
     def predict(self, use_set, directory):
-        fit_model = xgb.XGBClassifier({'nthread': 4})  # init model
+        fit_model = xgb.XGBClassifier()  # init model
         fit_model.load_model(str(directory / "model.bin"))  # load data
-        return fit_model.predict_proba(use_set.drop(self._drop_vars, axis=1))
+        prediction = fit_model.predict_proba(use_set[self.use_vars])
+        self.minmax[0] = np.min([np.min(prediction), self.minmax[0]])
+        self.minmax[1] = np.max([np.max(prediction), self.minmax[1]])
+        return prediction
 
-    def get_importance(self, directory):
-        x_train = self.train_set.drop(self._drop_vars, axis=1)
-        fit_model = xgb.XGBClassifier({'nthread': 4})  # init model
-        fit_model.load_model(str(directory / "model.bin"))  # load data
+    def get_importance(self):
+        x_train = self.train_set[self.use_vars]
+        fit_model = xgb.XGBClassifier()  # init model
+        fit_model.load_model(str(self.outdir / "model.bin"))  # load data
         impor = fit_model.get_booster().get_score(importance_type= "total_gain")
         sorted_import = {x_train.columns[int(k[1:])]: v for k, v in sorted(impor.items(), key=lambda item: item[1]) }
 
         from analysis_suite.commons.plot_utils import plot, color_options
-        with plot("{}/importance.png".format(directory)) as ax:
+        with plot(f"{self.outdir}/importance.png") as ax:
             ax.barh(range(len(sorted_import)), list(sorted_import.values()),
                     align='center',
                     height=0.5,)
@@ -152,10 +169,10 @@ class XGBoostMaker(MLHolder):
             ax.set_xlabel("Total Gain")
             ax.set_title("Variable Importance")
 
-    def plot_training_progress(self, outdir):
+    def plot_training_progress(self):
         for typ in self.results['validation_0'].keys():
             from analysis_suite.commons.plot_utils import plot, color_options
-            with plot(f"{outdir}/{typ}_training.png") as ax:
+            with plot(f"{self.outdir}/{typ}_training.png") as ax:
                 ax.plot(self.results['validation_0'][typ], label='Training Set')
                 ax.plot(self.results['validation_1'][typ], label='Validation Set')
                 ax.legend()

@@ -39,6 +39,8 @@ class Stack(Histogram):
 
 
     def plot_stack(self, pad, **kwargs):
+        if not self.stack:
+            return
         n, bins, patches = pad.hist(
             weights=np.array([h.vals for h in self.stack]).T, bins=self.axis.edges,
             x=np.tile(self.axis.centers, (len(self.stack), 1)).T,

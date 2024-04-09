@@ -6,13 +6,22 @@ import uproot
 def likelihood_sig(s, b):
     return np.sqrt(2*(s+b)*np.log(1+s/(b+1e-5))-2*s)
 
-def get_syst_index(filename, systName):
+def get_syst_index(filename, group, systName):
     with uproot.open(filename) as f:
-        syst_dir = [key for key in f.keys() if "Systematics" in key][0]
-        systNames = [name.member("fName") for name in f[syst_dir]]
-        index_dir = [key for key in f.keys() if "Syst_Index" in key][0]
-        syst_index = {systNames[int(name.member("fName"))]: int(name.member("fTitle")) for name in f[index_dir]}
-    if systName not in syst_index:
-        return None, None
-    else:
-        return syst_index[systName], systNames.index(systName)
+        print(group)
+        if group not in f:
+            return None, None
+        tree = f[group]
+        systNames = [name.member("fName") for name in tree["Systematics"]]
+        print(np.unique(systNames))
+        if systName not in systNames:
+            return None, None
+        systNum = systNames.index(systName)
+
+        if "Syst_Index" in tree:
+            for name in tree["Syst_Index"]:
+                if int(name.member("fName")) == systNum:
+                    return int(name.member('fTitle')), systNum
+            return None, None
+        else:
+            return systNum, systNum

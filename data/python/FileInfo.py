@@ -219,7 +219,7 @@ info = {
     },
     "wjets" : {
         # "cross_section" : 61334.9,
-        "cross_section" : 61526.7,
+        "cross_section" : 66680.0,
         "Source of cross section" : "AN2018-062",
         "DAS": 'WJetsToLNu_Tune.*',
     },
@@ -267,7 +267,7 @@ info = {
 
     # Drell-Yan
     'DYm10-50': {
-        "cross_section" : 18610.0,
+        "cross_section" : 15810.0,
         "Source of cross section" : "1G25ns",
         "Level": "NLO",
         "DAS": 'DYJetsToLL_M-10to50_Tune.*',

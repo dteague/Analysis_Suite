@@ -59,19 +59,20 @@ if __name__ == "__main__":
                         type=lambda x : ["2016", "2017", "2018"] if x == "all" \
                                    else [i.strip() for i in x.split(',')],
                         help="Year to use")
-    parser.add_argument('--nonprompt', required=True)
-    parser.add_argument('--charge', required=True)
+    parser.add_argument('-d', '--workdir', help="directory to run over. If nothing, use date",)
     args = parser.parse_args()
 
+    workdir = user.workspace_area / args.workdir
     basePath = user.analysis_area / "data/POG/USER"
 
     for year in args.years:
-        with open(user.workspace_area/"charge_misId"/f"{args.charge}/fr_{year}.pickle", "rb") as f:
+        # new_workdir = user.workspace_area / "Jan_ptcut"
+        with open(workdir/"charge_misId"/f"fr_{year}.pickle", "rb") as f:
             charge_fr = pickle.load(f)
-        with open(user.workspace_area/"fake_rate"/f"{args.nonprompt}/fr_bjet_{year}.pickle", "rb") as f:
+        with open(workdir/"fake_rate"/f"fr_{year}.pickle", "rb") as f:
             fake_rates = pickle.load(f)
-            elec_nonprompt_fr = fake_rates["Electron"]["data_ewk"]
-            muon_nonprompt_fr = fake_rates["Muon"]["data_ewk"]
+            elec_nonprompt_fr = fake_rates["Electron"]["ewk"]
+            muon_nonprompt_fr = fake_rates["Muon"]["ewk"]
 
         cset = CorrectionSet.parse_obj({
             "schema_version": VERSION,

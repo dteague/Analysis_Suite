@@ -75,83 +75,40 @@ def fit_template(data, flip):
     return res.x
 
 
-def measurement(workdir, ginfo, year, input_dir):
+def measurement(workdir, year, input_dir):
     plot_dir = workdir / f'MR_{year}'
     plot_dir.mkdir(exist_ok=True)
 
     bkg = ["DY_ht", "ttbar_lep", 'VV']
-    groups = ginfo.setup_groups(["data"] + bkg)
-    ntuple = config.get_ntuple('charge_misId', 'measurement')
     chans = ['MM', 'EE', 'EM']
+
+    ntuple = config.get_ntuple('charge_misId', 'measurement')
+    groups = ntuple.get_info().setup_groups(["data"] + bkg)
+    filename = ntuple.get_filename(year=year, workdir=input_dir)
 
     graphs = pinfo.charge_misId['Measurement']
     graphs_1d = [graph for graph in graphs if graph.dim() == 1]
 
-    filename = ntuple.get_filename(year=year, workdir=input_dir)
     plotter = Plotter(filename, groups, ntuple=ntuple, year=year)
-    plotter.cut(lambda vg : vg["Met"] > 25)
-    plotter.cut(lambda vg : vg["Nloose_Muon"]+vg["Nloose_Electron"]==2)
     plotter.set_groups(bkg=bkg)
-
-    # pt_hist = np.zeros(11)
-    # err_hist = np.zeros(11)
-    # eta_hist = np.zeros(4)
-    # eta_err = np.zeros(4)
-    # for member, dfs in plotter.dfs.items():
-    #     for tree, df in dfs.items():
-    #         print(member)
-    #         mask = ak.flatten(df['TightElectron']['flip', -1] == 1)
-    #         pt = ak.flatten(df['TightElectron']['pt', -1])[mask]
-    #         eta = ak.flatten(df['TightElectron']['abseta', -1])[mask]
-    #         weight = ak.flatten(df['TightElectron'].scale(-1))[mask]
-    #         if len(weight) == 0:
-    #             continue
-    #         print(np.histogram(pt, bins=np.array([15, 20, 25, 30, 35, 40, 60, 80, 100, 150, 200, 500]), weights=weight)[0])
-    #         print(np.sqrt(np.histogram(pt, bins=np.array([15, 20, 25, 30, 35, 40, 60, 80, 100, 150, 200, 500]), weights=weight*weight)[0]))
-    #         print(np.histogram(eta, bins=np.array([0, 0.8, 1.479, 1.653, 2.5]), weights=weight)[0])
-    #         pt_hist += np.histogram(pt, bins=np.array([15, 20, 25, 30, 35, 40, 60, 80, 100, 150, 200, 500]), weights=weight)[0]
-    #         err_hist +=np.histogram(pt, bins=np.array([15, 20, 25, 30, 35, 40, 60, 80, 100, 150, 200, 500]), weights=weight*weight)[0]
-    #         eta_hist += np.histogram(eta, bins=np.array([0, 0.8, 1.479, 1.653, 2.5]), weights=weight)[0]
-    #         eta_err += np.histogram(eta, bins=np.array([0, 0.8, 1.479, 1.653, 2.5]), weights=weight*weight)[0]
-
-    # print("tot")
-    # print(pt_hist)
-    # print(np.sqrt(err_hist))
-    # print(np.sqrt(err_hist)/pt_hist)
-    # print()
-    # print(eta_hist)
-    # print(np.sqrt(eta_err)/eta_hist)
-    # exit()
 
     for chan in chans:
         latex = latex_chan[chan]
         plotter.mask(lambda vg : vg["TightElectron"].num() == chan.count('E'))
-        plotter.fill_hists(graphs, ginfo)
+        plotter.fill_hists(graphs)
         for graph in graphs_1d:
             plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}.png', chan=latex, region=f"$MR({latex})$")
 
     plotter.mask(lambda vg : vg["TightElectron"].num() > 0)
-    plotter.fill_hists(graphs, ginfo)
+    plotter.fill_hists(graphs)
     for graph in graphs_1d:
         plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_e.png', chan="e\ell", region="$MR(e\ell)$")
 
     all_fr = plotter.get_sum(bkg, 'all_fr')
     flip_fr = plotter.get_sum(bkg, 'flip_fr')
-    # all_pt = plotter.get_sum(bkg, 'pt_allq')
-    # flip_pt = plotter.get_sum(bkg, 'pt_flipq')
-    # print(all_fr.project(0).vals)
-    # print(flip_fr.project(0).vals)
-    # print()
-    # print(all_fr.err)
-    # print(flip_fr.err)
-    # exit()
 
     fr = Histogram.efficiency(flip_fr, all_fr)
-    # fr_pt = Histogram.efficiency(flip_pt, all_pt)
-    # print(fr.vals)
-    # print(fr_pt.vals)
     fr_plot(plot_dir/f'fr_{year}', fr, year)
-    # plot_project(plot_dir/f'fr_pt_tight.png', flip_pt, all_pt, "$p_{{T}}(e)$", lumi[year])
 
     plot_project(plot_dir/f'fr_pt.png', flip_fr, all_fr, "$p_{{T}}(e)$", lumi[year], axis=0)
     plot_project(plot_dir/f'fr_eta.png', flip_fr, all_fr, '$\eta(e)$', lumi[year], axis=1)
@@ -161,12 +118,11 @@ def measurement(workdir, ginfo, year, input_dir):
         pickle.dump(fr, f)
 
 
-def closure(workdir, ginfo, year, input_dir):
+def closure(workdir, year, input_dir):
     plot_dir = workdir / f'CR_{year}'
     plot_dir.mkdir(exist_ok=True)
 
     mc_bkg = ["ttbar_lep", 'VV', 'DY']
-    groups = ginfo.setup_groups([ "data", "charge_flip"]+ mc_bkg)
     graphs = pinfo.charge_misId['Closure']
 
     # # Opposite sign region
@@ -182,18 +138,21 @@ def closure(workdir, ginfo, year, input_dir):
     #     plotter_os.plot_stack(graph.name, plot_dir/f'{graph.name}_OS.png', chan='ee', region="$OS({})$")
 
     # Same sign closure test
+
+
     ntuple_ss = config.get_ntuple('charge_misId', 'closure_ss')
+    groups = ntuple_ss.get_info().setup_groups(["charge_flip", 'data'] + mc_bkg)
     filename = ntuple_ss.get_filename(year=year, workdir=input_dir)
+
     plotter_ss = Plotter(filename, groups, ntuple=ntuple_ss, year=year)
     plotter_ss.cut(lambda vg : vg["Met"] < 50)
-    plotter_ss.cut(lambda vg : vg["Nloose_Muon"]+vg["Nloose_Electron"]==2)
     plotter_ss.set_groups(bkg=mc_bkg)
 
     # Scale Fake Rate
     with open(workdir/f"charge_misid_rate_{year}.pickle", "rb") as f:
         fake_rates = pickle.load(f)
     plotter_ss.scale(lambda vg : scale_misId(vg, fake_rates), groups='charge_flip')
-    plotter_ss.fill_hists(graphs, ginfo)
+    plotter_ss.fill_hists(graphs)
 
     # Get Scaling
     integrals = plotter_ss.get_integral()
@@ -227,8 +186,6 @@ def closure(workdir, ginfo, year, input_dir):
         pickle.dump(fake_rates, f)
 
 if __name__ == "__main__":
-    workdir = workspace_area/'charge_misId'
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-y", "--years", required=True,
                         type=lambda x : ["2016", "2017", "2018"] if x == "all" \
@@ -240,22 +197,13 @@ if __name__ == "__main__":
                         help="Regions to run through (sideband, measurement, closure)")
     args = parser.parse_args()
 
-    workdir /= datetime.now().strftime("%m%d") if args.workdir is None else args.workdir
-    workdir.mkdir(exist_ok=True)
+    workdir = workspace_area/ args.workdir / 'charge_misId'
+    workdir.mkdir(exist_ok=True, parents=True)
 
-    color_by_group = {
-        "data": "black",
-        "DY_ht": "goldenrod",
-        "DY": "goldenrod",
-        "ttbar_lep": 'royalblue',
-        "VV": 'mediumorchid',
-        'charge_flip': 'seagreen',
-    }
-    ginfo = GroupInfo(color_by_group)
     for year in args.years:
         if 'measurement' in args.run:
             print("Measurement")
-            measurement(workdir, ginfo, year, args.input_dir)
+            measurement(workdir, year, args.input_dir)
         if 'closure' in args.run:
             print("Closure")
-            closure(workdir, ginfo, year, args.input_dir)
+            closure(workdir, year, args.input_dir)

@@ -17,9 +17,7 @@ def get_cli():
                         help="Working Directory")
     parser.add_argument("-n", "--name", default="", help="Extra name to outfile")
     parser.add_argument("-t", '--extra_text', default="")
-    parser.add_argument("-y", "--years", required=True,
-                        type=lambda x : ["2016", "2017", "2018"] if x == "all" \
-                                   else [i.strip() for i in x.split(',')],
+    parser.add_argument("-y", "--years", required=True, type=lambda x : [i.strip() for i in x.split(',')],
                         help="Year to use")
     blind_text = "--run blind" if sys.argv[1] == "asymptotic" else "-t -1"
     parser.add_argument("--blind", default="", action="store_const", const=blind_text)
@@ -42,7 +40,7 @@ if __name__ == "__main__":
     workdir = args.workdir/args.extra_text
     runCombine.work_dir = workdir # same in all, so just set it
     for year in args.years:
-        card = f'final_{year}_card.root'
+        card = f'final_{year}_nosyst_card.root'
         blindness = f'{args.blind} --expectSignal {args.r}'
         # if need_redo_t2w(args.workdir, card):
         #     print("here")

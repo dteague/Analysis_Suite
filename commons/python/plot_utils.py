@@ -79,20 +79,21 @@ def ticks(pad):
     pad.tick_params(direction="in", length=4, which='minor', top=True,
                     right=True)
 
-def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bot=0.0, **kwargs):
+def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bot=0.0, zero_bot=True, **kwargs):
     xpad = pad if subpad is None else subpad
     if xlabel:
         xpad.set_xlabel(xlabel)
     if binning is not None:
         xpad.set_xlim(binning[0], binning[-1])
+    if zero_bot:
+        pad.set_ylim(bottom=0.)
 
-    pad.set_ylim(bottom=0.)
-    pad.set_ylabel("Events/bin")
+    pad.set_ylabel(kwargs.get("pad_label", "Events/bin"))
     right_align_label(pad.get_yaxis(), isYaxis=True)
     right_align_label(xpad.get_xaxis())
 
     if subpad is not None:
-        subpad.set_ylabel("Data/MC")
+        subpad.set_ylabel(kwargs.get("subpad_label", "Data/MC"))
         subpad.set_ylim(top=ratio_top, bottom=ratio_bot)
 
 

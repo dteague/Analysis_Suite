@@ -3,7 +3,7 @@ import numpy as np
 import prettytable
 
 class Card_Maker:
-    def __init__(self, path, year, cr, signals, plot_groups, variable):
+    def __init__(self, path, year, cr, signals, plot_groups, variable, nosyst=False):
         if 'data' in plot_groups:
             plot_groups.remove('data')
         self.variable = variable
@@ -13,9 +13,11 @@ class Card_Maker:
         self.channels = np.array([cr])
         self.signals = signals
         self.plot_groups = np.array(plot_groups)
+        self.nosyst = nosyst
 
     def __enter__(self):
-        self.f = open(f"{self.path}/{self.variable}_{self.year}_{self.cr}_card.txt", 'w')
+        region = self.cr + ("_nosyst" if self.nosyst else "")
+        self.f = open(f"{self.path}/{self.variable}_{self.year}_{region}_card.txt", 'w')
         return self
 
     def __exit__(self, type, value, traceback):
@@ -74,7 +76,9 @@ class Card_Maker:
 
         # Specify systematics
         for syst in syst_list:
-            table.add_row(syst.output(all_groups, self.year))
+            syst_row = syst.output(all_groups, self.year)
+            if syst_row is not None:
+                table.add_row(syst_row)
         table.align='l'
         self.write(table.get_string(align='l'))
         self.write("syst_error group = " + " ".join([syst.get_name(self.year) for syst in syst_list]))

@@ -14,8 +14,10 @@ color_by_group = {
 measurement = NtupleInfo(
     filename = user.hdfs_workspace / 'charge_misId/{year}/{workdir}/',
     trees = ['OS_MR'],
+    part_cut=[['TightLepton', 'pt', lambda var: var > 20]],
     cut=[
         lambda vg : vg["Met"] > 25,
+        lambda vg : vg['TightLepton'].num() >= 2,
     ],
     branches = [
         lambda vg : vg.mergeParticles("Electron", "TightElectron"),
@@ -27,6 +29,10 @@ measurement = NtupleInfo(
 closure_os = NtupleInfo(
     filename = user.hdfs_workspace / 'charge_misId/{year}/{workdir}/',
     trees = ['OS_CR'],
+    part_cut=[['TightLepton', 'pt', lambda var: var > 20]],
+    cut=[
+        lambda vg : vg['TightLepton'].num() >= 2,
+    ],
     branches = [
         lambda vg : vg.mergeParticles("TightLepton", "TightMuon", "TightElectron"),
     ],
@@ -36,12 +42,13 @@ closure_os = NtupleInfo(
 closure_ss = NtupleInfo(
     filename = user.hdfs_workspace / 'charge_misId/{year}/{workdir}/',
     trees = ['SS', 'OS_CR'],
+    part_cut=[['TightLepton', 'pt', lambda var: var > 20]],
+    cut=[
+        lambda vg : vg['TightLepton'].num() >= 2,
+    ],
     branches = [
         lambda vg : vg.mergeParticles("TightLepton", "TightMuon", "TightElectron"),
     ],
     color_by_group = color_by_group,
 )
-closure_ss.add_change('OS_CR', {'charge_flip': 'data'})
-closure_ss.set_ignore_trees("ttbar_lep", ["OS_CR"])
-closure_ss.set_ignore_trees("VV", ["OS_CR"])
-closure_ss.set_ignore_trees("DY", ["OS_CR"])
+closure_ss.set_groups_trees("OS_CR", ['charge_flip'])

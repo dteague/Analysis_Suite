@@ -69,6 +69,11 @@ class NtupleGetter(BaseGetter):
     def _get_var_nosyst(self, name):
         return self.tree[name].array()
 
+    def _get_arr(self, name):
+        if name not in self.arr:
+            self[name]
+        return self.arr[name]
+
     def __getitem__(self, key):
         if key in self.part_name:
             if key not in self.parts:
@@ -166,8 +171,8 @@ class NtupleGetter(BaseGetter):
             Array of DeltaPhi between part1 and idx1 and part2 at idx2
         """
         dphi = ak.to_numpy(self[part1]["phi", idx1] - self[part2]["phi", idx2])
-        dphi[dphi > np.pi] = dphi[dphi > np.pi] - np.pi
-        dphi[dphi < -np.pi] = dphi[dphi < -np.pi] + np.pi
+        dphi[dphi > np.pi] = dphi[dphi > np.pi] - 2*np.pi
+        dphi[dphi < -np.pi] = dphi[dphi < -np.pi] + 2*np.pi
         return dphi
 
     def cosDtheta(self, part1, idx1, part2, idx2):
@@ -369,7 +374,7 @@ class Particle(ParticleBase):
         return self._mask[self.vg.mask]
 
     def mask_part(self, var, func):
-        self._mask = func(self.vg._get_var_nosyst(f'{self.name}/{var}'))*self._mask
+        self._mask = func(self.vg._get_arr(f'{self.name}/{var}')) * self._mask
 
     # Functions for a particle
 
@@ -454,6 +459,7 @@ class MergeParticle(ParticleBase):
     def mask_part(self, var, func):
         for part in self.parts:
             part.mask_part(var, func)
+        self.reset()
 
     @property
     def _sort(self):

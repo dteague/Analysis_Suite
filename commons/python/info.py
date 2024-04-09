@@ -41,6 +41,8 @@ class GroupInfo:
                     else:
                         tmpMembers.append(mem)
                 members = tmpMembers
+            if "DataDriven" in info and info['DataDriven']:
+                members = [key]
             final[key] = members
         return final
 
@@ -58,6 +60,10 @@ class GroupInfo:
             return list()
         return np.concatenate(list(groups.values()))
 
+    def is_data_driven(self, group):
+        if "DataDriven" not in ginfo[group]:
+            return False
+        return ginfo[group]["DataDriven"]
     
 class FileInfo:
     def __init__(self):
@@ -109,6 +115,8 @@ class NtupleInfo:
     changes: dict = field(default_factory=dict)
     ignore: dict = field(default_factory=dict)
     part_cut: list = None
+    tree_groups: dict = field(default_factory=dict)
+    group_trees: dict = field(default_factory=dict)
 
     def get_info(self, remove=None, add=None):
         color_by_group = self.color_by_group
@@ -130,27 +138,23 @@ class NtupleInfo:
             logging.info(f"Getting from workdir {workdir}")
         return Path(str(self.filename).format(year=year, workdir=workdir))
 
-    def add_change(self, tree, changes):
-        self.changes[tree] = changes
-        for ignore in changes.values():
-            if ignore not in self.ignore:
-                self.ignore[ignore] = list()
-            self.ignore[ignore].append(tree)
-
-    def set_ignore_trees(self, group, trees):
+    def set_groups_trees(self, trees, groups):
         if isinstance(trees, str):
             trees = [trees]
-        self.ignore[group] = trees
+        if isinstance(groups, str):
+            groups = [groups]
+        for tree in trees:
+            self.tree_groups[tree] = groups
+        for group in groups:
+            self.group_trees[group] = tree
 
-    def exclude(self, tree, group):
-        if group in self.ignore:
-            return tree in self.ignore[group]
-        return False
-
-    def get_change(self, tree, member):
-        if tree in self.changes and member in self.changes[tree]:
-            return self.changes[tree][member]
-        return member
+    def pass_group(self, tree, group):
+        if tree in self.tree_groups:
+            return group in self.tree_groups[tree]
+        elif group in self.group_trees:
+            return tree in self.group_trees[group]
+        else:
+            return True
 
     def apply_part_cut(self, vg):
         if self.part_cut is None:

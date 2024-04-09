@@ -34,9 +34,5 @@ info = NtupleInfo(
         'data': 'black',
     }
 )
-
-info.add_change('Nonprompt_Dilepton', {'nonprompt': 'data'})
-info.add_change('Nonprompt_Multi', {'nonprompt': 'data'})
-info.add_change('OS_Charge_MisId', {'charge_flip': 'data'})
-
-info.set_ignore_trees("nonprompt_mc", ["Signal_Dilepton", "Signal_Multi", "OS_Charge_MisId"])
+info.set_groups_trees(["Nonprompt_Dilepton", "Nonprompt_Multi"], ['nonprompt', 'nonprompt_mc'])
+info.set_groups_trees(["OS_Charge_MisId"], ['charge_flip'])

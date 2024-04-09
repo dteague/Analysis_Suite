@@ -2,7 +2,7 @@
 from analysis_suite.commons.info import NtupleInfo
 import analysis_suite.commons.user as user
 
-trees = ['Signal_Multi', "Nonprompt_Multi", "OS_Charge_MisId", ]
+trees = ['Signal_Multi', "Nonprompt_Multi"]
 
 info = NtupleInfo(
     filename = user.hdfs_area / 'workspace/signal_region/{year}/{workdir}/',
@@ -31,10 +31,7 @@ info = NtupleInfo(
         "rare_nowz": "deeppink",
         "wz": 'slateblue',
         "tttt": "tomato",
-        'charge_flip': 'mediumseagreen',
         'data': 'black',
     }
 )
-
-info.add_change('Nonprompt_Multi', {'nonprompt': 'data'})
-info.add_change('OS_Charge_MisId', {'charge_flip': 'data'})
+info.set_groups_trees(["Nonprompt_Multi"], ['nonprompt', 'nonprompt_mc'])

@@ -11,7 +11,7 @@ from prettytable import PrettyTable
 from pathlib import Path
 import warnings
 
-import analysis_suite.flatten as getter
+from analysis_suite.flatten import NtupleGetter, FlatGetter
 from analysis_suite.commons.histogram import Histogram
 from analysis_suite.commons.constants import lumi
 import analysis_suite.commons.configs as config
@@ -59,6 +59,7 @@ class Plotter:
         self.bkg = []
         self.data = 'data'
         self.groups = copy(groups)
+        self.group_by_mem = {}
         self.graphs = dict()
         self.lumi = lumi[year]
         self.workdir = Path('.')
@@ -71,10 +72,10 @@ class Plotter:
             self.setup_ntuple(filename, ntuple, **kwargs)
         self.clean_groups(groups)
 
+
     def set_syst(self, syst):
-        for key, vg in self.dfs.items():
-            for tree, subvg in vg.items():
-                subvg.set_syst(syst)
+        for vg in self.getters():
+            vg.set_syst(syst)
 
 
     def set_groups(self, sig="", bkg=None, data=None):
@@ -83,11 +84,12 @@ class Plotter:
         if data is not None:
             self.data = data
 
+
     def clean_groups(self, groups):
         for group, members in groups.items():
             new_members = [member for member in members if member in self.dfs]
             self.groups[group] = new_members
-        
+
 
     def get_hists(self, name, group=None):
         if group is None:
@@ -103,38 +105,54 @@ class Plotter:
             for group, members in self.groups.items():
                 for member in members:
                     xsec = 1. if fileInfo.is_data(member) else fileInfo.get_xsec(member)*self.lumi*1000
+                    # if member not in uproot.open(root_file):
+                    #     continue # nice for debugging
                     for tree in ntuple.trees:
-                        if ntuple.exclude(tree, group):
+                        if not ntuple.pass_group(tree, group):
                             continue
-                        tuple_name = ntuple.get_change(tree, member)
-                        vg = getter.NtupleGetter(root_file, tree, tuple_name, xsec, systName=systName)
+                        vg = NtupleGetter(root_file, tree, member, xsec, systName=systName)
                         if not vg:
                             continue
 
                         ntuple.setup_branches(vg)
+                        ntuple.apply_part_cut(vg)
                         ntuple.apply_cut(vg)
+
+                        # To avoid data-driven bkg being written out as 'data'
+                        if gself.ginfo.is_data_driven(group):
+                            member = group
+
                         if vg:
+                            if member not in self.group_by_mem:
+                                self.group_by_mem[member] = {}
+                            self.group_by_mem[member][tree] = group
                             if member not in self.dfs:
                                 self.dfs[member] = dict()
                             self.dfs[member][tree] = vg
+
 
     def setup_flat(self, filename, cuts):
         region = filename.stem.split('_')[-1]
         with uproot.open(filename) as f:
             for group, members in self.groups.items():
                 for member in members:
-                    fg = getter.FlatGetter(f, member)
+                    fg = FlatGetter(f, member)
                     if not fg:
                         continue
                     fg.cut(cuts)
+                    if member not in self.group_by_mem:
+                        self.group_by_mem[member] = {}
+                    self.group_by_mem[member][region] = group
                     self.dfs[member] = {region: fg}
 
     def get_integral(self):
-        output = {keys: 0. for keys in self.dfs.keys()}
-        for key, vg in self.dfs.items():
-            for subvg in vg.values():
-                output[key] += sum(subvg.scale)
+        output = {}
+        for vg, key, group in self.getters(keys=True):
+            if group not in output:
+                output[group] = 0.
+            output[group] += sum(vg.scale)
         return output
+
 
     def fill_hists(self, graphs, *args, subset=None, **kwargs):
         if isinstance(graphs, dict):
@@ -147,98 +165,75 @@ class Plotter:
         for name, graph in self.graphs.items():
             if subset is not None and name not in subset:
                 continue
-            for group, members in self.groups.items():
-                self.hists[name][group] = Histogram(group, *graph.bins(), group_info=self.ginfo)
-                for member in members:
-                    vals, weight = self.get_array(member, graph, *args)
+            self.hists[name] = {g: Histogram(g, *graph.bins(), group_info=self.ginfo) for g in self.groups.keys()}
+            for vg, member, group in self.getters(keys=True):
+                vals, weight = vg.get_graph(graph, *args)
+                if graph.dim() == 1:
+                    self.hists[name][group].fill(vals, weight=weight, member=member, **kwargs)
+                else:
                     self.hists[name][group].fill(*vals, weight=weight, member=member, **kwargs)
 
     def mask(self, mask, clear=True, groups=None):
-        for key, vg in self.dfs.items():
-            if groups is not None and key not in groups:
-                continue
-            for subvg in vg.values():
-                if clear:
-                    subvg.clear_mask()
-                subvg.mask = mask
+        for vg in self.getters(groups):
+            if clear:
+                vg.clear_mask()
+            vg.mask = mask
+
 
     def cut(self, mask, groups=None):
-        def _cut(vg, mask):
-            for key, subvg in vg.items():
-                subvg.cut(mask)
+        for vg in self.getters(groups):
+            vg.cut(mask)
 
-        if groups is None:
-            for vg in self.dfs.values():
-                _cut(vg, mask)
-        elif isinstance(groups, str):
-            _cut(self.dfs[groups], mask)
-        else:
-            for group in groups:
-                for member in self.groups[group]:
-                    _cut(self.dfs[member], mask)
+
+    def getters(self, groups=None, keys=False):
+        if isinstance(groups, str):
+            groups = [groups]
+        members = list(self.dfs.keys())
+
+        for key in members:
+            vg = self.dfs[key]
+            for subkey, subvg in vg.items():
+                group = self.group_by_mem[key][subkey]
+                if groups is not None and group not in groups:
+                    continue
+                if keys:
+                    yield subvg, key, group
+                else:
+                    yield subvg
 
     def mask_part(self, part, var, func):
-        for key, vg in self.dfs.items():
-            for subvg in vg.values():
-                subvg[part].mask_part(var, func)
-                subvg.reset()
+        for vg in self.getters():
+            vg[part].mask_part(var, func)
+            vg.reset()
+
+    def reset_part(self, part):
+        for vg in self.getters():
+            vg[part].clear_mask()
 
     def scale(self, scaler, groups=None):
-        def _scale(vg, scaler):
-            for key, subvg in vg.items():
-                scaler(subvg)
+        for vg in self.getters(groups):
+            scaler(vg)
 
-        if groups is None:
-            for vg in self.dfs.values():
-                _scale(vg, scaler)
-        elif isinstance(groups, str):
-            for member in self.groups[groups]:
-                _scale(self.dfs[member], scaler)
-        else:
-            for group in groups:
-                for member in self.groups[group]:
-                    _scale(self.dfs[member], scaler)
-
-
-    def scale_hists(self, group, scale, scale_df=False):
+    def scale_hists(self, groups, scale, scale_df=False):
+        if isinstance(groups, str):
+            groups = [groups]
         for name, hist in self.hists.items():
-            hist[group].scale(scale, changeName=True)
-        if not scale_df:
-            return
-
-        for member in self.groups[group]:
-            for subdf in self.dfs[member].values():
-                subdf.scale = scale
-
-    def get_array(self, member, graph, *args):
-        if isinstance(graph, str):
-            graph = self.graphs[graph]
-
-        vals = [[] for _ in range(graph.dim())]
-        scales = np.array([])
-        for tree, vg in self.dfs[member].items():
-            v, s = vg.get_graph(graph, *args)
-            if len(s) == 0:
-                continue
-            if graph.dim() == 1:
-                vals = [np.concatenate((val, v)) for i, val in enumerate(vals)]
-            else:
-                vals = [np.concatenate((val, v[i])) for i, val in enumerate(vals)]
-            scales = np.concatenate((scales, s))
-        return vals, scales
-
+            for group in groups:
+                hist[group].scale(scale, changeName=True)
+        if scale_df:
+            for vg in self.getters(group):
+                vg.scale = scale
 
 
     def get_fom(self, graph, bins, sig_type="likely"):
         s_tot = np.zeros(len(bins))
         b_tot = np.zeros(len(bins))
-        for group, members in self.groups.items():
-            for member in members:
-                (values,), scales = self.get_array(member, graph)
-                if group in self.bkg:
-                    b_tot += np.array([np.sum(scales[values > val]) for val in bins])
-                elif group in self.sig:
-                    s_tot += np.array([np.sum(scales[values > val]) for val in bins])
+        for df, member, group in self.getters(keys=True):
+            values, scales = vg.get_graph(graph, *args)
+            if group in self.bkg:
+                b_tot += np.array([np.sum(scales[values > val]) for val in bins])
+            elif group in self.sig:
+                s_tot += np.array([np.sum(scales[values > val]) for val in bins])
         if sig_type == "likely":
             return likelihood_sig(s_tot, b_tot)
         elif sig_type == "s/sqrtb":
@@ -310,15 +305,13 @@ class Plotter:
     def plot_roc(self):
         with nonratio_plot(self.workdir/'roc.png', "False Positive Rate", [0., 1.]) as ax:
             pred, truth, weight = np.empty((3,0))
-            for group, members in self.groups.items():
-                for member in members:
-                    df = self.dfs[member]
-                    if group in self.sig:
-                        truth = np.append(truth, np.ones(len(df)))
-                    elif group in self.bkg:
-                        truth = np.append(truth, np.zeros(len(df)))
-                    weight = np.append(weight, df.scale)
-                    pred = np.append(pred, df['Signal'])
+            for df, member, group in self.getters(keys=True):
+                if group in self.sig:
+                    truth = np.append(truth, np.ones(len(df)))
+                elif group in self.bkg:
+                    truth = np.append(truth, np.zeros(len(df)))
+                weight = np.append(weight, df.scale)
+                pred = np.append(pred, df['Signal'])
             fpr, tpr, _ = roc_curve(truth, pred, sample_weight=weight)
             auc = np.trapz(tpr, fpr)
 
@@ -357,10 +350,10 @@ class Plotter:
             #upper pad
             if self.scale_signal:
                 # sig_scale = 250
-                # rounder = 250
-                # sig_scale = np.max(stack.vals)/np.max(signal.vals)
-                # sig_scale = int(sig_scale//rounder*rounder)
-                sig_scale = 750
+                rounder = 50
+                sig_scale = np.max(stack.vals)/np.max(signal.vals)
+                sig_scale = int(sig_scale//rounder*rounder)
+                # sig_scale = 750
                 signal.scale(sig_scale, changeName=True, forPlot=True)
 
             stack.plot_stack(pad)
@@ -399,18 +392,17 @@ class Plotter:
     def print_info(self, varname):
         info = list()
         graph = self.graphs[varname]
-        for group, members in self.groups.items():
-            for member in members:
-                vals, weight = self.get_array(member, graph)
-                info.append({
-                    "name" : member,
-                    "group" : group,
-                    "mean": np.mean(vals),
-                    "std":  np.std(vals),
-                    "kurtosis": kurtosis(vals),
-                    'nRaw': len(vals),
-                    'nEvents': np.sum(weight)
-                })
+        for df, member, group in self.getters(keys=True):
+            vals, weight = df.get_graph(graph)
+            info.append({
+                "name" : member,
+                "group" : group,
+                "mean": np.mean(vals),
+                "std":  np.std(vals),
+                "kurtosis": kurtosis(vals),
+                'nRaw': len(vals),
+                'nEvents': np.sum(weight)
+            })
 
         table = PrettyTable(["Name", "Group", "Events", "Raw", "Mean", "Kurtosis"])
         info = sorted(info, reverse=True, key=lambda x: x["mean"])

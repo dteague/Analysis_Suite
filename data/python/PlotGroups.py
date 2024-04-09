@@ -207,6 +207,12 @@ info ={
             "ttbar_hadronic",
         ],
     },
+    "ttbar": {
+        "Name": r"t\bar{t}",
+        "Members" : [
+            "ttbar",
+        ],
+    },
     "wjet_ht": {
         "Name": r"W+jets",
         "Members": [
@@ -272,6 +278,14 @@ info ={
             "DYm10-50"
         ]
     },
+    "DY_J": {
+        "Name": r"DY",
+        "Members" : [
+            "DY_0J",
+            "DY_1J",
+            "DY_2J",
+        ]
+    },
     "VV": {
         "Name": r"VV",
         "Members": [
@@ -289,16 +303,18 @@ info ={
     },
     'charge_flip': {
         "Name": r"Charge Misid",
-        "Members": ["charge_flip"]
+        "Members": ["data"],
+        "DataDriven": True,
     },
     'nonprompt': {
         "Name": r"Nonprompt",
-        "Members": ["nonprompt"]
+        "Members": ["data"],
+        "DataDriven": True,
     },
     'nonprompt_mc': {
         "Composite": True,
         "Name": r'Nonprompt',
-        "Members": ['ttbar_lep', "wjet_ht"],
+        "Members": ['ttbar_lep', "wjet_ht", 'DY', 'DY_J'],
     },
     "all": {
         "Composite": True,

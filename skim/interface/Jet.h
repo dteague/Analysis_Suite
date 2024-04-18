@@ -8,7 +8,7 @@
 
 #include <complex>
 
-enum PUID { PU_Tight = 0, PU_Medium = 1, PU_Loose = 2 };
+enum PUID { PU_Tight = 7};
 
 class Jet : public Particle {
 public:
@@ -174,6 +174,7 @@ private:
         Systematic::BJet_Shape_cferr2,
     };
 
+    WeightHolder veto_map;
     WeightHolder jer_scale, jet_resolution, jes_scale;
     WeightHolder puid_scale;
     WeightHolder btag_bc_scale, btag_udsg_scale, btag_eff, btag_shape_scale;

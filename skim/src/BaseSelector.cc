@@ -115,7 +115,9 @@ void BaseSelector::Init(TTree* tree)
     PV_npvs.setup(fReader, "PV_npvs");
 
     metfilters.setup(fReader, {"Flag_goodVertices", "Flag_globalSuperTightHalo2016Filter", "Flag_HBHENoiseFilter", "Flag_HBHENoiseIsoFilter",
-                               "Flag_EcalDeadCellTriggerPrimitiveFilter", "Flag_BadPFMuonFilter","Flag_ecalBadCalibFilter"});
+                               "Flag_EcalDeadCellTriggerPrimitiveFilter", "Flag_BadPFMuonFilter","Flag_ecalBadCalibFilter",
+                               "Flag_eeBadScFilter", "Flag_BadPFMuonDzFilter",
+        });
 
     // Set output vector. Fixed to size of systematics (one per variation)
     o_weight.resize(numSystematics());

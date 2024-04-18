@@ -29,6 +29,7 @@ public:
     size_t getPrescale(size_t run, size_t lumi, std::string trig);
 
     bool inGoldenLumi(UInt_t run, UInt_t lumi);
+    bool shouldVetoJets(Particle& jets);
 
     float getChargeMisIdFR(float eta, float pt);
     float getNonpromptFR(float eta, float pt, PID pid);
@@ -53,6 +54,7 @@ private:
         }
     };
 
+    WeightHolder veto_map;
     WeightHolder pu_scale;
     WeightHolder ee_scale, em_scale, mm_scale;
     WeightHolder charge_misId, nonprompt_elec, nonprompt_muon;

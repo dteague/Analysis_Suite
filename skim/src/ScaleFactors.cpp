@@ -20,14 +20,6 @@ void ScaleFactors::init(TTreeReader& fReader)
         auto corr_set = getScaleFile("LUM", "puWeights");
         pu_scale = WeightHolder(corr_set->at("Collisions" + yearNum.at(year_)+ "_UltraLegacy_goldenJSON"),
                                 Systematic::Pileup, {"nominal", "up", "down"});
-        // Trigger Scale Factor
-        // auto trig_set = getScaleFile("USER", "trigger_sf");
-        // ee_scale = WeightHolder(trig_set->at("EE_TriggerSF"), Systematic::TriggerSF,
-        //                         {"nom", "up", "down"});
-        // em_scale = WeightHolder(trig_set->at("EM_TriggerSF"), Systematic::TriggerSF,
-        //                         {"nom", "up", "down"});
-        // mm_scale = WeightHolder(trig_set->at("MM_TriggerSF"), Systematic::TriggerSF,
-        //                         {"nom", "up", "down"});
         auto trig_set = getScaleFile("USER", "my_trigger_sf");
         ee_scale = WeightHolder(trig_set->at("EE"), Systematic::TriggerSF,
                                 {"nom", "up", "down"});
@@ -40,6 +32,9 @@ void ScaleFactors::init(TTreeReader& fReader)
         std::ifstream golden_json_file(scaleDir_ + "/golden_json/golden_json_" + yearMap.at(year_).substr(0,4) + ".json");
         golden_json_file >> golden_json;
     }
+    // auto veto_set = getScaleFile("JME", "jetvetomaps");
+    // std::string veto_map_name = "Summer19UL"+yearNum.at(year_)+"_V1";
+    // veto_map = WeightHolder(veto_set->at(veto_map_name), Systematic::Nominal, {"jetvetomap", "", ""});
 
     // Fake Rates
     try {
@@ -55,6 +50,20 @@ void ScaleFactors::init(TTreeReader& fReader)
     }
 
     LOG_FUNC << "End init";
+}
+
+bool ScaleFactors::shouldVetoJets(Particle& jets)
+{
+    float pi = 3.141592;
+    for (auto idx: jets.list(Level::Loose)) {
+        float phi = jets.phi(idx);
+        if(phi > pi) phi = pi;
+        else if (phi < -pi) phi = -pi;
+        if (veto_map.evaluate({"jetvetomap", jets.eta(idx), phi}) != 0.0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void ScaleFactors::setup_prescale()

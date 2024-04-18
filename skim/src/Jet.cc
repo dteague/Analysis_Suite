@@ -95,6 +95,10 @@ void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
         }
     }
 
+    auto veto_set = getScaleFile("JME", "jetvetomaps");
+    std::string veto_map_name = "Summer19UL"+yearNum.at(year_)+"_V1";
+    veto_map = WeightHolder(veto_set->at(veto_map_name), Systematic::Nominal, {"jetvetomap", "", ""});
+
     m_jet_scales[Systematic::Nominal] = {{eVar::Nominal, std::vector<float>()}};
     for (auto syst : used_jec_systs) {
         m_jet_scales[syst] = {
@@ -143,13 +147,20 @@ void Jet::fillJetEff(BEffOut& output, Level level, const Bitmap& event_bitmap)
 
 void Jet::createLooseList()
 {
+    float pi = 3.141592;
     for (size_t i = 0; i < size(); i++) {
+        float jphi = phi(i);
+        if(jphi > pi) jphi = pi;
+        else if (jphi < -pi) jphi = -pi;
         if (pt(i) > 25
             && fabs(eta(i)) < 2.4
             && (jetId.at(i) & tightId) != 0
             && (neHEF.at(i) < 0.9 && neEmEF.at(i) < 0.9 && muEF.at(i) < 0.8 && chEmEF.at(i) < 0.8 && chHEF.at(i) > 0. && nConstituents.at(i) > 1)
-            && (closeJetDr_by_index.find(i) == closeJetDr_by_index.end() || closeJetDr_by_index.at(i) >= pow(0.4, 2))) {
-            if (pt(i) > 50 || (puId.at(i) >> PU_Tight) & 1) {
+            && (closeJetDr_by_index.find(i) == closeJetDr_by_index.end() || closeJetDr_by_index.at(i) >= pow(0.4, 2))
+            && (veto_map.evaluate({"jetvetomap", eta(i), jphi}) < 1e-5)
+            ) {
+
+            if (pt(i) > 50 || (puId.at(i) & PU_Tight) == PU_Tight) { // Issue with puid for 2016, need 111 for id now
                 m_partList[Level::Loose]->push_back(i);
             } else {
                 m_partList[Level::Loose_NoPUID]->push_back(i);
@@ -220,14 +231,14 @@ float Jet::getScaleFactor()
     float weight = 1;
     std::string syst = systName(puid_scale);
     for (auto idx : list(Level::Loose)) {
-        if (pt(idx) < 50)
+        if (pt(idx) < 50 && genJetIdx.at(idx) != -1)
             weight *= puid_scale.evaluate({eta(idx), pt(idx), syst, "T"});
     }
-    for (auto idx : list(Level::Loose_NoPUID)) {
-        float eff = puid_scale.evaluate({eta(idx), pt(idx), "MCEff", "T"});
-        float sf = puid_scale.evaluate({eta(idx), pt(idx), syst, "T"});
-        weight *= (1 - sf*eff) / (1 -eff);
-    }
+    // for (auto idx : list(Level::Loose_NoPUID)) {
+    //     float eff = puid_scale.evaluate({eta(idx), pt(idx), "MCEff", "T"});
+    //     float sf = puid_scale.evaluate({eta(idx), pt(idx), syst, "T"});
+    //     weight *= (1 - sf*eff) / (1 -eff);
+    // }
     return weight;
 }
 

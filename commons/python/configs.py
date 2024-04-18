@@ -14,8 +14,8 @@ def get_graph(name, graphs):
             return graph
     raise Exception(f"Graph ({name}) has not been found")
     
-def get_inputs(workdir):
-    return import_module('.inputs', f'workspace.{workdir.stem}')
+def get_inputs(workdir, filename='inputs'):
+    return import_module(f'.{filename}', f'workspace.{workdir.stem}')
 
 def get_ntuple(name, obj='info'):
     module = import_module(f'.{name}', 'ntuple_info')

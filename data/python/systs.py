@@ -76,8 +76,8 @@ systematics = [
     Systematic("Pileup", corr=True).add().dname("PILEUP"),
 
     ## Fake Rate stuff
-    Systematic("ChargeMisId_stat").add(groups='charge_flip', chan=['Dilepton', "ttzCR"]),
-    Systematic("ChargeMisId_closure", 'lnN').add(1.2, groups="charge_flip", chan=['Dilepton', "ttzCR"]),
+    Systematic("ChargeMisId_stat").add(groups='charge_flip'),
+    Systematic("ChargeMisId_closure", 'lnN').add(1.2, groups="charge_flip"),
 
     Systematic("Nonprompt_Mu_stat").add(groups='nonprompt'),
     Systematic("Nonprompt_El_stat").add(groups='nonprompt'),
@@ -99,6 +99,16 @@ systematics = [
 ]
 
 dummy = [Systematic("dummy", "lnN").add(1.0001, groups="rare"),]
+
+def get_syst_name(systname, year):
+    if systname == 'Nominal':
+        return 'Nominal'
+    for syst in systematics:
+        if syst.name in systname:
+            updown = systname[systname.rfind('_'):]
+            return syst.get_name(year)+updown
+    print('ERROR')
+    return None
 
 def get_shape_systs(year):
     systs = [(syst.name, syst.get_name(year)) for syst in systematics if syst.syst_type == "shape"]

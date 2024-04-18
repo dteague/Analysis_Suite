@@ -40,7 +40,7 @@ if __name__ == "__main__":
     workdir = args.workdir/args.extra_text
     runCombine.work_dir = workdir # same in all, so just set it
     for year in args.years:
-        card = f'final_{year}_nosyst_card.root'
+        card = f'final_{year}_card.root'
         blindness = f'{args.blind} --expectSignal {args.r}'
         # if need_redo_t2w(args.workdir, card):
         #     print("here")

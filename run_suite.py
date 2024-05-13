@@ -32,6 +32,7 @@ def get_cli():
                         type=lambda x : [i.strip() for i in x.split(',')],
                         help="Systematics to be used")
     parser.add_argument("--unblind", action="store_true")
+    parser.add_argument('-v', '--verbose', action='store_true')
 
     if len(sys.argv) == 1:
         pass
@@ -47,7 +48,6 @@ def get_cli():
         parser.add_argument("--save", action='store_true', help="Save training set")
         parser.add_argument("--plot", action='store_true')
         parser.add_argument('-r', '--region', default="signal",)
-        parser.add_argument('--rerun', action='store_true')
     elif sys.argv[1] == "plot":
         parser.add_argument('-p', '--plots', default="plots")
         parser.add_argument('-n', '--name', default=None,
@@ -76,9 +76,16 @@ def get_cli():
 
 def setup(workdir):
     workdir.mkdir(exist_ok=True)
-    inputs = workdir/'inputs.py'
-    if not inputs.exists():
-        shutil.copy(user.analysis_area/'data/python/inputs.py', inputs)
+    inputs = 'inputs.py'
+    if not (workdir/inputs).exists():
+        shutil.copy(user.analysis_area/'data/templates'/inputs, workdir/inputs)
+    params = 'params.py'
+    if not (workdir/params).exists():
+        shutil.copy(user.analysis_area/'data/templates'/params, workdir/params)
+    combine = 'combine_info.py'
+    if not (workdir/combine).exists():
+        shutil.copy(user.analysis_area/'data/templates'/combine, workdir/combine)
+
 
 if __name__ == "__main__":
     cli_args = get_cli()

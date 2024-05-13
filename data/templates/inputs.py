@@ -42,6 +42,13 @@ allvar = {
     "j4Pt":             lambda vg : vg.Jets['pt', 3, pad],
     "j5Pt":             lambda vg : vg.Jets['pt', 4, pad],
     "j6Pt":             lambda vg : vg.Jets['pt', 5, pad],
+
+    "j1Disc":             lambda vg : vg.Jets['discriminator', 0, pad],
+    "j2Disc":             lambda vg : vg.Jets['discriminator', 1, pad],
+    "j3Disc":             lambda vg : vg.Jets['discriminator', 2, pad],
+    "j4Disc":             lambda vg : vg.Jets['discriminator', 3, pad],
+    "j5Disc":             lambda vg : vg.Jets['discriminator', 4, pad],
+    "j6Disc":             lambda vg : vg.Jets['discriminator', 5, pad],
     # "j7Pt":             lambda vg : vg.Jets['pt', 6, pad],
     # "j8Pt":             lambda vg : vg.Jets['pt', 7, pad],
 
@@ -52,29 +59,37 @@ allvar = {
 
     "l1Pt":              lambda vg : vg.TightLepton["pt", 0],
     "l2Pt":              lambda vg : vg.TightLepton["pt", 1],
+    "l3Pt":              lambda vg : vg.TightLepton["pt", 2, pad],
+
 
     "lep_mass" :         lambda vg : vg.mass("TightLepton", 0, "TightLepton", 1),
-    # "lep_dphi" :         lambda vg : vg.dphi("TightLepton", 0, "TightLepton", 1),
-    # "lep_deta" :         lambda vg : vg.TightLepton['eta', 0] - vg.TightLepton['eta', 1],
-    # "lep_dr" :           lambda vg : vg.dr("TightLepton", 0, "TightLepton", 1),
+    "lep_dphi" :         lambda vg : vg.dphi("TightLepton", 0, "TightLepton", 1),
+    "lep_deta" :         lambda vg : vg.TightLepton['eta', 0] - vg.TightLepton['eta', 1],
+    "lep_dr" :           lambda vg : vg.dr("TightLepton", 0, "TightLepton", 1),
     "lep_mt":            lambda vg : vg.dipart_mt("TightLepton", 0, "TightLepton", 1),
-    "lep_cosTheta" :          lambda vg : vg.cosDtheta("TightLepton", 0, "TightLepton", 1),
+    "lep_cosTheta" :     lambda vg : vg.cosDtheta("TightLepton", 0, "TightLepton", 1),
 
     "jet_dr" :           lambda vg : vg.dr("Jets", 0, "Jets", 1),
     "jet_mass" :         lambda vg : vg.mass("Jets", 0, "Jets", 1),
-    # "jet_dphi" :         lambda vg : vg.dphi("Jets", 0, "Jets", 1),
-    # "jet_deta" :         lambda vg : vg.Jets['eta', 0] - vg.Jets['eta', 1],
+    "jet_dphi" :         lambda vg : vg.dphi("Jets", 0, "Jets", 1),
+    "jet_deta" :         lambda vg : vg.Jets['eta', 0] - vg.Jets['eta', 1],
     "jet_mt":            lambda vg : vg.dipart_mt("Jets", 0, "Jets", 1),
     "jet_cosTheta" :     lambda vg : vg.cosDtheta("Jets", 0, "Jets", 1),
 
-    # "JetLep1_Cos" :     lambda vg : vg.cosDtheta("TightLepton", 0, "Jets", 0),
-    # "JetLep2_Cos" :     lambda vg : vg.cosDtheta("TightLepton", 1, "Jets", 0),
+    "JetLep1_Cos" :     lambda vg : vg.cosDtheta("TightLepton", 0, "Jets", 0),
+    "JetLep2_Cos" :     lambda vg : vg.cosDtheta("TightLepton", 1, "Jets", 0),
+
+    "bjet_lep1_dr":      lambda vg : vg.dr("BJets", 0, "TightLepton", 0),
+    "bjet_lep2_dr":      lambda vg : vg.dr("BJets", 0, "TightLepton", 1),
+    "bjet_lep1_mass":    lambda vg : vg.mass("BJets", 0, "TightLepton", 0),
+    "bjet_lep2_mass":    lambda vg : vg.mass("BJets", 0, "TightLepton", 1),
+
 
     "mT_1":             lambda vg : vg.TightLepton['mt', 0],
     "mT_2":             lambda vg : vg.TightLepton['mt', 1],
     "mT2_l" :           lambda vg : mt2_l(vg),
-    # "cosdphi_1":        lambda vg : np.cos(vg.TightLepton['phi', 0] - vg["Met_phi"]),
-    # "cosdphi_2":        lambda vg : np.cos(vg.TightLepton['phi', 1] - vg["Met_phi"]),
+    "cosdphi_1":        lambda vg : np.cos(vg.TightLepton['phi', 0] - vg["Met_phi"]),
+    "cosdphi_2":        lambda vg : np.cos(vg.TightLepton['phi', 1] - vg["Met_phi"]),
 }
 
 
@@ -83,12 +98,10 @@ usevars = list(allvar.keys())
 
 # Samples and the groups they are a part of
 groups = {
-    "Signal": ["ttt"],
+    "Signal": [],
     "Background": [
-        "4top",
         "ttw", "ttz", "tth",
-        "ttXY",
-        "rare", "xg",
+        "ttXY", "rare", "xg",
     ],
     "NotTrained": [
         "nonprompt", "charge_flip",

@@ -119,16 +119,15 @@ class Plotter:
                         ntuple.apply_cut(vg)
 
                         # To avoid data-driven bkg being written out as 'data'
-                        if gself.ginfo.is_data_driven(group):
-                            member = group
+                        out_name = group if self.ginfo.is_data_driven(group) else member
 
                         if vg:
-                            if member not in self.group_by_mem:
-                                self.group_by_mem[member] = {}
-                            self.group_by_mem[member][tree] = group
-                            if member not in self.dfs:
-                                self.dfs[member] = dict()
-                            self.dfs[member][tree] = vg
+                            if out_name not in self.group_by_mem:
+                                self.group_by_mem[out_name] = {}
+                            self.group_by_mem[out_name][tree] = group
+                            if out_name not in self.dfs:
+                                self.dfs[out_name] = dict()
+                            self.dfs[out_name][tree] = vg
 
 
     def setup_flat(self, filename, cuts):

@@ -21,8 +21,8 @@ info = NtupleInfo(
     ],
     color_by_group = {
         "ttt": "crimson",
-        # "tttj": "crimson",
-        # "tttw": "crimson",
+        "tttj": "firebrick",
+        "tttw": "indianred",
         'nonprompt': 'gray',
         'nonprompt_mc': 'blue',
         "xg": "indigo",

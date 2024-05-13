@@ -10,9 +10,9 @@ from analysis_suite.data.FileInfo import info as finfo
 from analysis_suite.data.PlotGroups import info as ginfo
 
 class GroupInfo:
-    def __init__(self, group2color=None, **kwargs):
+    def __init__(self, group2color=None, keep_dd_data=False, **kwargs):
         self.group2color = group2color if group2color is not None else {}
-        self.group2MemberMap = self.get_memberMap()
+        self.group2MemberMap = self.get_memberMap(keep_dd_data)
 
     def get_groups(self):
         return list(self.group2color.keys())
@@ -23,13 +23,25 @@ class GroupInfo:
         else:
             return group
 
+    def get_combine_name(self, group):
+        if group in ginfo and 'Combine' in ginfo[group]:
+            return ginfo[group]['Combine']
+        else:
+            return group.upper()
+
+    def get_group_from_combine(self, combine):
+        for group, info in ginfo.items():
+            if 'Combine' in info and info['Combine'] == combine:
+                return group
+        return combine.lower()
+
     def get_color(self, group):
         if group not in self.group2color:
             logging.warning("No color info given, default to black")
             return 'black'
         return self.group2color[group]
 
-    def get_memberMap(self):
+    def get_memberMap(self, keep_dd_data=False):
         final = dict()
         for key, info in ginfo.items():
             members = info["Members"]
@@ -41,7 +53,7 @@ class GroupInfo:
                     else:
                         tmpMembers.append(mem)
                 members = tmpMembers
-            if "DataDriven" in info and info['DataDriven']:
+            if not keep_dd_data and "DataDriven" in info and info['DataDriven']:
                 members = [key]
             final[key] = members
         return final
@@ -118,15 +130,15 @@ class NtupleInfo:
     tree_groups: dict = field(default_factory=dict)
     group_trees: dict = field(default_factory=dict)
 
-    def get_info(self, remove=None, add=None):
+    def get_info(self, remove=None, add=None, **kwargs):
         color_by_group = self.color_by_group
         if not isinstance(remove, list):
             remove = [remove]
         if remove is not None:
             color_by_group = {group: color for group, color in color_by_group.items() if group not in remove}
         if add is not None:
-            color_by_group = {**clr_by_group, **add}
-        return GroupInfo(color_by_group)
+            color_by_group = {**color_by_group, **add}
+        return GroupInfo(color_by_group, **kwargs)
 
     def get_file(self, **kwargs):
         return Path(str(self.filename).format(**kwargs))
@@ -146,7 +158,7 @@ class NtupleInfo:
         for tree in trees:
             self.tree_groups[tree] = groups
         for group in groups:
-            self.group_trees[group] = tree
+            self.group_trees[group] = trees
 
     def pass_group(self, tree, group):
         if tree in self.tree_groups:

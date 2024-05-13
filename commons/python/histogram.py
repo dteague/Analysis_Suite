@@ -161,7 +161,7 @@ class Histogram:
         self.hist.fill(*vals, weight=weight)
         if member is not None:
             self.breakdown[member] = bh_weights().fill(weight)
-        if flow:
+        if flow and sum(self.hist.shape) > 1:
             self.move_overflow()
 
     def set_plot_details(self, group_info):
@@ -209,7 +209,7 @@ class Histogram:
                      color=self.color, barsabove=True, label=self.name,
                      markersize=4, **kwargs)
 
-    def plot_2d(self, pad, **kwargs):
+    def plot_2d(self, pad, noText=False, **kwargs):
         import matplotlib.patheffects as path_effects
         if not self or pad is None:
             return
@@ -219,6 +219,9 @@ class Histogram:
         vals = self.vals.T
         vals_masked = np.ma.masked_where(vals < 1e-5, vals)
         color_plot = pad.pcolormesh(xx, yy, vals_masked, shading='flat', **kwargs)
+        if noText:
+            return color_plot
+
 
         xstart, xend = self.get_xrange()
         min_size = (xend-xstart)/9

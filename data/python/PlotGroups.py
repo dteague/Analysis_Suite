@@ -9,7 +9,7 @@ info ={
 	        "zg",
             "wg",
             "tg"
-        ]
+        ],
     },
 
     "tttt": {
@@ -18,7 +18,8 @@ info ={
     },
     "4top": {
         "Name": r"t\bar{t}t\bar{t}",
-        "Members": ["tttt",]
+        "Members": ["tttt",],
+        "Combine": 'TTTT',
     },
     "tttj": {
         "Name": r"t\bar{t}tj",

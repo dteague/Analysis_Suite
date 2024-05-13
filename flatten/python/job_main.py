@@ -15,8 +15,8 @@ def setup(cli_args):
 
     ntuple = get_ntuple(cli_args.ntuple)
     for year in cli_args.years:
-        outdir = cli_args.workdir / year
-        outdir.mkdir(exist_ok=True)
+        outdir = cli_args.workdir /year
+        outdir.mkdir(exist_ok=True, parents=True)
         allSysts = get_list_systs(ntuple.get_filename(year=year), cli_args.tool, cli_args.systs)
         for syst in allSysts:
             argList.append((cli_args.workdir, outdir, cli_args.ntuple, year, syst, cli_args.inputs))
@@ -26,7 +26,7 @@ def setup(cli_args):
 def run(workdir, outdir, tupleName, year, syst, inputs):
     inputs = get_inputs(workdir)
     ntuple = get_ntuple(tupleName)
-    groups = ntuple.get_info().setup_groups()
+    groups = ntuple.get_info(keep_dd_data=True).setup_groups()
     plotter = Plotter(ntuple.get_filename(year=year),
                       groups, ntuple=ntuple, systName=syst, year=year)
 

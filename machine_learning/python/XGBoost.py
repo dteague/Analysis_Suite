@@ -151,22 +151,22 @@ class XGBoostMaker(MLHolder):
         self.minmax[1] = np.max([np.max(prediction), self.minmax[1]])
         return prediction
 
-    def get_importance(self):
+    def get_importance(self, typ='total_gain'):
         x_train = self.train_set[self.use_vars]
         fit_model = xgb.XGBClassifier()  # init model
         fit_model.load_model(str(self.outdir / "model.bin"))  # load data
-        impor = fit_model.get_booster().get_score(importance_type= "total_gain")
+        impor = fit_model.get_booster().get_score(importance_type=typ)
         sorted_import = {x_train.columns[int(k[1:])]: v for k, v in sorted(impor.items(), key=lambda item: item[1]) }
 
         from analysis_suite.commons.plot_utils import plot, color_options
-        with plot(f"{self.outdir}/importance.png") as ax:
+        with plot(f"{self.outdir}/importance_{typ}.png") as ax:
             ax.barh(range(len(sorted_import)), list(sorted_import.values()),
                     align='center',
                     height=0.5,)
             ax.set_yticks(range(len(sorted_import)))
             ax.set_yticklabels(sorted_import.keys(), fontsize=12)
             ax.set_xscale("log")
-            ax.set_xlabel("Total Gain")
+            ax.set_xlabel(typ)
             ax.set_title("Variable Importance")
 
     def plot_training_progress(self):

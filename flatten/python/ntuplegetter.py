@@ -27,6 +27,7 @@ class NtupleGetter(BaseGetter):
         systNames = [name.member("fName") for name in f[group]["Systematics"]]
         if self.systName not in systNames:
             return
+
         self.syst_unique = systNames.index(systName)
         if "Syst_Index" in f[group]:
             indices = {int(name.member("fName")): int(name.member('fTitle')) for name in f[group]["Syst_Index"]}
@@ -47,7 +48,6 @@ class NtupleGetter(BaseGetter):
         self._mask = copy(self._base_mask)
         self._scale = ak.to_numpy(self.tree['weight'].array()[:, self.syst_unique])
         self._setSyst()
-
         if group == "data":
             # Remove duplicates
             pass

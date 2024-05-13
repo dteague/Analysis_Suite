@@ -20,7 +20,7 @@ from sklearn.model_selection import train_test_split
 
 from analysis_suite.plotting.utils import likelihood_sig
 from analysis_suite.commons.constants import lumi
-from analysis_suite.commons.plot_utils import plot, hep
+from analysis_suite.commons.plot_utils import plot, hep, plot_colorbar
 
 pd.options.mode.chained_assignment = None
 
@@ -94,12 +94,9 @@ class MLHolder:
         self.pred_test = dict()
         self.pred_train = dict()
         self.pred_validation = dict()
-        self.auc = dict()
-        self.fom = dict()
-
+        self.cuts = list()
         self.best_iter = 0
         self.minmax = [1, 0]
-
         self.outdir = None
 
         self.group_names = {
@@ -125,17 +122,27 @@ class MLHolder:
         is_SR_nominal = self.region == "signal" and self.systName == "Nominal"
         return enough_events and trainable_class and is_SR_nominal
 
-    def read_in_file(self, directory, year="2018", rerun=False, load_train=False):
+    def read_in_file(self, directory, year="2018", typ='test', mask=None):
         test_set= setup_pandas(self.all_vars)
         test_weights = dict()
-        if (directory/year/f'test_{self.systName}_{self.region}.root').exists() and not rerun:
-            return
-        infile = directory/year/f'processed_{self.systName}_{self.region}.root'
+
+        infile = directory/year/f'{typ}_{self.systName}_{self.region}.root'
         for className, df, sample, weights in self.read_in_dataframe(infile):
             test_set = pd.concat([df, test_set], ignore_index=True)
             test_weights[sample] = weights
         self.test_sets[year] = test_set
         self.test_weights[year] = test_weights
+
+        # Try to get train sets
+        infile = directory/'train_files'/f'train_{self.systName}_{self.region}.root'
+        if infile.exists():
+            for className, df, sample, weights in self.read_in_dataframe(infile):
+                self.train_set = pd.concat([df, self.train_set], ignore_index=True)
+        infile = directory/'train_files'/f'validation_{self.systName}_{self.region}.root'
+        if infile.exists():
+            for className, df, sample, weights in self.read_in_dataframe(infile):
+                self.validation_set = pd.concat([df, self.validation_set], ignore_index=True)
+
 
     def total_class(self, infile, className):
         total_wgt = 0.
@@ -156,17 +163,23 @@ class MLHolder:
             for className, samples in self.group_dict.items():
                 for sample in samples:
                     if sample not in f:
-                        print(f"{sample} not found")
+                        logging.debug(f"{sample} not found")
                         continue
                     # print(sample, "loaded")
-                    df = f[sample].arrays(self._file_vars, library="pd")
+                    df = f[sample].arrays(library="pd")
+                    mask = self._cut_mask(df)
+                    df = df[self._file_vars][mask]
+                    if df.empty:
+                        continue
                     logging.debug(f'{sample}, {len(df)}, {sum(df.scale_factor)}, {sum(df.scale_factor)/len(df)}')
                     df.loc[:, "classID"] = self.classID_by_className[className]
                     df.loc[:, "sampleName"] = self.sample_map[sample]
                     df.loc[:, "train_weight"] = sum(df.scale_factor) / len(df)
                     df.loc[:, "split_weight"] = np.ones(len(df))
-                    all_weights = f[f'weights/{sample}'].arrays(library='pd')
-
+                    if "weights" not in f:
+                        all_weights = None
+                    else:
+                        all_weights = f[f'weights/{sample}'].arrays(library='pd')[mask]
                     yield className, df, sample, all_weights
 
     def setup_weights(self, filename):
@@ -178,7 +191,7 @@ class MLHolder:
             self.total_train = len(sample_wgt)/0.2*self.split_ratio
 
 
-    def setup_year(self, directory, year="2018"):
+    def setup_year(self, directory, year="2018", split=True):
         """**Fill the dataframes with all info in the input files**
 
         This grabs all the variable information about each sample,
@@ -193,7 +206,7 @@ class MLHolder:
         infile = directory / year / f'processed_{self.systName}_{self.region}.root'
         self.setup_weights(infile)
         for className, df, sample, weights in self.read_in_dataframe(infile):
-            test, train, validation = self.setup_split(df, className, sample)
+            test, train, validation = self.setup_split(df, className, sample, split)
             # print(sample, len(df), len(test), len(train), len(validation))
             if not test.empty:
                 self.test_weights[year][sample] = weights.loc[test.index]*len(df)/len(test)
@@ -204,18 +217,21 @@ class MLHolder:
                 # print(sample, "train", np.sum(train.scale_factor), np.sum(train.split_weight))
             if not validation.empty:
                 self.validation_set = pd.concat([validation, self.validation_set], ignore_index=True)
+        # exit()
 
-
-    def setup_split(self, df, className, sample):
+    def setup_split(self, df, className, sample, split=True):
         train = setup_pandas(self.all_vars)
         test = setup_pandas(self.all_vars)
         validation = setup_pandas(self.all_vars)
 
+        if not split:
+            return df, train, validation
+
         exp_train_evt = np.sum(df.scale_factor)/self.train_total[className]*self.total_train
         split_ratio = self.split_ratio
 
-        # if sample == "tttj" or sample == "tttw":
-        #     exp_train_evt = split_ratio*len(df)
+        if sample == "tttj" or sample == "tttw":
+            exp_train_evt = split_ratio*len(df)
 
         # Only train, i.e. use all the events possible
         if className == "OnlyTrain":
@@ -252,14 +268,15 @@ class MLHolder:
         return test, train
 
 
-    def apply_model(self, year, get_auc=False):
+    def apply_model(self, year, get_auc=False, skip_train=False):
         def get_pred(use_set, directory):
             unique_labels = np.unique(use_set.classID.astype(int))
             pred = self.predict(use_set, directory)
             return {grp: pred.T[i] for grp, i in self.classID_by_className.items() if i in unique_labels}
         self.pred_test[year] = get_pred(self.test_sets[year], self.outdir)
-        self.pred_train = get_pred(self.train_set, self.outdir)
-        self.pred_validation = get_pred(self.validation_set, self.outdir)
+        if not skip_train:
+            self.pred_train = get_pred(self.train_set, self.outdir)
+            self.pred_validation = get_pred(self.validation_set, self.outdir)
 
         # if get_auc:
         #     self.auc[year] = roc_auc_score(labels, pred.T[1], sample_weight = abs(weights))
@@ -301,6 +318,42 @@ class MLHolder:
         if len(num) == 0:
             return np.full(len(df), False)
         return np.any([df.sampleName == i for i in num], axis=0)
+
+    def get_corr(self, typ='train', year=None):
+        import matplotlib.pyplot as plt
+
+        if typ == 'train':
+            work_set = self.train_set[self.use_vars]
+            weights = abs(self.train_set.scale_factor.to_numpy())
+            filename = 'corr_train.png'
+        elif typ == 'test' and year is not None:
+            work_set = self.test_sets[year][self.use_vars]
+            weights = abs(self.test_sets[year].scale_factor.to_numpy())
+            filename = f'corr_test_{year}.png'
+
+        cov = np.cov(work_set.to_numpy(), rowvar=False, aweights=weights)
+        stddev = np.sqrt(np.diag(cov))
+        corr = cov/(stddev[:, None]*stddev[None, :])
+
+        with plot(self.outdir/filename) as ax:
+            nVars = corr.shape[0]
+            x = np.linspace(0, nVars, nVars+1)
+            xx = np.tile(x, (nVars+1, 1))
+            yy = np.tile(x, (nVars+1, 1)).T
+
+            color_plot = ax.pcolormesh(xx, yy, corr, shading='flat')
+            plot_colorbar(color_plot, ax)
+            ax.minorticks_off()
+            ax.tick_params(direction='out', length=0)
+            ax.set_xticks(np.arange(nVars)+0.5)
+            ax.set_xticklabels(work_set.columns, rotation=70, ha='right', rotation_mode="anchor", fontsize=10)
+            ax.set_yticks(np.arange(nVars)+0.5)
+            ax.set_yticklabels(work_set.columns, fontsize=10)
+
+        #     for i in range(work_set.shape[1]):
+        #         for j in range(work_set.shape[1]):
+        #             text = ax.text(j, i, corr[i, j], ha="center", va="center", color="w")
+            ax.set_title("Correlation")
 
 
     def roc_curve(self, year, signal="Signal"):
@@ -417,8 +470,8 @@ class MLHolder:
         bins = np.linspace(0, 1, nbins+1)
         # bins = np.concatenate([[0], np.linspace(self.minmax[0], self.minmax[1], nbins+1), [1]])
         def get_hist(pred, df, group):
-                mask = self.get_mask(df, self.group_names[group])
-                return np.histogram(pred[mask], bins, weights=df.scale_factor[mask])[0]
+            mask = self.get_mask(df, self.group_names[group])
+            return np.histogram(pred[mask], bins, weights=df.scale_factor[mask])[0]
 
         with plot(self.outdir/f'{name}_breakdown_{year}.png') as ax:
             ttt_hist = get_hist(pred, df, 'ttt')
@@ -457,7 +510,7 @@ class MLHolder:
           frame(pandas.DataFrame): DataFrame to cut on
 
         """
-        mask = np.ones(len(frame))
+        mask = np.ones(len(frame), dtype=bool)
         for cut in self.cuts:
             if cut.find("<") != -1:
                 cutter= (operator.lt, *cut.split("<"))
@@ -472,24 +525,25 @@ class MLHolder:
         return mask
 
     def add_cut(self, cut_string):
-        self.cuts = cut_string
+        self.cuts.append(cut_string)
 
 
-    def output(self, outdir, year, signal="Signal"):
+    def output(self, year, sig_out='Signal', signal="Signal"):
         workSet = self.test_sets[year]
-        if signal not in workSet:
-            workSet.insert(0, signal, self.pred_test[year]['Signal'])
-        self._output(workSet, outdir / year / f"test_{self.systName}_{self.region}.root", self.test_weights[year])
+        if sig_out not in workSet:
+            workSet.insert(0, sig_out, self.pred_test[year][signal])
+        self._output(workSet, self.outdir / year / f"test_{self.systName}_{self.region}.root", self.test_weights[year])
 
-    def output_train(self, outdir, signal='Signal'):
-        train_out = outdir / 'train_files'
+
+    def output_train(self, sig_out='Signal', signal='Signal'):
+        train_out = self.outdir / 'train_files'
         train_out.mkdir(exist_ok=True, parents=True)
-        if signal not in self.train_set:
-            self.train_set.insert(0, signal, self.pred_train['Signal'])
-        self._output(self.train_set, train_out / f"train_{self.systName}.root")
-        if signal not in self.validation_set:
-            self.validation_set.insert(0, signal, self.pred_validation['Signal'])
-        self._output(self.validation_set, train_out / f"validation_{self.systName}.root")
+        if sig_out not in self.train_set:
+            self.train_set.insert(0, sig_out, self.pred_train[signal])
+        self._output(self.train_set, train_out / f"train_{self.systName}_{self.region}.root")
+        if sig_out not in self.validation_set:
+            self.validation_set.insert(0, sig_out, self.pred_validation[signal])
+        self._output(self.validation_set, train_out / f"validation_{self.systName}_{self.region}.root")
 
 
     def _output(self, workSet, outfile, weights=None):
@@ -503,10 +557,8 @@ class MLHolder:
         samples = np.unique(workSet.sampleName)
         with uproot.recreate(outfile) as f:
             for sample, value in self.sample_map.items():
-                # print(sample)
                 if value not in samples:
                     continue
-                # print(len(workSet[workSet.sampleName == value][keepList]))
                 f[sample] = workSet[workSet.sampleName == value][keepList]
                 if weights is not None:
                     f[f"weights/{sample}"] = weights[sample]

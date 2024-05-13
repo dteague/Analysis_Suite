@@ -1,7 +1,8 @@
 #ifndef ElectroWeakAnalysis_RoccoR_H
 #define ElectroWeakAnalysis_RoccoR_H
 
-#include <boost/math/special_functions/erf.hpp>
+#include <cmath>
+#include <vector>
 
 struct CrystalBall{
     static const double pi;
@@ -29,58 +30,71 @@ struct CrystalBall{
     double cdfPa;
 
     CrystalBall():m(0),s(1),a(10),n(10){
-	init();
+        init();
     }
 
     void init(){
-	double fa = fabs(a);
-	double ex = exp(-fa*fa/2);
-	double A  = pow(n/fa, n) * ex;
-	double C1 = n/fa/(n-1) * ex; 
-	double D1 = 2 * sqrtPiOver2 * erf(fa/sqrt2);
+        double fa = fabs(a);
+        double ex = exp(-fa*fa/2);
+        double A  = pow(n/fa, n) * ex;
+        double C1 = n/fa/(n-1) * ex;
+        double D1 = 2 * sqrtPiOver2 * std::erf(fa/sqrt2);
 
-	B = n/fa-fa;
-	C = (D1+2*C1)/C1;   
-	D = (D1+2*C1)/2;   
+        B = n/fa-fa;
+        C = (D1+2*C1)/C1;
+        D = (D1+2*C1)/2;
 
-	N = 1.0/s/(D1+2*C1); 
-	k = 1.0/(n-1);  
+        N = 1.0/s/(D1+2*C1);
+        k = 1.0/(n-1);
 
-	NA = N*A;       
-	Ns = N*s;       
-	NC = Ns*C1;     
-	F = 1-fa*fa/n; 
-	G = s*n/fa;    
+        NA = N*A;
+        Ns = N*s;
+        NC = Ns*C1;
+        F = 1-fa*fa/n;
+        G = s*n/fa;
 
-	cdfMa = cdf(m-a*s);
-	cdfPa = cdf(m+a*s);
+        cdfMa = cdf(m-a*s);
+        cdfPa = cdf(m+a*s);
     }
 
-    double pdf(double x) const{ 
-	double d=(x-m)/s;
-	if(d<-a) return NA*pow(B-d, -n);
-	if(d>a) return NA*pow(B+d, -n);
-	return N*exp(-d*d/2);
+    float erf_inv(double x) const {
+        double tt1, tt2, lnx, sgn;
+        sgn = (x < 0) ? -1.0 : 1.0;
+
+        x = (1 - x)*(1 + x);        // x = 1 - x*x;
+        lnx = log(x);
+
+        tt1 = 2/(M_PI*0.147) + 0.5 * lnx;
+        tt2 = 1/(0.147) * lnx;
+
+        return(sgn*sqrt(-tt1 + sqrt(tt1*tt1 - tt2)));
     }
 
-    double pdf(double x, double ks, double dm) const{ 
-	double d=(x-m-dm)/(s*ks);
-	if(d<-a) return NA/ks*pow(B-d, -n);
-	if(d>a) return NA/ks*pow(B+d, -n);
-	return N/ks*exp(-d*d/2);
+    double pdf(double x) const{
+        double d=(x-m)/s;
+        if(d<-a) return NA*pow(B-d, -n);
+        if(d>a) return NA*pow(B+d, -n);
+        return N*exp(-d*d/2);
+    }
+
+    double pdf(double x, double ks, double dm) const{
+        double d=(x-m-dm)/(s*ks);
+        if(d<-a) return NA/ks*pow(B-d, -n);
+        if(d>a) return NA/ks*pow(B+d, -n);
+        return N/ks*exp(-d*d/2);
     }
 
     double cdf(double x) const{
-	double d = (x-m)/s;
-	if(d<-a) return NC / pow(F-s*d/G, n-1);
-	if(d>a) return NC * (C - pow(F+s*d/G, 1-n) );
-	return Ns * (D - sqrtPiOver2 * erf(-d/sqrt2));
+        double d = (x-m)/s;
+        if(d<-a) return NC / pow(F-s*d/G, n-1);
+        if(d>a) return NC * (C - pow(F+s*d/G, 1-n) );
+        return Ns * (D - sqrtPiOver2 * std::erf(-d/sqrt2));
     }
 
     double invcdf(double u) const{
-	if(u<cdfMa) return m + G*(F - pow(NC/u, k));
-	if(u>cdfPa) return m - G*(F - pow(C-u/NC, -k) );
-	return m - sqrt2 * s * boost::math::erf_inv((D - u/Ns )/sqrtPiOver2);
+        if(u<cdfMa) return m + G*(F - pow(NC/u, k));
+        if(u>cdfPa) return m - G*(F - pow(C-u/NC, -k) );
+        return m - sqrt2 * s * erf_inv((D - u/Ns )/sqrtPiOver2);
     }
 };
 
@@ -89,12 +103,12 @@ struct RocRes{
     enum TYPE {MC, Data, Extra};
 
     struct ResParams{
-	double eta; 
-	double kRes[2]; 
-	std::vector<double> nTrk[2]; 
-	std::vector<double> rsPar[3]; 
-	std::vector<CrystalBall> cb;
-	ResParams():eta(0){for(auto& k: kRes) k=1;}
+        double eta;
+        double kRes[2];
+        std::vector<double> nTrk[2];
+        std::vector<double> rsPar[3];
+        std::vector<CrystalBall> cb;
+        ResParams():eta(0){for(auto& k: kRes) k=1;}
     };
 
     int NETA;
@@ -121,7 +135,7 @@ struct RocRes{
 
 class RoccoR{
 
-    private:
+private:
 	enum TYPE{MC, DT};
 	enum TVAR{Default, Replica, Symhes};
 
@@ -147,7 +161,7 @@ class RoccoR{
 	int phiBin(double phi) const;
 	template <typename T> double error(T f) const;
 
-    public:
+public:
 	RoccoR(); 
 	RoccoR(std::string filename); 
 	void init(std::string filename);

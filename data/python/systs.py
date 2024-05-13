@@ -10,34 +10,36 @@ ratio = {
 }
 
 mc_samples = ['ttt', 'xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top', 'tttj', 'tttw']
+mc_samples_norp = ['ttt', 'xg', 'ttw', 'tth', 'ttXY', 'rare', '4top', 'tttj', 'tttw']
+mc_samples_nosig = ['xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top']
 qcd = ['tth', 'ttz', '4top', 'ttXY']
 ewk = ['ttw', 'xg', 'rare', 'tttw', 'rare']
 Systematic.default_groups = mc_samples
 
 
 systematics = [
-    Systematic("LUMI_RUN2", "lnN", True).add(1.006, groups=mc_samples, year="2016pre") \
-                                        .add(1.006, groups=mc_samples, year="2016post") \
-                                        .add(1.009, groups=mc_samples, year="2017")    \
-                                        .add(1.020, groups=mc_samples, year="2018"),
-    Systematic("LUMI_17_18", "lnN", True).add(1.006, groups=mc_samples, year="2017") \
-                                         .add(1.002, groups=mc_samples, year="2018"),
-    Systematic("LUMI_", "lnN").add(1.010, groups=mc_samples, year="2016pre") \
-                              .add(1.010, groups=mc_samples, year="2016post") \
-                              .add(1.020, groups=mc_samples, year="2017")    \
-                              .add(1.015, groups=mc_samples, year="2018"),
+    Systematic("LUMI_RUN2", "lnN", True).add(1.006, groups=mc_samples_norp, year="2016pre") \
+                                        .add(1.006, groups=mc_samples_norp, year="2016post") \
+                                        .add(1.009, groups=mc_samples_norp, year="2017")    \
+                                        .add(1.020, groups=mc_samples_norp, year="2018"),
+    Systematic("LUMI_17_18", "lnN", True).add(1.006, groups=mc_samples_norp, year="2017") \
+                                         .add(1.002, groups=mc_samples_norp, year="2018"),
+    Systematic("LUMI_", "lnN").add(1.010, groups=mc_samples_norp, year="2016pre") \
+                              .add(1.010, groups=mc_samples_norp, year="2016post") \
+                              .add(1.020, groups=mc_samples_norp, year="2017")    \
+                              .add(1.015, groups=mc_samples_norp, year="2018"),
 
     #### Theory systs
-    Systematic("PDF_unc", corr=True).add().dname("PDF"),
-    Systematic("PDF_alphaZ", corr=True).add().dname("ALPHAS"),
+    Systematic("PDF_unc", corr=True).add(groups=mc_samples_nosig).dname("PDF"),
+    Systematic("PDF_alphaZ", corr=True).add(groups=mc_samples_nosig).dname("ALPHAS"),
     Systematic("PS_FSR", corr=True).add().dname("FSR"),
 
-    Systematic("LHE_muF", corr=True).add(groups=qcd).dname("MUF_QCD"),
-    Systematic("LHE_muF", corr=True).add(groups=ewk).dname("MUF_EWK"),
-    Systematic("LHE_muR", corr=True).add(groups=qcd).dname("MUR_QCD"),
-    Systematic("LHE_muR", corr=True).add(groups=ewk).dname("MUR_EWK"),
-    Systematic("PS_ISR", corr=True).add(groups=qcd).dname("ISR_QCD"),
-    Systematic("PS_ISR", corr=True).add(groups=ewk).dname("ISR_EWK"),
+    Systematic("LHE_muF", corr=True).add(groups=qcd).dname("MUFQCD"),
+    Systematic("LHE_muF", corr=True).add(groups=ewk).dname("MUFEWK"),
+    Systematic("LHE_muR", corr=True).add(groups=qcd).dname("MURQCD"),
+    Systematic("LHE_muR", corr=True).add(groups=ewk).dname("MUREWK"),
+    Systematic("PS_ISR", corr=True).add(groups=qcd).dname("ISRQCD"),
+    Systematic("PS_ISR", corr=True).add(groups=ewk).dname("ISREWK"),
 
     ### BTagging scales
     Systematic("BJet_Shape_lf", corr=True).add().dname("LF"),
@@ -50,11 +52,11 @@ systematics = [
     Systematic("BJet_Shape_cferr2", corr=True).add().dname("CFERR2"),
 
     #### Lepton/Jet ID stuff
-    Systematic("Muon_Scale").add().dname("ID_MU_"),
-    Systematic("Electron_Scale").add().dname("ID_EL_"),
-    Systematic("Lepton_tthMVA", "lnN").add(1.04, chan='Dilepton') # 1.02**2 \
-                                      .add(1.061, chan=['Multi', 'ttzCR']), # 1.02**3
-    Systematic("TriggerSF", 'lnN').add(1.03),
+    Systematic("Muon_Scale", corr=True).add().dname("ID_SS_MU"),
+    Systematic("Electron_Scale", corr=True).add().dname("ID_SS_EL"),
+    Systematic("Lepton_tthMVA", "lnN", corr=True).add(1.04, chan='Dilepton') # 1.02**2 \
+                                                 .add(1.061, chan=['Multi', 'ttzCR', 'ttttCR']), # 1.02**3
+    Systematic("TriggerSF", 'lnN').add(1.05),
     Systematic("Jet_PUID", corr=True).add().dname("PILEUPJETID"),
 
     #### JEC stuff
@@ -81,15 +83,17 @@ systematics = [
 
     Systematic("Nonprompt_Mu_stat").add(groups='nonprompt'),
     Systematic("Nonprompt_El_stat").add(groups='nonprompt'),
-    Systematic("Nonprompt_closure", 'lnN').add(1.3, groups="nonprompt"),
+    Systematic("Nonprompt_closure", 'lnN', corr=True).add(1.3, groups="nonprompt"),
 
     # Normalization stuff
-    Systematic("CMS_norm_tttt", "lnN").add(1.2, groups="tttt"),
-    Systematic("CMS_norm_ttw", "lnN").add(1.5, groups="ttw"),
-    Systematic("CMS_norm_ttz", "lnN").add(1.5, groups="ttz"),
-    Systematic("CMS_norm_tth", "lnN").add(1.5, groups="tth"),
-    Systematic("CMS_norm_xg", "lnN").add(1.5, groups="xg"),
-    Systematic("CMS_norm_rare", "lnN").add(1.5, groups="rare"),
+    Systematic("XSEC_TTTT", "lnN", corr=True).add('0.86/1.08', groups="4top"),
+    Systematic("XSEC_TTTW", "lnN", corr=True).add('0.85/1.16', groups="tttw"),
+    Systematic("XSEC_TTTJ", "lnN", corr=True).add('0.9/1.12', groups="tttj"),
+    Systematic("XSEC_TTW", "lnN", corr=True).add(1.15, groups="ttw"),
+    # Systematic("CMS_norm_ttz", "lnN").add(1.20, groups="ttz"),
+    Systematic("XSEC_TTH", "lnN", corr=True).add(1.20, groups="tth"),
+    Systematic("XSEC_XG", "lnN", corr=True).add(1.5, groups="xg"),
+    Systematic("XSEC_RARE", "lnN", corr=True).add(1.5, groups="rare"),
 
     ##### Not used any more
     # # Systematic("Top_SF", "shape").add(1),
@@ -99,16 +103,6 @@ systematics = [
 ]
 
 dummy = [Systematic("dummy", "lnN").add(1.0001, groups="rare"),]
-
-def get_syst_name(systname, year):
-    if systname == 'Nominal':
-        return 'Nominal'
-    for syst in systematics:
-        if syst.name in systname:
-            updown = systname[systname.rfind('_'):]
-            return syst.get_name(year)+updown
-    print('ERROR')
-    return None
 
 def get_shape_systs(year):
     systs = [(syst.name, syst.get_name(year)) for syst in systematics if syst.syst_type == "shape"]

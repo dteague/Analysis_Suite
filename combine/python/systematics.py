@@ -9,6 +9,8 @@ year_convert = {
     "2018": "18",
 }
 
+
+
 @dataclass
 class Systematic:
     name: str
@@ -19,7 +21,8 @@ class Systematic:
     default_groups: list = None
 
     def __post_init__(self):
-        self.systs = {year: dict() for year in all_eras}
+        self.systs = {# year: dict() for year in all_eras
+                      }
         self.dan_name = self.name
 
     def output(self, group_list, year, chan='all'):
@@ -39,7 +42,11 @@ class Systematic:
         return line
 
     def good_syst(self, group_list, year):
-        systs = self.systs[year]
+        if isinstance(group_list, str):
+            group_list = [group_list]
+        if year not in self.systs:
+            return False
+        systs = self.systs[year]['groups']
         for group in group_list:
             if group in systs or "all" in systs:
                 return True
@@ -51,7 +58,7 @@ class Systematic:
         chans = [chan] if isinstance(chan, str) else chan
 
         for yr in year:
-            if not self.systs[yr]:
+            if yr not in self.systs:
                 self.systs[yr] = {'groups': groups}
             for chan in chans:
                 self.systs[yr][chan] = syst
@@ -59,6 +66,10 @@ class Systematic:
 
     def get_name(self, year):
         name = self.dan_name
+        if "JEC" in name or "JER" in name:
+            if not self.corr:
+                name += year[:3]
+            name += "LOWESS"
         if not self.corr:
             name += year_convert[year]
         return name

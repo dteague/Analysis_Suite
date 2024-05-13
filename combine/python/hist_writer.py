@@ -13,14 +13,15 @@ class HistWriter:
     def __exit__(self, type, value, traceback):
         self.close()
 
-    def add_syst(self, hists, syst="Nominal", blind=True):
+    def add_syst(self, hists, ginfo, syst="Nominal", blind=True):
         syst = syst.replace("_up", "Up").replace("_down", "Down")
         for group, hist in hists.items():
+            outgroup = ginfo.get_combine_name(group)
             if group == 'data':
                 if syst == "Nominal" and not blind:
                     self.f['data_obs'] = hist.hist
             else:
-                outname = group if syst == "Nominal" else f'{syst}/{group}'
+                outname = outgroup if syst == "Nominal" else f'{syst}/{outgroup}'
                 self.f[outname] = hist.hist
 
         if syst == "Nominal" and blind:

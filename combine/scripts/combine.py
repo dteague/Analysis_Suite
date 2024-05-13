@@ -9,7 +9,7 @@ from analysis_suite.combine.combine_wrapper import runCombine
 
 def get_cli():
     parser = argparse.ArgumentParser(prog="main", description="")
-    parser.add_argument("type", type=str, choices=["impact", "sig", "hybrid", "sig_scan",
+    parser.add_argument("type", type=str, choices=["impact", "sig", "hybrid", "sig_scan", "pulls",
                                                    "fit", "asymptotic", "limit_scan", "help"])
     if sys.argv[1] == 'help':
         return parser.parse_args()
@@ -48,10 +48,19 @@ if __name__ == "__main__":
         runCombine(f'text2workspace.py {card.replace("root", "txt")}', output=args.debug)
 
         if args.type == "impact":
-            runCombine(f'combineTool.py -M Impacts -d {card} -m 125 --doInitialFit --robustFit 1 --rMin -20 --rMax 20')
-            runCombine(f'combineTool.py -M Impacts -d {card} -m 125 --robustFit 1 --doFits --rMin -20 --rMax 20')
-            runCombine(f'combineTool.py -M Impacts -d {card} -m 125 -o impacts.json  --rMin -20 --rMax 20')
+            runCombine(f'combineTool.py -M Impacts -d {card} -m 125 --doInitialFit --robustFit 1 --rMin -20 --rMax 20 --parallel 10 --cminDefaultMinimizerStrategy 0 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH')
+            runCombine(f'combineTool.py -M Impacts -d {card} -m 125 --robustFit 1 --doFits --rMin -20 --rMax 20 --parallel 10 --cminDefaultMinimizerStrategy 0 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH')
+            runCombine(f'combineTool.py -M Impacts -d {card} -m 125 -o impacts.json  --rMin -20 --rMax 20  --parallel 10')
             runCombine(f'plotImpacts.py -i impacts.json -o impacts')
+
+            # runCombine(f'combineTool.py -M Impacts -d {card} -m 125 --doInitialFit --robustFit 1 --rMin -20 --rMax 20')
+            # runCombine(f'combineTool.py -M Impacts -d {card} -m 125 --robustFit 1 --doFits --rMin -20 --rMax 20')
+            # runCombine(f'combineTool.py -M Impacts -d {card} -m 125 -o impacts.json  --rMin -20 --rMax 20')
+            # runCombine(f'plotImpacts.py -i impacts.json -o impacts')
+
+        elif args.type == 'pulls':
+            runCombine(f'combine -M FitDiagnostics {card} -m 125 --saveShapes --saveWithUncertainties --robustFit 1 --rMin -20 --rMax 20 -t -1  --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH')
+            runCombine(f'diffNuisances.py fitDiagnosticsTest.root --all --abs -g plotdiff_{year}.root')
 
         elif args.type == "sig":
             # runCombine(f'combine -M Significance {card} {blindness} --toysFrequentist --freezeParameters allConstrainedNuisances')

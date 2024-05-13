@@ -65,8 +65,10 @@ class Card_Maker:
         self.end_section()
 
 
-    def write_systematics(self, syst_list):
+    def write_systematics(self, syst_list, ginfo):
         all_groups = np.concatenate((self.signals, self.plot_groups))
+        for i in range(len(all_groups)):
+            all_groups[i] = ginfo.get_group_from_combine(all_groups[i])
         syst_list = list(filter(lambda x: x.good_syst(all_groups, self.year), syst_list))
 
         table = prettytable.PrettyTable()
@@ -76,7 +78,7 @@ class Card_Maker:
 
         # Specify systematics
         for syst in syst_list:
-            syst_row = syst.output(all_groups, self.year)
+            syst_row = syst.output(all_groups, self.year, self.cr)
             if syst_row is not None:
                 table.add_row(syst_row)
         table.align='l'

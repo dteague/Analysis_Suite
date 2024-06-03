@@ -18,6 +18,14 @@ void BaseSelector::SetupOutTreeBranches(TTree* tree)
 
 void BaseSelector::Init(TTree* tree)
 {
+    // Set verbosity
+    for (auto item : *fInput) {
+        std::string itemName = item->GetName();
+        if (itemName == "Verbosity") {
+            loguru::g_stderr_verbosity = std::stoi(item->GetTitle());
+        }
+    }
+
     LOG_FUNC << "Start of Init";
     loguru::g_preamble_thread = false;
     loguru::g_preamble_time = false;
@@ -50,7 +58,6 @@ void BaseSelector::Init(TTree* tree)
                 } else if (dataName == "Group") {
                     groupName_ = data->GetTitle();
                 } else if (dataName == "Dataset") {
-                    std::cout << data->GetTitle() << std::endl;
                     dataset_ = dataset_name_to_enum.at(data->GetTitle());
                 } else if (dataName == "DataRun") {
                     data_run = data->GetTitle();
@@ -83,8 +90,6 @@ void BaseSelector::Init(TTree* tree)
                 rootSystList->Add(new TNamed((systName + "_up").c_str(), systName.c_str()));
                 rootSystList->Add(new TNamed((systName + "_down").c_str(), systName.c_str()));
             }
-        } else if (itemName == "Verbosity") {
-            loguru::g_stderr_verbosity = std::stoi(item->GetTitle());
         } else if (itemName == "NEvents") {
             stop_point = std::stoi(item->GetTitle());
         }
@@ -140,7 +145,6 @@ void BaseSelector::Init(TTree* tree)
         bar.set_total(tree->GetEntries());
         bar.print_header();
     }
-
     LOG_FUNC << "End of Init";
 }
 

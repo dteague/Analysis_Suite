@@ -44,14 +44,11 @@ void Met::setupMet(Jet& jet, UInt_t run, int nVertices)
             (*corr_pt) = (currentVar == eVar::Up) ? *m_jer_pt_up : *m_jer_pt_down;
             (*corr_phi) = (currentVar == eVar::Up) ? *m_jer_phi_up : *m_jer_phi_down;
         }
-        else if (currentSyst != Systematic::Nominal) {
+        else {
             auto met_vec = std::polar(*m_pt, *m_phi) - jet.get_momentum_change();
             (*corr_pt) = std::abs(met_vec);
             (*corr_phi) = std::arg(met_vec);
 
-        } else {
-            (*corr_pt) = *m_pt;
-            (*corr_phi) = *m_phi;
         }
         pt_unfix = pt();
         phi_unfix = phi();

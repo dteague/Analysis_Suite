@@ -21,6 +21,7 @@ void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
     chHEF.setup(fReader, "Jet_chHEF");
     chEmEF.setup(fReader, "Jet_chEmEF");
     nConstituents.setup(fReader, "Jet_nConstituents");
+    muonSubtrFactor.setup(fReader, "Jet_muonSubtrFactor");
 
     setup_map(Level::Loose_NoPUID);
     setup_map(Level::Loose);
@@ -68,7 +69,6 @@ void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
             if (syst == Systematic::Jet_JER) continue;
             jec_unc_vec[syst] = unc_set->at(jes_source[year_]+unc_by_syst.at(syst)+"_AK4PFchs");
         }
-
         // Pileup Weights
         auto jmar_set = getScaleFile("JME", "jmar");
         puid_scale = WeightHolder(jmar_set->at("PUJetID_eff"),
@@ -111,7 +111,6 @@ void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
 void Jet::fillJet(JetOut& output, Level level, const Bitmap& event_bitmap)
 {
     output.clear();
-    output.jet_shifts.resize(2*used_jec_systs.size());
     const auto central = m_jet_scales.at(Systematic::Nominal).at(eVar::Nominal);
     for (size_t idx = 0; idx < size(); ++idx) {
         bool pass = fillParticle(output, level, idx, event_bitmap);
@@ -121,10 +120,11 @@ void Jet::fillJet(JetOut& output, Level level, const Bitmap& event_bitmap)
             else if (btag.at(idx) > loose_bjet_cut) output.pass_btag.push_back(1);
             else output.pass_btag.push_back(0);
             output.discriminator.push_back(btag.at(idx));
+            output.pt_shift.push_back(std::vector<Float_t>());
             for (size_t n_syst=0; n_syst < used_jec_systs.size(); ++n_syst) {
                 auto syst = used_jec_systs.at(n_syst);
-                output.jet_shifts[2*n_syst].push_back(m_jet_scales[syst][eVar::Up][idx]/central.at(idx));
-                output.jet_shifts[2*n_syst+1].push_back(m_jet_scales[syst][eVar::Down][idx]/central.at(idx));
+                output.pt_shift.back().push_back(m_pt.at(idx)*m_jet_scales[syst][eVar::Up][idx]);
+                output.pt_shift.back().push_back(m_pt.at(idx)*m_jet_scales[syst][eVar::Down][idx]);
             }
         }
     }
@@ -296,7 +296,8 @@ std::complex<float> Jet::get_momentum_change()
 {
     std::complex<float> change;
     for(size_t i = 0; i < size(); ++i) {
-        change += std::polar(pt(i)-nompt(i), phi(i));
+        if (nompt(i)*(1-muonSubtrFactor.at(i)) > 15 && neEmEF.at(i)+chEmEF.at(i) < 0.9)
+            change += std::polar(pt(i)-nompt(i), phi(i));
     }
     return change;
 }

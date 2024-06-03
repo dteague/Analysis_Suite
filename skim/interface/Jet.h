@@ -69,6 +69,7 @@ public:
     TRArray<Float_t> area;
     TRArray<Float_t> rawFactor;
     TRArray<Int_t> puId;
+    TRArray<Float_t> muonSubtrFactor;
     TRVariable<Float_t> rho;
 
     TRArray<Float_t> neHEF, neEmEF, muEF, chHEF, chEmEF;

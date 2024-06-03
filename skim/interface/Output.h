@@ -38,12 +38,12 @@ struct ParticleOut {
 
 struct JetOut {
     PARTICLE_VARS;
-    std::vector<std::vector<Float_t>> jet_shifts;
+    std::vector<std::vector<Float_t>> pt_shift;
     std::vector<Float_t> discriminator;
     std::vector<Int_t> pass_btag;
     void clear() {
         generic_clear(this);
-        jet_shifts.clear();
+        pt_shift.clear();
         discriminator.clear();
         pass_btag.clear();
     }

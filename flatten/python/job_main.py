@@ -29,12 +29,19 @@ def run(workdir, outdir, tupleName, year, syst, inputs):
     groups = ntuple.get_info(keep_dd_data=True).setup_groups()
     plotter = Plotter(ntuple.get_filename(year=year),
                       groups, ntuple=ntuple, systName=syst, year=year)
-
     final_set = dict()
     final_weight = dict()
+
+    allvars = inputs.allvar
+    if "CR" in tupleName:
+        allvars = {
+            "HT": inputs.allvar['HT'],
+            "NJets": inputs.allvar['NJets'],
+        }
+
     for member, vgs in plotter.dfs.items():
         for tree, vg in vgs.items():
-            df_dict = {varname: func(vg) for varname, func in inputs.allvar.items()}
+            df_dict = {varname: func(vg) for varname, func in allvars.items()}
             df_dict["scale_factor"] = vg.scale
             df = pd.DataFrame.from_dict(df_dict)
             df = df.astype({col: int for col in df.columns if col[0] == 'N'})

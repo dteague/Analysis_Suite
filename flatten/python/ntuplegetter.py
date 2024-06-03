@@ -24,13 +24,25 @@ class NtupleGetter(BaseGetter):
         f = uproot.open(filename)
         if group not in f or treename not in f[group]:
             return
-        systNames = [name.member("fName") for name in f[group]["Systematics"]]
+        systNames = []
+        for name in f[group]["Systematics"]:
+            mem = name.member("fName")
+            if mem in systNames:
+                break
+            else:
+                systNames.append(mem)
         if self.systName not in systNames:
             return
 
         self.syst_unique = systNames.index(systName)
         if "Syst_Index" in f[group]:
-            indices = {int(name.member("fName")): int(name.member('fTitle')) for name in f[group]["Syst_Index"]}
+            indices = {}
+            for name in f[group]["Syst_Index"]:
+                i, j = int(name.member("fName")), int(name.member("fTitle"))
+                if i in indices:
+                    break
+                else:
+                    indices[i] = j
             self.syst = indices[self.syst_unique]
             self.systNames = [(s, systNames[s]) for s, n in indices.items() if n == self.syst]
         else:
@@ -47,15 +59,10 @@ class NtupleGetter(BaseGetter):
         self._base_mask = ak.to_numpy(self._get_var("PassEvent"))
         self._mask = copy(self._base_mask)
         self._scale = ak.to_numpy(self.tree['weight'].array()[:, self.syst_unique])
-        self._setSyst()
+        self.is_jec_unc = "JER" in self.systName or "JEC" in self.systName
+
         if group == "data":
-            # Remove duplicates
             pass
-            # _, idx = np.unique(np.array([self["run"], self['luminosityBlock'], self["event"]]).T,
-            #                    return_index=True, axis=0)
-            # dup_mask = np.array([i in idx for i in np.arange(len(self._base_mask))])
-            # self._base_mask = np.all([self._base_mask, dup_mask], axis=0)
-            # self.clear_mask()
         elif "sumweight" in f[group]:
             self._scale = self.get_sf(self.systName) * self._scale
         else:
@@ -87,14 +94,6 @@ class NtupleGetter(BaseGetter):
             else:
                 self.arr[key] = self._get_var(key)
         return self.arr[key][self.mask]
-
-    def _setSyst(self):
-        if self.systName in ["JES", "JER"]:
-            jec = self.systName.lower().split("_")
-            updown = {"down": "first", "up": "second"}
-            self.jec_var = f"jec/{jec[1]}.{updown[jec[2]]}"
-        else:
-            self.jec_var = ""
 
     def get_sf(self, systName):
         if self.xsec == 1:
@@ -348,12 +347,16 @@ class Particle(ParticleBase):
 
     def _get_val(self, var, idx=-1, pad=False):
         if pad:
-            vals = ak.fill_none(ak.pad_none(self.vg[f"{self.name}/{var}"][self.mask], idx + 1), pad)
+            # vals = ak.where(self.num()>idx, self.vg[f"{self.name}/{var}"][self.mask, idx:idx+1]  pad)
+            vals = ak.fill_none(ak.firsts(self.vg[f"{self.name}/{var}"][self.mask][:,idx:idx+1]), pad)
+            return ak.to_numpy(vals)
+            # vals = ak.fill_none(ak.pad_none(self.vg[f"{self.name}/{var}"][self.mask], idx + 1), pad)
         elif idx == -1:
             return self.vg[f"{self.name}/{var}"][self.mask]
         else:
             vals = self.vg[f"{self.name}/{var}"][self.mask][self.num() > idx]
         return ak.to_numpy(vals[:, idx])
+
 
     def clear_mask(self):
         self._mask = copy(self._base_mask)
@@ -363,9 +366,11 @@ class Particle(ParticleBase):
 
     # Special function for allowing jec in pt
     def pt(self, *args):
-        self._get_val("pt", *args)
-        if self.vg.jec_var and "Jet" in self.name:
-            return self._get_val("pt", *args) * self(f"{self.vg.jec_var}",*args)
+        if self.vg.is_jec_unc and "Jet" in self.name:
+            if f'{self.name}/pt_fix' not in  self.vg.arr:
+                self.vg.arr[f'{self.name}/pt_fix'] = self.vg.tree[f"{self.name}/pt_shift"].array()[:, :, self.vg.syst-1]
+                self.vg.branches.append(f'{self.name}/pt_fix')
+            return self._get_val('pt_fix', *args)
         else:
             return self._get_val("pt", *args)
 

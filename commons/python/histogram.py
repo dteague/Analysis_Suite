@@ -199,13 +199,19 @@ class Histogram:
     def integral(self, flow=True):
         return self.hist.sum(flow=flow).value
 
-    def plot_points(self, pad, **kwargs):
+    def plot_points(self, pad, normed=False, **kwargs):
         if not self or pad is None:
             return
         mask = self.vals > 0.
+        if normed:
+            vals = self.vals/self.axis.widths
+            err = self.err/self.axis.widths
+        else:
+            vals = self.vals
+            err = self.err
         pad.errorbar(x=self.axis.centers[mask], xerr=self.axis.widths[mask]/2,
-                     y=self.draw_sc*self.vals[mask], ecolor=self.color,
-                     yerr=self.draw_sc*self.err[mask], fmt='o',
+                     y=self.draw_sc*vals[mask], ecolor=self.color,
+                     yerr=self.draw_sc*err[mask], fmt='o',
                      color=self.color, barsabove=True, label=self.name,
                      markersize=4, **kwargs)
 
@@ -250,20 +256,23 @@ class Histogram:
         return color_plot
 
 
-    def plot_band(self, pad, asymm=False, **kwargs):
+    def plot_band(self, pad, normed=False, asymm=False, **kwargs):
         if not self or pad is None:
             return
-        if asymm:
-            bottom = self.vals
+        if normed:
+            vals = self.vals/self.axis.widths
+            err = self.err/self.axis.widths
         else:
-            bottom = self.vals - self.err
-        pad.hist(weights=2*self.err, x=self.axis.centers,
+            vals = self.vals
+            err = self.err
+        bottom = vals - err
+        pad.hist(weights=2*err, x=self.axis.centers,
                  bins=self.axis.edges, bottom=bottom,
                  histtype='stepfilled', color=self.color,
                  align='mid', stacked=True, hatch='//',
                  alpha=0.4, label=self.name, **kwargs)
 
-    def plot_shape(self, pad, **kwargs):
+    def plot_shape(self, pad, normed=False, **kwargs):
         if not self or pad is None:
             return
         pad.hist(x=self.axis.centers, weights=self.draw_sc*self.vals, bins=self.axis.edges,

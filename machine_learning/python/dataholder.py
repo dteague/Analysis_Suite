@@ -212,7 +212,11 @@ class MLHolder:
             test, train, validation = self.setup_split(df, className, sample, split)
             # print(sample, len(df), len(test), len(train), len(validation))
             if not test.empty:
-                self.test_weights[year][sample] = weights.loc[test.index]*len(df)/len(test)
+                for key, col in weights.items():
+                    if key == 'index':
+                        continue
+                    weights[key] = col.loc[test.index]*np.sum(col)/np.sum(col[test.index])
+                self.test_weights[year][sample] = weights
                 self.test_sets[year] = pd.concat([test, self.test_sets[year]], ignore_index=True)
                 # print(sample, np.sum(test.scale_factor), np.sum(test.split_weight))
             if not train.empty:
@@ -271,7 +275,7 @@ class MLHolder:
         print()
         return test, train, validation
 
-        
+
     def split(self, workset, split_ratio, target_scale):
         train, test = train_test_split(workset, train_size=split_ratio, random_state=self.random_state)
         # test.loc[:, ["scale_factor", "train_weight"]] *= target_scale/np.sum(test.scale_factor)

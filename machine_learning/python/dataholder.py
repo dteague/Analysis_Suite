@@ -24,8 +24,11 @@ from analysis_suite.commons.plot_utils import plot, hep, plot_colorbar
 
 pd.options.mode.chained_assignment = None
 
-def generic_plot_setup(ax, year):
-    ax.set_xlim(0., 1.)
+def generic_plot_setup(ax, year, bins=None):
+    if bins is None:
+        ax.set_xlim(0., 1.)
+    else:
+        ax.set_xlim(bins[0], bins[-1])
     ax.set_xlabel("$disc_{BDT}$")
     ax.set_ylabel("A.U.")
     ax.legend()
@@ -217,17 +220,18 @@ class MLHolder:
                 # print(sample, "train", np.sum(train.scale_factor), np.sum(train.split_weight))
             if not validation.empty:
                 self.validation_set = pd.concat([validation, self.validation_set], ignore_index=True)
-        # exit()
+        exit()
 
     def setup_split(self, df, className, sample, split=True):
         train = setup_pandas(self.all_vars)
         test = setup_pandas(self.all_vars)
         validation = setup_pandas(self.all_vars)
+        total_scale = np.sum(df.scale_factor)
 
         if not split:
             return df, train, validation
 
-        exp_train_evt = np.sum(df.scale_factor)/self.train_total[className]*self.total_train
+        exp_train_evt = total_scale/self.train_total[className]*self.total_train
         split_ratio = self.split_ratio
 
         if sample == "tttj" or sample == "tttw":
@@ -241,7 +245,7 @@ class MLHolder:
                 df.loc[:, "split_weight"] *= exp_train_evt/len(df)
                 train = df
             else:
-                _, train = self.split(df, exp_train_evt/len(df))
+                _, train = self.split(df, exp_train_evt/len(df), total_scale)
         # Dont Train (not enough events)
         elif not self.should_train(df, className):
             test = df
@@ -254,21 +258,31 @@ class MLHolder:
                 df.loc[:, "split_weight"] *= exp_train_evt/self.min_train_events
             else:
                 df.loc[:, "split_weight"] *= exp_train_evt/(split_ratio*len(df))
-            test, train = self.split(df, split_ratio)
+            test, train = self.split(df, split_ratio, total_scale)
         if self.validation_ratio > 0. and len(train)*self.validation_ratio > 1:
-            train, validation = self.split(train, self.validation_ratio)
+            train, validation = self.split(train, self.validation_ratio, total_scale)
 
+        print(sample,  np.sum(df.scale_factor), np.sum(test.scale_factor), np.sum(train.scale_factor), np.sum(validation.scale_factor))
+        if len(train) > 0 and len(test) > 0:
+            print("NJets", np.average(df.NJets, weights=df.scale_factor), np.average(test.NJets, weights=test.scale_factor), np.average(train.NJets, weights=train.scale_factor))
+            print("NlooseBJets", np.average(df.NlooseBJets, weights=df.scale_factor), np.average(test.NlooseBJets, weights=test.scale_factor), np.average(train.NlooseBJets, weights=train.scale_factor))
+            print("HT", np.average(df.HT, weights=df.scale_factor), np.average(test.HT, weights=test.scale_factor), np.average(train.HT, weights=train.scale_factor))
+            print("j1Pt", np.average(df.j1Pt, weights=df.scale_factor), np.average(test.j1Pt, weights=test.scale_factor), np.average(train.j1Pt, weights=train.scale_factor))
+        print()
         return test, train, validation
 
         
-    def split(self, workset, split_ratio):
+    def split(self, workset, split_ratio, target_scale):
         train, test = train_test_split(workset, train_size=split_ratio, random_state=self.random_state)
+        # test.loc[:, ["scale_factor", "train_weight"]] *= target_scale/np.sum(test.scale_factor)
+        # train.loc[:, ["scale_factor", "train_weight"]] *= target_scale/np.sum(train.scale_factor)
         test.loc[:, ["scale_factor", "train_weight"]] *= len(workset)/len(test)
         train.loc[:, ["scale_factor", "train_weight"]] *= len(workset)/len(train)
+
         return test, train
 
 
-    def apply_model(self, year, get_auc=False, skip_train=False):
+    def apply_model(self, year, skip_train=False):
         def get_pred(use_set, directory):
             unique_labels = np.unique(use_set.classID.astype(int))
             pred = self.predict(use_set, directory)
@@ -278,20 +292,6 @@ class MLHolder:
             self.pred_train = get_pred(self.train_set, self.outdir)
             self.pred_validation = get_pred(self.validation_set, self.outdir)
 
-        # if get_auc:
-        #     self.auc[year] = roc_auc_score(labels, pred.T[1], sample_weight = abs(weights))
-
-        #     self.fom[year] = 0
-        #     fom_bins = np.linspace(0, 1, 101)
-        #     sig = np.cumsum(np.histogram(self.pred_test[year]["Signal"][labels==1], bins=fom_bins,
-        #                              weights=weights[labels==1])[0][::-1])[::-1]
-        #     tot = np.cumsum(np.histogram(self.pred_test[year]["Signal"], bins=fom_bins,
-        #                                  weights=weights)[0][::-1])[::-1]
-        #     self.fom[year] = max(sig/np.sqrt(tot+1e-5))
-        #     fom_maxbin = np.argmax(sig/np.sqrt(tot+1e-5))
-
-        #     print(f'AUC for year {year}: {self.auc[year]}')
-        #     print(f'FOM (cut) for year {year}: {self.fom[year]:0.3f} at val {fom_bins[fom_maxbin]:0.2f}')
 
     def get_stats(self, year, cut):
         truth_vals = self.test_sets[year].classID.astype(int)
@@ -354,6 +354,25 @@ class MLHolder:
         #         for j in range(work_set.shape[1]):
         #             text = ax.text(j, i, corr[i, j], ha="center", va="center", color="w")
             ax.set_title("Correlation")
+
+    def get_auc(self, year, signal="Signal"):
+        classID = self.classID_by_className[signal]
+        df = self.test_sets[year]
+        pred = self.pred_test[year][signal]
+        is_sig = df.classID == classID
+
+        nbins = 100
+        bins = np.linspace(0, 1+1/nbins, nbins+2)
+
+        s_hist = np.histogram(pred[is_sig], bins, weights=df.scale_factor[is_sig])[0]
+        b_hist = np.histogram(pred[~is_sig], bins, weights=df.scale_factor[~is_sig])[0]
+        tp = np.cumsum(s_hist[::-1])/(np.sum(s_hist)+1e-5)
+        fp = np.cumsum(b_hist[::-1])/(np.sum(b_hist)+1e-5)
+
+        delta = fp[1:]-fp[:-1]
+        trap = (tp[1:]+tp[:-1])/2
+        auc = np.sum(delta*trap)
+        return auc
 
 
     def roc_curve(self, year, signal="Signal"):
@@ -423,6 +442,26 @@ class MLHolder:
             ax.set_ylabel("True Positive Rate")
             hep.cms.label(ax=ax, lumi=lumi[year], label="Preliminary")
 
+    def get_fom(self, year, signal='Signal'):
+        test = self.test_sets[year]
+        pred_test = self.pred_test[year][signal]
+        classID = self.classID_by_className[signal]
+
+        nbins = 20
+        bins = np.linspace(0, 1, nbins+1)
+
+        def get_hist(pred, df, sig=False):
+            mask = df.classID==classID if sig else df.classID!=classID
+            return np.histogram(pred[mask], bins, weights=df.scale_factor[mask])[0]
+
+        s = get_hist(pred_test, test, sig=True)
+        b = get_hist(pred_test, test)
+
+
+        with np.errstate(invalid='ignore'):
+            fom = np.sqrt(2*np.sum((s+b)*np.log(np.where(b > 1e-5, 1+s/b, 1))-s))
+        return fom
+
 
     def plot_overtrain(self, year, signal='Signal'):
         test = self.test_sets[year]
@@ -438,12 +477,16 @@ class MLHolder:
             mask = df.classID==classID if sig else df.classID!=classID
             return np.histogram(pred[mask], bins, weights=df.scale_factor[mask])[0]
 
-        train_b = get_hist(pred_train, train, sig=True)
-        train_s = get_hist(pred_train, train)
-        test_b = get_hist(pred_test, test, sig=True)
-        test_s = get_hist(pred_test, test)
+        train_s = get_hist(pred_train, train, sig=True)
+        train_b = get_hist(pred_train, train)
+        test_s = get_hist(pred_test, test, sig=True)
+        test_b = get_hist(pred_test, test)
 
-        fom = lambda s, b: np.sqrt(2*np.sum((s+b)*np.log(np.where(test_b > 1e-5, 1+test_s/test_b, 1))-s))
+        def fom(s, b):
+            with np.errstate(invalid='ignore'):
+                fom_val = np.sqrt(2*np.sum((s+b)*np.log(np.where(b > 1e-5, 1+s/b, 1))-s))
+            return fom_val
+
         print(f"Train FOM: {fom(train_s, train_b)}")
         print(f"Test FOM: {fom(test_s, test_b)}")
 
@@ -457,7 +500,7 @@ class MLHolder:
             generic_plot_setup(ax, year)
 
 
-    def plot_train_breakdown(self, year, signal='Signal', use_test=True):
+    def plot_train_breakdown(self, year, signal='Signal', use_test=True, bins=None):
         name = 'test' if use_test else 'train'
         if use_test:
             pred = self.pred_test[year][signal]
@@ -466,14 +509,19 @@ class MLHolder:
             pred = self.pred_train[signal]
             df = self.train_set
 
+
         nbins = 50
-        bins = np.linspace(0, 1, nbins+1)
+        if bins is None:
+            bins = np.linspace(0, 1, nbins+1)
+            plotname = f'{name}_breakdown_{year}.png'
+        else:
+            plotname = f'{name}_breakdown_{year}_{bins[0]}-{bins[-1]}.png'
         # bins = np.concatenate([[0], np.linspace(self.minmax[0], self.minmax[1], nbins+1), [1]])
         def get_hist(pred, df, group):
             mask = self.get_mask(df, self.group_names[group])
             return np.histogram(pred[mask], bins, weights=df.scale_factor[mask])[0]
 
-        with plot(self.outdir/f'{name}_breakdown_{year}.png') as ax:
+        with plot(self.outdir/plotname) as ax:
             ttt_hist = get_hist(pred, df, 'ttt')
             tttt_hist = get_hist(pred, df, 'tttt')
             ttX_hist = get_hist(pred, df, 'ttX')
@@ -499,7 +547,7 @@ class MLHolder:
                     else:
                         p.set(ec=ec)
 
-            generic_plot_setup(ax, year)
+            generic_plot_setup(ax, year, bins=bins)
 
 
     # Private Functions

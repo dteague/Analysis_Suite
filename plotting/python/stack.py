@@ -38,11 +38,15 @@ class Stack(Histogram):
         self.hist.view().variance = sumw2
 
 
-    def plot_stack(self, pad, **kwargs):
+    def plot_stack(self, pad, normed=False, **kwargs):
         if not self.stack:
             return
+        if normed:
+            norms = self.axis.widths
+        else:
+            norms = np.ones(len(self.axis.centers))
         n, bins, patches = pad.hist(
-            weights=np.array([h.vals for h in self.stack]).T, bins=self.axis.edges,
+            weights=np.array([h.vals/norms for h in self.stack]).T, bins=self.axis.edges,
             x=np.tile(self.axis.centers, (len(self.stack), 1)).T,
             color=[h.color for h in self.stack],
             label=[h.name for h in self.stack],

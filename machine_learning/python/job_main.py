@@ -39,10 +39,11 @@ def training(model, years):
     model.train()
     model.plot_training_progress()
     for year in years:
-        model.apply_model(year, get_auc=True)
+        model.apply_model(year)
         model.roc_curve(year)
         model.plot_overtrain(year)
         model.plot_train_breakdown(year)
+        model.plot_train_breakdown(year, bins=np.linspace(0.8, 1, 41))
         model.plot_train_breakdown(year, use_test=False)
 
 
@@ -69,13 +70,14 @@ def run(groups, usevars, workdir, model_type, train, years, region, systName, sa
     for year in years:
         (output_first/year).mkdir(exist_ok=True, parents=True)
         model.setup_year(workdir, year, isNom)
+
     if train:
         training(model, years)
         model.output_train(params.signal_first)
 
     for year in years:
         if not train:
-            model.apply_model(year, get_auc=True, skip_train=True)
+            model.apply_model(year, skip_train=True)
         model.output(year, params.signal_first)
 
     print(f"Training for syst {systName}")
@@ -97,7 +99,7 @@ def run(groups, usevars, workdir, model_type, train, years, region, systName, sa
 
     for year in years:
         if not train:
-            model2.apply_model(year, get_auc=True, skip_train=True)
+            model2.apply_model(year, skip_train=True)
         model2.output(year, params.signal_second)
 
 

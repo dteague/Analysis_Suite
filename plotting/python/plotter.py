@@ -117,7 +117,6 @@ class Plotter:
                         ntuple.setup_branches(vg)
                         ntuple.apply_part_cut(vg)
                         ntuple.apply_cut(vg)
-
                         # To avoid data-driven bkg being written out as 'data'
                         out_name = group if self.ginfo.is_data_driven(group) else member
 

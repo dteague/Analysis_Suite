@@ -12,8 +12,8 @@ from .dataholder import MLHolder
 
 
 def fom_metric(y_pred, dtrain):
-    prev = fom_metric.prev
-    nbins = 20
+    # prev = fom_metric.prev
+    nbins = 50
     y_true = dtrain.get_label()
     if len(y_pred.shape) > 1:
         y_pred = 1/(1+np.exp(-y_pred.T[1]))
@@ -22,18 +22,16 @@ def fom_metric(y_pred, dtrain):
 
     bins = np.linspace(np.min(y_pred), np.max(y_pred), nbins+1)
     weight = dtrain.get_weight()
+
     b = np.histogram(y_pred[y_true==0], bins, weights=weight[y_true==0])[0]
     s = np.histogram(y_pred[y_true==1], bins, weights=weight[y_true==1])[0]
-    fom = -np.sqrt(2*np.sum((s+b)*np.log(1+s/(b+1e-5))-s))
-    # print(min(y_pred), max(y_pred))
+    with np.errstate(invalid='ignore'):
+        fom = -np.sqrt(2*np.sum((s+b)*np.log(np.where(b > 1e-5, 1+s/b, 1))-s))
 
-    diff = abs((fom-prev)/fom)
-    # print(fom, diff)
-    # if diff > 0.35 and prev < -0.09:
-    #     fom = prev
-    fom_metric.prev = fom
+    # diff = abs((fom-prev)/fom)
+    # fom_metric.prev = fom
     return 'fom', fom
-fom_metric.prev = 0
+# fom_metric.prev = 0
 
 @dataclass
 class Params:
@@ -79,7 +77,7 @@ class XGBoostMaker(MLHolder):
     def update_params(self, params):
         self.param = Params(params=params)
 
-    def train(self):
+    def train(self, verbose=20):
         """**Train for multiclass BDT**
 
         Does final weighting of the data (normalize all groups total
@@ -113,11 +111,10 @@ class XGBoostMaker(MLHolder):
         # w_test = self.validation_set.scale_factor
 
         _, group_tot = np.unique(y_train, return_counts=True)
-        print()
-        print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
-        print(group_tot)
+        # print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
+        # print(group_tot)
         w_train[y_train==1] *= np.sum(w_train[y_train!=1])/np.sum(w_train[y_train==1])
-        print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
+        # print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
         # w_train[y_train == 0] /= np.sum(w_train[y_train == 0])
         # w_test = self.validation_set.scale_factor.copy()
         # w_train[y_train == 1] /= np.sum(w_train[y_train == 1])
@@ -134,12 +131,11 @@ class XGBoostMaker(MLHolder):
 
         fit_model = xgb.XGBClassifier(**asdict(self.param))
         fit_model.fit(x_train, y_train, sample_weight=w_train,
-                      # eval_metric=fom_metric,
+                      eval_metric=fom_metric,
                       eval_set=[(x_train, y_train), (x_test, y_test)],
                       sample_weight_eval_set=[w_train2, w_test],
-                      early_stopping_rounds=1500, verbose=20)
+                      early_stopping_rounds=1500, verbose=verbose)
         self.results = fit_model.evals_result()
-
         self.best_iter = fit_model.get_booster().best_iteration
         fit_model.save_model(f'{self.outdir}/model.bin')
 

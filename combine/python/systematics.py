@@ -68,7 +68,7 @@ class Systematic:
         name = self.dan_name
         if "JEC" in name or "JER" in name:
             if not self.corr:
-                name += year[:3]
+                name += year[:4]
             name += "LOWESS"
         if not self.corr:
             name += year_convert[year]

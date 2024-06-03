@@ -24,10 +24,11 @@ from analysis_suite.commons.plot_utils import plot, nonratio_plot, ratio_plot, h
 from analysis_suite.plotting.stack import Stack
 
 masks = {}
+graphs = {}
 ginfo = None
 signals = ['tttj', 'tttw']
 
-def plot_stack(hists, outfile, graph, year, region):
+def plot_stack(hists, outfile, graph, year, region, normed=False):
     signal = Histogram("ttt", graph.bin_tuple, color='crimson', name=ginfo.get_legend_name('ttt'))
     data = Histogram("data", graph.bin_tuple, color='black')
     stack = Stack(*graph.bins())
@@ -42,7 +43,7 @@ def plot_stack(hists, outfile, graph, year, region):
             stack += hist
 
     plotter = ratio_plot if data else nonratio_plot
-    with plotter(outfile, graph.axis_name, stack.get_xrange()) as ax:
+    with plotter(outfile, graph.axis_name, stack.get_xrange(), normed=normed) as ax:
         ratio = Histogram("Ratio", graph.bin_tuple, color="black")
         band = Histogram("Ratio", graph.bin_tuple, color="plum")
         error = Histogram("Stat Errors", graph.bin_tuple, color="plum")
@@ -65,10 +66,10 @@ def plot_stack(hists, outfile, graph, year, region):
             sig_scale = int(sig_scale//rounder*rounder)
             signal.scale(sig_scale, changeName=True, forPlot=True)
 
-        stack.plot_stack(pad)
-        signal.plot_points(pad)
-        data.plot_points(pad)
-        error.plot_band(pad)
+        stack.plot_stack(pad, normed=normed)
+        signal.plot_points(pad, normed=normed)
+        data.plot_points(pad, normed=normed)
+        error.plot_band(pad, normed=normed)
 
         # ratio pad
         ratio.plot_points(subpad)
@@ -144,59 +145,67 @@ def fill_group(f, year, group, members, graph, mask=None):
     return output
 
 
-def make_card(indir, filename, outdir, year, region, graph, rate_params, unblind, skip):
+def make_hists(file_list, outdir, year, region, unblind):
     groups = ginfo.setup_groups()
-    graph_name = graph.name
     mask = masks.get(region, None)
+    graph = graphs.get(region, None)
+    graph_name = graph.name
     out_signals = [ginfo.get_combine_name(s) for s in signals]
     group_list = list()
 
-    if not skip:
-        syst_hists = {}
-        for infile in (indir/year).glob(filename):
-            # if "Nominal" not in str(infile):
-            #     continue
-            with uproot.open(infile) as f:
-                for group, members in groups.items():
-                    syst_hists = deep_update(syst_hists, fill_group(f, year, group, members, graph, mask))
+    syst_hists = {}
+    for infile in file_list:
+        # if "Nominal" not in str(infile):
+        #     continue
+        with uproot.open(infile) as f:
+            for group, members in groups.items():
+                syst_hists = deep_update(syst_hists, fill_group(f, year, group, members, graph, mask))
 
-        clean_negatives(syst_hists)
+    clean_negatives(syst_hists)
 
-        plot_stack(syst_hists['Nominal'], outdir/'plots'/f'{graph_name}_{year}_{region}.png', graph, year, region)
+    plot_stack(syst_hists['Nominal'], outdir/'plots'/f'{graph_name}_{year}_{region}.png', graph, year, region)
+    plot_stack(syst_hists['Nominal'], outdir/'plots'/f'{graph_name}_{year}_{region}_normed.png', graph, year, region, normed=True)
 
-        used_syst_names = set()
-        with HistWriter(outdir / f'{graph_name}_{year}_{region}.root') as writer:
-            for syst, hists in syst_hists.items():
-                final_name = syst[:syst.rfind('_')]
-                if final_name not in used_syst_names:
-                    used_syst_names.add(final_name)
-                writer.add_syst(hists, ginfo, syst=syst, blind=not unblind)
-        for g in syst_hists['Nominal'].keys():
-            if g not in signals and 'data' not in g:
-                group_list.append(ginfo.get_combine_name(g))
-    else:
-        with uproot.open(outdir / f'{graph_name}_{year}_{region}.root') as f:
-            used_syst_names = list()
-            for d, cls in f.classnames().items():
-                if '/' in d:
-                    continue
-                elif 'TH1' in cls and d[:-2] not in out_signals and 'data' not in d:
-                    group_list.append(d[:-2])
-                elif 'Up' in d:
-                    used_syst_names.append(d[:-4])
+    with HistWriter(outdir / f'{graph_name}_{year}_{region}.root') as writer:
+        for syst, hists in syst_hists.items():
+            final_name = syst[:syst.rfind('_')]
+            writer.add_syst(hists, ginfo, syst=syst, blind=not unblind)
+    for g in syst_hists['Nominal'].keys():
+        if g not in signals and 'data' not in g:
+            group_list.append(ginfo.get_combine_name(g))
+    print(f'Finished {region}: {year}')
+
+
+def make_card(outdir, year, region, graph, rate_params, nosyst):
+    groups = ginfo.setup_groups()
+    graph_name = graph.name
+    out_signals = [ginfo.get_combine_name(s) for s in signals]
+    group_list = list()
+
+    with uproot.open(outdir / f'{graph_name}_{year}_{region}.root') as f:
+        used_syst_names = list()
+        for d, cls in f.classnames().items():
+            if '/' in d:
+                continue
+            elif 'TH1' in cls and d[:-2] not in out_signals and 'data' not in d:
+                group_list.append(d[:-2])
+            elif 'Up' in d:
+                used_syst_names.append(d[:-4])
 
     def keep_systs(x):
         return x.syst_type != 'shape' or x.get_name(year) in used_syst_names
 
-    with Card_Maker(outdir, year, region, out_signals, group_list, graph_name) as card:
+    with Card_Maker(outdir, year, region, out_signals, group_list, graph_name, nosyst) as card:
         card.write_preamble()
-        card.write_systematics(list(filter(keep_systs, systematics)), ginfo)
-        # card.add_stats()
+        if nosyst:
+            card.write_systematics(dummy, ginfo)
+        else:
+            card.write_systematics(list(filter(keep_systs, systematics)), ginfo)
+            # card.add_stats()
         for rp in rate_params:
             card.add_rateParam(ginfo.get_combine_name(rp))
-    print(f'Finished {region}: {year}')
-    # exit()
-    return f"{region}={graph_name}_{year}_{region}_card.txt"
+
+    return f"{region}={graph_name}_{year}_{region}{'_nosyst' if args.no_systs else ''}_card.txt"
 
 
 if __name__ == "__main__":
@@ -224,32 +233,31 @@ if __name__ == "__main__":
     combine_info = get_inputs(args.workdir, 'combine_info')
     rate_params = combine_info.rate_params
 
-    inputs = []
-    for region, info in combine_info.regions.items():
-        masks[region] = info['mask']
-        for year in args.years:
-            inputs.append((
-                args.workdir/info['dir'], info['glob'], combine_dir, year, region, info['graph'],
-                rate_params, args.unblind, args.skip
-            ))
+    if not args.skip:
+        hist_inputs = []
+        for region, info in combine_info.regions.items():
+            masks[region] = info['mask']
+            graphs[region] = info['graph']
+            for year in args.years:
+                infiles = list((args.workdir/info['dir']/year).glob(info['glob']))
+                hist_inputs.append(( infiles, combine_dir, year, region, args.unblind))
 
+        if args.cores == 1:
+            for input in hist_inputs:
+                make_hists(*input)
+        else:
+            with mp.Pool(args.cores) as pool:
+                pool.starmap(make_hists, hist_inputs)
 
-    if args.cores == 1:
-        combine_txt = []
-        for input in inputs:
-            combine_txt.append(make_card(*input))
-    else:
-        with mp.Pool(args.cores) as pool:
-            combine_txt = pool.starmap(make_card, inputs)
-    # exit()
     for year in args.years:
-        combine_cmd = "combineCards.py "
-        final_card = f"final_{year}_card.txt"
+        combine_cmd = "combineCards.py"
+        final_card = f"final_{year}{'_nosyst' if args.no_systs else ''}_card.txt"
 
-        for line in combine_txt:
-            if year in line:
-                combine_cmd += " " + line
-        combine_cmd += f'> {final_card}'
+        combine_txt = list()
+        for region, info in combine_info.regions.items():
+            combine_cmd += " " + make_card(combine_dir, year, region, info['graph'], rate_params, args.no_systs)
+
+        combine_cmd += f' > {final_card}'
         all_command += f'era{year}={final_card} '
         runCombine(combine_cmd)
 

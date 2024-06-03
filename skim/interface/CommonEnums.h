@@ -152,9 +152,9 @@ static const std::unordered_map<std::string, Systematic> syst_by_name = {
     { "Jet_JEC_AbsoluteSample", Systematic::Jet_JEC_RelativeSample},
     { "Jet_JEC_FlavorQCD", Systematic::Jet_JEC_FlavorQCD},
 
-    { "ChargeMisId_stat", Systematic::ChargeMisId_stat },
-    { "Nonprompt_Mu_stat", Systematic::Nonprompt_Mu_stat },
-    { "Nonprompt_El_stat", Systematic::Nonprompt_El_stat },
+    { "ChargeMisId_Stat", Systematic::ChargeMisId_stat },
+    { "Nonprompt_Mu_Stat", Systematic::Nonprompt_Mu_stat },
+    { "Nonprompt_El_Stat", Systematic::Nonprompt_El_stat },
 };
 
 static const std::vector<Systematic> systs_that_change = {
@@ -190,9 +190,9 @@ const std::vector<Systematic> jec_systs = {
 };
 
 const std::vector<std::string> data_systs = {
-    "ChargeMisId_stat",
-    "Nonprompt_Mu_stat",
-    "Nonprompt_El_stat",
+    "ChargeMisId_Stat",
+    "Nonprompt_Mu_Stat",
+    "Nonprompt_El_Stat",
 };
 
 static const std::vector<eVar> syst_vars = { eVar::Up, eVar::Down };

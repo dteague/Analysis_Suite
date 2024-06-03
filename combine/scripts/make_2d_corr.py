@@ -59,6 +59,7 @@ def run_combine(workdir, cardname, year, other, sig='ttt', sig_up=3, sig_down=0,
 
     if not skip:
         runCombine.work_dir = workdir
+        runCombine(f'combine -M Significance {cardname}.txt --toysFrequentist')
         runCombine(f'text2workspace.py {cardname}.txt -m 125 -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel \
                      --PO "map=.*/{sig}:r_sig[1,0,200]" --PO "map=.*/{other}:r_other[1,0,200]" -o {cardname}.root', output=debug)
         runCombine(f'combine -M MultiDimFit {cardname}.root -m 125 -n .scan2d.{out_plot}.{year}  --points 800 --algo grid \
@@ -177,8 +178,8 @@ def make_2d_plot(outfile, data, xaxis_name="", yaxis_name=""):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="main", description="")
-    parser.add_argument("-d", "--workdir", required=True, type=lambda x : user.workspace_area/x/"combine",
-                        help="Working Directory")
+    # parser.add_argument("-d", "--workdir", required=True, type=lambda x : user.workspace_area/x/"combine",
+    #                     help="Working Directory")
     parser.add_argument('-t', '--extra_text')
     parser.add_argument("-y", "--years", required=True,
                         type=lambda x : [i.strip() for i in x.split(',')], help="Year to use")
@@ -190,14 +191,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     extra = args.other if args.extra_text is None else args.extra_text
-    sig_up = 50
-    other_up = 3
+    if args.signal == 'TTTJ':
+        sig_up = 200
+    elif args.signal == 'TTTW':
+        sig_up = 100
+    other_up = 10
     other_down = 0
     sig_down = 0
     syst_name = "_nosyst" if args.no_syst else ""
 
     # workdir = args.workdir/extra
-    workdir = user.analysis_area/f'corr_test/final_Dec_{args.extra_text}/combine'
+    # workdir = user.analysis_area/f'corr_test/final_Dec_{args.extra_text}/combine'
+    workdir = user.analysis_area/f'corr_test/no4topCR'
 
     for year in args.years:
         cardname = f'final_{year}{syst_name}_card'

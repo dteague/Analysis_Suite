@@ -12,8 +12,8 @@ ratio = {
 mc_samples = ['ttt', 'xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top', 'tttj', 'tttw']
 mc_samples_norp = ['ttt', 'xg', 'ttw', 'tth', 'ttXY', 'rare', '4top', 'tttj', 'tttw']
 mc_samples_nosig = ['xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top']
-qcd = ['tth', 'ttz', '4top', 'ttXY']
-ewk = ['ttw', 'xg', 'rare', 'tttw', 'rare']
+qcd = ['ttw', 'tth', 'ttz', '4top', 'ttXY', 'xg']
+ewk = ['tttj', 'tttw', 'rare']
 Systematic.default_groups = mc_samples
 
 
@@ -54,9 +54,9 @@ systematics = [
     #### Lepton/Jet ID stuff
     Systematic("Muon_Scale", corr=True).add().dname("ID_SS_MU"),
     Systematic("Electron_Scale", corr=True).add().dname("ID_SS_EL"),
-    Systematic("Lepton_tthMVA", "lnN", corr=True).add(1.04, chan='Dilepton') # 1.02**2 \
-                                                 .add(1.061, chan=['Multi', 'ttzCR', 'ttttCR']), # 1.02**3
-    Systematic("TriggerSF", 'lnN').add(1.05),
+    Systematic("Lepton_tthMVA_SS", "lnN", corr=True).add(1.04, chan='Dilepton') # 1.02**2 \
+                                                    .add(1.061, chan=['Multi', 'ttzCR', 'ttttCR']), # 1.02**3
+    Systematic("Trigger_SS", 'lnN').add(1.05),
     Systematic("Jet_PUID", corr=True).add().dname("PILEUPJETID"),
 
     #### JEC stuff
@@ -78,17 +78,17 @@ systematics = [
     Systematic("Pileup", corr=True).add().dname("PILEUP"),
 
     ## Fake Rate stuff
-    Systematic("ChargeMisId_stat").add(groups='charge_flip'),
-    Systematic("ChargeMisId_closure", 'lnN').add(1.2, groups="charge_flip"),
+    Systematic("ChargeMisId_Stat").add(groups='charge_flip'),
+    Systematic("ChargeMisId_Closure", 'lnN').add(1.2, groups="charge_flip"),
 
-    Systematic("Nonprompt_Mu_stat").add(groups='nonprompt'),
-    Systematic("Nonprompt_El_stat").add(groups='nonprompt'),
-    Systematic("Nonprompt_closure", 'lnN', corr=True).add(1.3, groups="nonprompt"),
+    Systematic("Nonprompt_Mu_Stat").add(groups='nonprompt'),
+    Systematic("Nonprompt_El_Stat").add(groups='nonprompt'),
+    Systematic("Nonprompt_Closure", 'lnN', corr=True).add(1.3, groups="nonprompt"),
 
     # Normalization stuff
     Systematic("XSEC_TTTT", "lnN", corr=True).add('0.86/1.08', groups="4top"),
-    Systematic("XSEC_TTTW", "lnN", corr=True).add('0.85/1.16', groups="tttw"),
-    Systematic("XSEC_TTTJ", "lnN", corr=True).add('0.9/1.12', groups="tttj"),
+    # Systematic("XSEC_TTTW", "lnN", corr=True).add('0.85/1.16', groups="tttw"),
+    # Systematic("XSEC_TTTJ", "lnN", corr=True).add('0.9/1.12', groups="tttj"),
     Systematic("XSEC_TTW", "lnN", corr=True).add(1.15, groups="ttw"),
     # Systematic("CMS_norm_ttz", "lnN").add(1.20, groups="ttz"),
     Systematic("XSEC_TTH", "lnN", corr=True).add(1.20, groups="tth"),

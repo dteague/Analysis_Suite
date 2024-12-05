@@ -3,14 +3,34 @@
 info = {
     # TTT
     "tttj" : {
-        "cross_section" : 0.0004741,
+        "cross_section" : 0.0007,
         "Source of cross section" : "AN2018-062",
         "DAS": 'TTTJ_Tune.*',
     },
     "tttw" : {
-        "cross_section" : 0.000788,
+        "cross_section" : 0.0013,
         "Source of cross section" : "AN2018-062",
         "DAS": 'TTTW_Tune.*',
+    },
+    "tttj_m" : {
+        "cross_section" : 0.00049,
+        "Source of cross section" : "https://github.com/gdurieux/triple-top-nlo",
+        "DAS": 'TTTJminus-DR1_Tune.*',
+    },
+    "tttj_p" : {
+        "cross_section" : 0.00021,
+        "Source of cross section" : "https://github.com/gdurieux/triple-top-nlo",
+        "DAS": 'TTTJplus-DR1_Tune.*',
+    },
+    "tttw_m" : {
+        "cross_section" : 0.00066,
+        "Source of cross section" : "https://github.com/gdurieux/triple-top-nlo",
+        "DAS": 'TTTWminus-DR1_Tune.*',
+    },
+    "tttw_p" : {
+        "cross_section" : 0.00066,
+        "Source of cross section" : "https://github.com/gdurieux/triple-top-nlo",
+        "DAS": 'TTTWplus-DR1_Tune.*',
     },
 
     # TTTT

@@ -131,7 +131,6 @@ class XGBoostMaker(MLHolder):
 
         fit_model = xgb.XGBClassifier(**asdict(self.param))
         fit_model.fit(x_train, y_train, sample_weight=w_train,
-                      eval_metric=fom_metric,
                       eval_set=[(x_train, y_train), (x_test, y_test)],
                       sample_weight_eval_set=[w_train2, w_test],
                       early_stopping_rounds=1500, verbose=verbose)

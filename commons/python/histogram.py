@@ -3,7 +3,10 @@ from copy import copy
 from matplotlib import colors as clr
 import boost_histogram as bh
 from boost_histogram.accumulators import WeightedSum as bh_weights
-from scipy.stats import beta
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from scipy.stats import beta
 import warnings
 
 class Histogram:

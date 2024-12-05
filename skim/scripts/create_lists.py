@@ -83,6 +83,12 @@ dataset_dict = {
             'TTTJ_TuneCP5*',
             'TTTW_TuneCP5*',
         ],
+        'ttt_nlo': [
+            'TTTJminus-DR1_TuneCP5*',
+            'TTTJplus-DR1_TuneCP5*',
+            'TTTWminus-DR1_TuneCP5*',
+            'TTTWplus-DR1_TuneCP5*',
+        ],
         'tttt' : [
             'TTTT_TuneCP5*',
         ],

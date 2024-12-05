@@ -212,11 +212,14 @@ class MLHolder:
             test, train, validation = self.setup_split(df, className, sample, split)
             # print(sample, len(df), len(test), len(train), len(validation))
             if not test.empty:
+                self.test_weights[year][sample] = pd.DataFrame()
+                # self.test_weights[year][sample] = weights.loc[test.index]*len(df)/len(test)
                 for key, col in weights.items():
                     if key == 'index':
                         continue
-                    weights[key] = col.loc[test.index]*np.sum(col)/np.sum(col[test.index])
-                self.test_weights[year][sample] = weights
+                    self.test_weights[year][sample].insert(
+                        0, key, col.loc[test.index]*np.sum(col)/np.sum(col[test.index]))
+                # self.test_weights[year][sample] = weights
                 self.test_sets[year] = pd.concat([test, self.test_sets[year]], ignore_index=True)
                 # print(sample, np.sum(test.scale_factor), np.sum(test.split_weight))
             if not train.empty:
@@ -224,7 +227,7 @@ class MLHolder:
                 # print(sample, "train", np.sum(train.scale_factor), np.sum(train.split_weight))
             if not validation.empty:
                 self.validation_set = pd.concat([validation, self.validation_set], ignore_index=True)
-        exit()
+
 
     def setup_split(self, df, className, sample, split=True):
         train = setup_pandas(self.all_vars)
@@ -266,22 +269,22 @@ class MLHolder:
         if self.validation_ratio > 0. and len(train)*self.validation_ratio > 1:
             train, validation = self.split(train, self.validation_ratio, total_scale)
 
-        print(sample,  np.sum(df.scale_factor), np.sum(test.scale_factor), np.sum(train.scale_factor), np.sum(validation.scale_factor))
-        if len(train) > 0 and len(test) > 0:
-            print("NJets", np.average(df.NJets, weights=df.scale_factor), np.average(test.NJets, weights=test.scale_factor), np.average(train.NJets, weights=train.scale_factor))
-            print("NlooseBJets", np.average(df.NlooseBJets, weights=df.scale_factor), np.average(test.NlooseBJets, weights=test.scale_factor), np.average(train.NlooseBJets, weights=train.scale_factor))
-            print("HT", np.average(df.HT, weights=df.scale_factor), np.average(test.HT, weights=test.scale_factor), np.average(train.HT, weights=train.scale_factor))
-            print("j1Pt", np.average(df.j1Pt, weights=df.scale_factor), np.average(test.j1Pt, weights=test.scale_factor), np.average(train.j1Pt, weights=train.scale_factor))
-        print()
+        # print(sample,  np.sum(df.scale_factor), np.sum(test.scale_factor), np.sum(train.scale_factor), np.sum(validation.scale_factor))
+        # if len(train) > 0 and len(test) > 0:
+        #     print("NJets", np.average(df.NJets, weights=df.scale_factor), np.average(test.NJets, weights=test.scale_factor), np.average(train.NJets, weights=train.scale_factor))
+        #     print("NlooseBJets", np.average(df.NlooseBJets, weights=df.scale_factor), np.average(test.NlooseBJets, weights=test.scale_factor), np.average(train.NlooseBJets, weights=train.scale_factor))
+        #     print("HT", np.average(df.HT, weights=df.scale_factor), np.average(test.HT, weights=test.scale_factor), np.average(train.HT, weights=train.scale_factor))
+        #     print("j1Pt", np.average(df.j1Pt, weights=df.scale_factor), np.average(test.j1Pt, weights=test.scale_factor), np.average(train.j1Pt, weights=train.scale_factor))
+        # print()
         return test, train, validation
 
 
     def split(self, workset, split_ratio, target_scale):
         train, test = train_test_split(workset, train_size=split_ratio, random_state=self.random_state)
-        # test.loc[:, ["scale_factor", "train_weight"]] *= target_scale/np.sum(test.scale_factor)
-        # train.loc[:, ["scale_factor", "train_weight"]] *= target_scale/np.sum(train.scale_factor)
-        test.loc[:, ["scale_factor", "train_weight"]] *= len(workset)/len(test)
-        train.loc[:, ["scale_factor", "train_weight"]] *= len(workset)/len(train)
+        test.loc[:, ["scale_factor", "train_weight"]] *= target_scale/np.sum(test.scale_factor)
+        train.loc[:, ["scale_factor", "train_weight"]] *= target_scale/np.sum(train.scale_factor)
+        # test.loc[:, ["scale_factor", "train_weight"]] *= len(workset)/len(test)
+        # train.loc[:, ["scale_factor", "train_weight"]] *= len(workset)/len(train)
 
         return test, train
 

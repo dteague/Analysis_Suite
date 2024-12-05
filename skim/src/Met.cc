@@ -1,5 +1,6 @@
 #include "analysis_suite/skim/interface/Met.h"
 #include "analysis_suite/skim/interface/Jet.h"
+#include "analysis_suite/skim/interface/CommonFuncs.h"
 
 #include "analysis_suite/skim/interface/XYMETCorrection.h"
 
@@ -9,6 +10,8 @@ void Met::setup(TTreeReader& fReader, MET_Type type)
     ispuppi = (type == MET_Type::PUPPI);
     m_pt.setup(fReader, (name+"_pt").c_str());
     m_phi.setup(fReader, (name+"_phi").c_str());
+    m_raw_pt.setup(fReader, "RawMET_pt");
+    m_raw_phi.setup(fReader, "RawMET_phi");
 
     if (ispuppi && isMC) {
         m_jer_pt_up.setup(fReader, "PuppiMET_ptJERUp");
@@ -45,13 +48,11 @@ void Met::setupMet(Jet& jet, UInt_t run, int nVertices)
             (*corr_phi) = (currentVar == eVar::Up) ? *m_jer_phi_up : *m_jer_phi_down;
         }
         else {
-            auto met_vec = std::polar(*m_pt, *m_phi) - jet.get_momentum_change();
+            auto met_vec = std::polar(*m_raw_pt, *m_raw_phi) - jet.get_momentum_change();
+            // auto met_vec = std::polar(*m_pt, *m_phi) - jet.get_momentum_change();
             (*corr_pt) = std::abs(met_vec);
             (*corr_phi) = std::arg(met_vec);
-
         }
-        pt_unfix = pt();
-        phi_unfix = phi();
         fix_xy(run, nVertices);
     }
 }

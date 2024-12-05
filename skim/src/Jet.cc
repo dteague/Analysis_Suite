@@ -1,9 +1,7 @@
 #include "analysis_suite/skim/interface/Jet.h"
 #include "analysis_suite/skim/interface/CommonFuncs.h"
 
-#define BTAG_SHAPE
-
-void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
+void Jet::setup(TTreeReader& fReader, std::string data_run, std::vector<Systematic> used_jec_systs_)
 {
     GenericParticle::setup("Jet", fReader);
     jetId.setup(fReader, "Jet_jetId");
@@ -14,6 +12,12 @@ void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
         genJetIdx.setup(fReader, "Jet_genJetIdx");
         rawFactor.setup(fReader, "Jet_rawFactor");
         rho.setup(fReader, "fixedGridRhoFastjetAll");
+        // Stuff for Met recalc
+        t1_rawpt.setup(fReader, "CorrT1METJet_rawPt");
+        t1_eta.setup(fReader, "CorrT1METJet_eta");
+        t1_phi.setup(fReader, "CorrT1METJet_phi");
+        t1_area.setup(fReader, "CorrT1METJet_area");
+        t1_muonSub.setup(fReader, "CorrT1METJet_muonSubtrFactor");
     }
     neHEF.setup(fReader, "Jet_neHEF");
     neEmEF.setup(fReader, "Jet_neEmEF");
@@ -22,8 +26,9 @@ void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
     chEmEF.setup(fReader, "Jet_chEmEF");
     nConstituents.setup(fReader, "Jet_nConstituents");
     muonSubtrFactor.setup(fReader, "Jet_muonSubtrFactor");
+    area.setup(fReader, "Jet_area");
 
-    setup_map(Level::Loose_NoPUID);
+    setup_map(Level::Loose_inHEM);
     setup_map(Level::Loose);
     setup_map(Level::Bottom);
     setup_map(Level::Tight);
@@ -57,18 +62,8 @@ void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
 
     used_jec_systs = used_jec_systs_;
 
-    if (isMC) {
-        // JEC Weights
-        auto corr_set = getScaleFile("JME", "jet_jerc");
-        jet_resolution = WeightHolder(corr_set->at(jer_source[year_]+"_PtResolution_AK4PFchs"));
-        jer_scale = WeightHolder(corr_set->at(jer_source[year_]+"_ScaleFactor_AK4PFchs"),
-                                 Systematic::Jet_JER, {"nom","up","down"});
 
-        auto unc_set = getScaleFile("JME", "jec_unc");
-        for (auto syst: used_jec_systs) {
-            if (syst == Systematic::Jet_JER) continue;
-            jec_unc_vec[syst] = unc_set->at(jes_source[year_]+unc_by_syst.at(syst)+"_AK4PFchs");
-        }
+    if (isMC) {
         // Pileup Weights
         auto jmar_set = getScaleFile("JME", "jmar");
         puid_scale = WeightHolder(jmar_set->at("PUJetID_eff"),
@@ -76,15 +71,13 @@ void Jet::setup(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
 
         // BTagging Weights
         auto btag_set = getScaleFile("BTV", "btagging");
-#ifdef BTAG_SHAPE
         btag_shape_scale = WeightHolder(btag_set->at("deepJet_shape"),
                                         Systematic::BJet_BTagging, {"central","up","down"});
-#else
+        // Btagging Cutbased weights
         btag_bc_scale = WeightHolder(btag_set->at("deepJet_comb"),
                                      Systematic::BJet_BTagging, {"central","up","down"});
         btag_udsg_scale = WeightHolder(btag_set->at("deepJet_incl"),
                                        Systematic::BJet_BTagging, {"central","up","down"});
-#endif
         // BTagging Efficiencies
         try {
             auto beff_set = getScaleFile("USER", "beff");
@@ -120,11 +113,17 @@ void Jet::fillJet(JetOut& output, Level level, const Bitmap& event_bitmap)
             else if (btag.at(idx) > loose_bjet_cut) output.pass_btag.push_back(1);
             else output.pass_btag.push_back(0);
             output.discriminator.push_back(btag.at(idx));
+            if(isMC) {
+                output.flavor.push_back(hadronFlavour.at(idx));
+            }
             output.pt_shift.push_back(std::vector<Float_t>());
+            output.mass_shift.push_back(std::vector<Float_t>());
             for (size_t n_syst=0; n_syst < used_jec_systs.size(); ++n_syst) {
                 auto syst = used_jec_systs.at(n_syst);
                 output.pt_shift.back().push_back(m_pt.at(idx)*m_jet_scales[syst][eVar::Up][idx]);
                 output.pt_shift.back().push_back(m_pt.at(idx)*m_jet_scales[syst][eVar::Down][idx]);
+                output.mass_shift.back().push_back(m_mass.at(idx)*m_jet_scales[syst][eVar::Up][idx]);
+                output.mass_shift.back().push_back(m_mass.at(idx)*m_jet_scales[syst][eVar::Down][idx]);
             }
         }
     }
@@ -147,23 +146,19 @@ void Jet::fillJetEff(BEffOut& output, Level level, const Bitmap& event_bitmap)
 
 void Jet::createLooseList()
 {
-    float pi = 3.141592;
     for (size_t i = 0; i < size(); i++) {
-        float jphi = phi(i);
-        if(jphi > pi) jphi = pi;
-        else if (jphi < -pi) jphi = -pi;
+
         if (pt(i) > 25
             && fabs(eta(i)) < 2.4
             && (jetId.at(i) & tightId) != 0
             && (neHEF.at(i) < 0.9 && neEmEF.at(i) < 0.9 && muEF.at(i) < 0.8 && chEmEF.at(i) < 0.8 && chHEF.at(i) > 0. && nConstituents.at(i) > 1)
-            && (closeJetDr_by_index.find(i) == closeJetDr_by_index.end() || closeJetDr_by_index.at(i) >= pow(0.4, 2))
-            && (veto_map.evaluate({"jetvetomap", eta(i), jphi}) < 1e-5)
+            && (closeJetDr_by_index.find(i) == closeJetDr_by_index.end())
+            && (pt(i) > 50 || (puId.at(i) & PU_Tight) == PU_Tight) // Issue with puid for 2016, need 111 for id now
             ) {
-
-            if (pt(i) > 50 || (puId.at(i) & PU_Tight) == PU_Tight) { // Issue with puid for 2016, need 111 for id now
+            if (passVeto(eta(i), phi(i))) {
                 m_partList[Level::Loose]->push_back(i);
-            } else {
-                m_partList[Level::Loose_NoPUID]->push_back(i);
+            } else if (applyHEMVeto && inHEM) {
+                m_partList[Level::Loose_inHEM]->push_back(i);
             }
         }
     }
@@ -234,11 +229,6 @@ float Jet::getScaleFactor()
         if (pt(idx) < 50 && genJetIdx.at(idx) != -1)
             weight *= puid_scale.evaluate({eta(idx), pt(idx), syst, "T"});
     }
-    // for (auto idx : list(Level::Loose_NoPUID)) {
-    //     float eff = puid_scale.evaluate({eta(idx), pt(idx), "MCEff", "T"});
-    //     float sf = puid_scale.evaluate({eta(idx), pt(idx), syst, "T"});
-    //     weight *= (1 - sf*eff) / (1 -eff);
-    // }
     return weight;
 }
 
@@ -248,7 +238,6 @@ float Jet::getBJetWeight(size_t idx, std::string lvl)
     return scaler.evaluate({"central", lvl, hadronFlavour.at(idx), fabs(eta(idx)), pt(idx)});
 }
 
-#ifdef BTAG_SHAPE
 float Jet::getTotalBTagWeight(std::string btag_wp)
 {
     float weight = 1;
@@ -270,8 +259,9 @@ float Jet::getTotalBTagWeight(std::string btag_wp)
     }
     return weight;
 }
-#else
-float Jet::getTotalBTagWeight(std::string btag_wp) {
+
+float Jet::getCutBasedBTagWeight(std::string btag_wp)
+{
     float weight = 1;
     if (!isMC) {
         return weight;
@@ -290,69 +280,124 @@ float Jet::getTotalBTagWeight(std::string btag_wp) {
     }
     return weight;
 }
-#endif
 
 std::complex<float> Jet::get_momentum_change()
 {
-    std::complex<float> change;
-    for(size_t i = 0; i < size(); ++i) {
-        if (nompt(i)*(1-muonSubtrFactor.at(i)) > 15 && neEmEF.at(i)+chEmEF.at(i) < 0.9)
-            change += std::polar(pt(i)-nompt(i), phi(i));
-    }
-    return change;
+    return m_met_change[currentSyst][currentVar];
 }
 
-void Jet::setupJEC(GenericParticle& genJet)
+bool Jet::passVeto(float eta, float phi)
 {
-    if (!isMC) {
-        m_jet_scales[Systematic::Nominal][eVar::Nominal].assign(size(), 1);
-        return;
+    if(phi > pi) phi = pi;
+    else if (phi < -pi) phi = -pi;
+
+    if (veto_map.evaluate({"jetvetomap", eta, phi}) < 1e-5) {
+        return true;
+    }  else if (!applyHEMVeto && year_ == Year::yr2018) {
+        return veto_map.evaluate({"jetvetomap_hem1516", eta, phi}) > 1e-5;
+    } else if (applyHEMVeto){
+        inHEM = (veto_map.evaluate({"jetvetomap_hem1516", eta, phi}) > 1e-5);
     }
-    for (auto& [syst, var_scales] : m_jet_scales ) {
-        for (auto& [var, scales] : var_scales) {
-            scales.resize(size());
-        }
+    return false;
+}
+
+
+void Jet::setupJEC(GenericParticle& genJet, size_t run)
+{
+    if (year_ != Year::yr2018) {
+        applyHEMVeto= false;
+    } else if (isMC) {
+        applyHEMVeto= 1.0*std::rand()/RAND_MAX < 0.64;
+    } else {
+        applyHEMVeto= run >= 319077;
     }
 
-    for(size_t i = 0; i < size(); ++i) {
-        auto jer_ = get_jer(i, genJet);
-        float central = jer_.at(0);
-        float jer_up = jer_.at(1);
-        float jer_down = jer_.at(2);
+    m_met_change[Systematic::Nominal][eVar::Nominal] = std::polar(0.f, 0.f);
+
+    if (!isMC) {
+        m_jet_scales[Systematic::Nominal][eVar::Nominal].assign(size(), 1);
+    } else {
         for (auto& [syst, var_scales] : m_jet_scales ) {
-            if (syst == Systematic::Nominal) {
-                m_jet_scales[syst][eVar::Nominal][i] = central;
-            } else if (syst == Systematic::Jet_JER) {
-                m_jet_scales[syst][eVar::Up][i] = jer_up;
-                m_jet_scales[syst][eVar::Down][i] = jer_down;
-            } else {
-                auto jec_unc = get_jec_unc(i, jec_unc_vec[syst]);
-                m_jet_scales[syst][eVar::Down][i] = central*jec_unc.first;
-                m_jet_scales[syst][eVar::Up][i] = central*jec_unc.second;
+            for (auto& [var, scales] : var_scales) {
+                scales.resize(size());
+                m_met_change[syst][var] = std::polar(0.f, 0.f);
             }
         }
     }
+
+    for(size_t i = 0; i < size(); ++i) {
+        auto jer = get_jer(m_pt.at(i), eta(i), i, genJet, false);
+        float central = jer.at(0);
+
+        m_jet_scales[Systematic::Nominal][eVar::Nominal][i] = central;
+        for (auto syst: used_jec_systs) {
+            if (syst == Systematic::Jet_JER) {
+                m_jet_scales[syst][eVar::Up][i] = jer.at(1);
+                m_jet_scales[syst][eVar::Down][i] = jer.at(2);
+            } else {
+                float jec_unc = get_jec_unc(m_pt.at(i), eta(i), jec_unc_vec[syst]);
+                m_jet_scales[syst][eVar::Down][i] = central*(1-jec_unc);
+                m_jet_scales[syst][eVar::Up][i] = central*(1+jec_unc);
+            }
+        }
+        if ((m_pt.at(i)*(1-muonSubtrFactor.at(i)) > 15) && (neEmEF.at(i)+chEmEF.at(i) < 0.9)) {
+            fix_met(rawPt(i), m_pt.at(i), eta(i), phi(i), area.at(i), muonSubtrFactor.at(i), jer);
+        }
+    }
+
+    for(size_t i = 0; i < t1_rawpt.size(); ++i) {
+        float jec_pt = t1_rawpt.at(i)*jec_total->evaluate({t1_area.at(i), t1_eta.at(i), t1_rawpt.at(i), *rho});
+        if (jec_pt*(1-t1_muonSub.at(i)) > 15) {
+            auto jer = get_jer(jec_pt, t1_eta.at(i), i, genJet, true);
+            fix_met(t1_rawpt.at(i), jec_pt, t1_eta.at(i), t1_phi.at(i), t1_area.at(i), t1_muonSub.at(i), jer);
+
+        }
+    }
+
 }
 
-std::vector<float> Jet::get_jer(size_t i, GenericParticle& genJets)
+std::vector<float> Jet::get_jer(float pt, float eta, size_t idx, GenericParticle& genJets, bool isLowPt)
 {
-    using namespace ROOT::Math::VectorUtil;
-    float resolution = jet_resolution.evaluate({eta(i), m_pt.at(i), *rho});
-    size_t g = genJetIdx.at(i);
-    bool hasGenJet = genJetIdx.at(i) != -1;
-    float pt_ratio = (hasGenJet) ? 1-genJets.pt(g)/m_pt.at(i) : 0.;
+
+    if (!isMC) {
+        return {1.0};
+    }
+
+    float resolution = jet_resolution.evaluate({eta, pt, *rho});
+    float pt_ratio = 100;
+    bool matched_gen = false;
+    float rand = 1.;
+
+    if (!isLowPt) {
+        size_t g = genJetIdx.at(idx);
+        pt_ratio = (genJetIdx.at(idx) != -1) ? 1-genJets.pt(g)/pt : 0.;
+        matched_gen = (genJetIdx.at(idx) != -1)
+            && (deltaR2(eta, genJets.eta(g), phi(idx), genJets.phi(g)) < 0.04) // (0.4/2)**2
+            && (fabs(pt_ratio) < 3*resolution);
+    } else {
+        float gen_dR = 0.04;
+        for (size_t i=0; i < genJets.size(); ++i) {
+            float dr = deltaR2(eta, genJets.eta(i), t1_phi.at(idx), genJets.phi(i));
+            if (dr < gen_dR) {
+                gen_dR = dr;
+                pt_ratio = 1-genJets.pt(i)/pt;
+                matched_gen = (fabs(pt_ratio) < 3*resolution); // Already required dR<0.2 by def
+            }
+        }
+    }
+
+    if (!matched_gen) {
+        std::normal_distribution<> gaussian{0, resolution};
+        rand = gaussian(gen);
+    }
 
     std::vector<float> output;
     for (auto var : all_vars) {
-        float scale = jer_scale.evaluate({eta(i), jer_scale.name_by_var.at(var)});
-        if (hasGenJet
-            && deltaR(eta(i), genJets.eta(g), phi(i), genJets.phi(g)) < jet_dr/2
-            && fabs(pt_ratio) < 3*resolution) {
+        float scale = jer_scale.evaluate({eta, jer_scale.name_by_var.at(var)});
+        if (matched_gen) {
             output.push_back(1 + (scale-1)*pt_ratio);
-
         } else if (scale > 1.) {
-            std::normal_distribution<> gaussian{0, resolution};
-            output.push_back(1 + gaussian(gen)*sqrt(pow(scale,2) - 1));
+            output.push_back(1 + rand*sqrt(pow(scale,2) - 1));
         } else {
             output.push_back(1);
         }
@@ -360,8 +405,27 @@ std::vector<float> Jet::get_jer(size_t i, GenericParticle& genJets)
     return output;
 }
 
-std::pair<float, float> Jet::get_jec_unc(size_t i, correction::Correction::Ref& jec_unc)
+float Jet::get_jec_unc(float pt, float eta, correction::Correction::Ref& jec_unc)
 {
-    float delta = jec_unc->evaluate({eta(i), m_pt.at(i)});
-    return std::make_pair<float, float>(1-delta, 1+delta);
+    return jec_unc->evaluate({eta, pt});
+}
+
+void Jet::fix_met(float raw_pt, float pt, float eta, float phi, float area, float muonSub, std::vector<float> jer_)
+{
+    float jec_l1 = jec_l1_total->evaluate({area, eta, raw_pt, *rho});
+    float l1_pt = raw_pt*(jec_l1*(1-muonSub) + muonSub);
+    float met_pt = pt*(1-muonSub)+raw_pt*muonSub;
+
+    float central = jer_.at(0);
+    m_met_change[Systematic::Nominal][eVar::Nominal] += std::polar(central*met_pt-l1_pt, phi);
+    for (auto syst: used_jec_systs) {
+        if (syst == Systematic::Jet_JER) {
+            m_met_change[syst][eVar::Up] += std::polar(jer_.at(1)*met_pt-l1_pt, phi);
+            m_met_change[syst][eVar::Down] += std::polar(jer_.at(2)*met_pt-l1_pt, phi);
+        } else {
+            float jec_unc = get_jec_unc(met_pt, eta, jec_unc_vec[syst]);
+            m_met_change[syst][eVar::Down] += std::polar((central-jec_unc)*met_pt-l1_pt, phi);
+            m_met_change[syst][eVar::Up] += std::polar((central+jec_unc)*met_pt-l1_pt, phi);
+        }
+    }
 }

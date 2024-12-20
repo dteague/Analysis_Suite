@@ -131,10 +131,11 @@ void BaseSelector::Init(TTree* tree)
 
     // Setup particle branches
     sfMaker.init(fReader);
+    // met.setup(fReader, used_jec_systs, met_type);
     met.setup(fReader, met_type);
     muon.setup(fReader);
     elec.setup(fReader);
-    jet.setup(fReader, used_jec_systs);
+    jet.setup(fReader, data_run, used_jec_systs);
     if (isMC_) {
         rGen.setup(fReader);
         rGenJet.setup(fReader);
@@ -165,11 +166,13 @@ Bool_t BaseSelector::Process(Long64_t entry)
     // Remove non-golden lumi stuff
     if (!isMC_ && !sfMaker.inGoldenLumi(*run, *lumiblock)) {
         return false;
+    } else if (!passPreselection()) {
+        return false;
     }
 
     std::vector<bool> systPassSelection;
     bool passAny = false;
-    jet.setupJEC(rGenJet);
+    jet.setup_jets(rGenJet, *run);
     for (auto it = syst_var_pair.begin(); it != syst_var_pair.end(); ++it) {
         Systematic syst = it->first;
         eVar var = it->second;
@@ -256,11 +259,11 @@ void BaseSelector::SetupEvent(size_t systNum)
         setOtherGoodParticles(novelNum);
     }
 
+    (*weight) *= muon.getRocCorrection(rGen);
     if (isMC_) {
         (*weight) *= *genWeight;
         ApplyScaleFactors();
     }
-    (*weight) *= muon.getRocCorrection(rGen);
 
     LOG_FUNC << "End of SetupEvent";
 }
@@ -288,5 +291,17 @@ void BaseSelector::setupSystematicInfo()
     SystematicWeights::year_ = year_;
     SystematicWeights::scaleDir_ = scaleDir;
     SystematicWeights::isMC = isMC_;
+
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_Absolute] = "jesAbsolute_20"+yearNum.at(year_);
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_Absolute_corr] = "jesAbsolute";
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_BBEC1] = "jesBBEC1_20"+yearNum.at(year_);
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_BBEC1_corr] = "jesBBEC1";
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_EC2] = "jesEC2_20"+yearNum.at(year_);
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_EC2_corr] = "jesEC2";
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_HF] = "jesHF_20"+yearNum.at(year_);
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_HF_corr] = "jesHF";
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_RelativeBal] = "jesRelativeBal";
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_RelativeSample] = "jesRelativeSample_20"+yearNum.at(year_);
+    SystematicWeights::jecSyst_to_string[Systematic::Jet_JEC_FlavorQCD] = "jesFlavorQCD";
     LOG_FUNC << "End of setupSystematicInfo";
 }

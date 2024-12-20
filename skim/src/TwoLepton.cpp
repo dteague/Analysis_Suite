@@ -2,16 +2,18 @@
 
 #include "analysis_suite/skim/interface/logging.h"
 
-enum class Channel {
-    Measurement,
-    None,
-};
+namespace Channel {
+    enum {
+        Measurement,
+        None,
+    };
+}
 
 void TwoLepton::Init(TTree* tree)
 {
     LOG_FUNC << "Start of Init";
     met_type = MET_Type::PUPPI;
-    BaseSelector::Init(tree);
+    DileptonBase::Init(tree);
 
     createTree("Measurement", Channel::Measurement);
 

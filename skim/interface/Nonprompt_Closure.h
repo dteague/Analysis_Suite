@@ -1,12 +1,12 @@
 #ifndef NONPROMPT_CLOSURE_H_
 #define NONPROMPT_CLOSURE_H_
 
-#include "analysis_suite/skim/interface/BaseSelector.h"
+#include "analysis_suite/skim/interface/DileptonBase.h"
 #include "analysis_suite/skim/interface/Output.h"
 
 #include <set>
 
-class Nonprompt_Closure : public BaseSelector {
+class Nonprompt_Closure : public DileptonBase {
 public:
     virtual void Init(TTree* tree) override;
     virtual bool getCutFlow() override;
@@ -21,11 +21,9 @@ public:
 
 private:
     void setSubChannel();
+
     bool closure_cuts();
     bool dy_closure_cuts();
-    float getLeadPt();
-    bool isSameSign();
-    bool getTriggerValue();
 
     LeptonOut_Fake *o_looseMuons, *o_fakeMuons, *o_tightMuons;
     LeptonOut_Fake* o_looseElectrons, *o_fakeElectrons, *o_tightElectrons;
@@ -35,7 +33,9 @@ private:
     TRVariable<Float_t> Pileup_nTrueInt;
 
     std::vector<Float_t> o_ht, o_htb, o_met, o_metphi;
-    std::vector<size_t> o_nb_loose, o_nb_tight;
+    std::vector<Float_t> o_bwgt_loose, o_bwgt_medium, o_bwgt_tight;
+    std::vector<Float_t> o_wgt_nobtag;
+    std::vector<size_t> o_nb_loose, o_nb_medium, o_nb_tight;
 
 };
 

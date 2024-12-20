@@ -3,20 +3,23 @@
 #include"analysis_suite/skim/interface/logging.h"
 #include"analysis_suite/skim/interface/CommonFuncs.h"
 
-enum class Channel {
-    SS_Dilepton,
-    SS_Multi,
-    Nonprompt_Dilepton,
-    Nonprompt_Multi,
-    OS_MisId,
-    OS_CR,
-    None,
-};
+namespace Channel {
+    enum {
+        SS_Dilepton,
+        SS_Multi,
+        Nonprompt_Dilepton,
+        Nonprompt_Multi,
+        OS_MisId,
+        OS_CR,
+        None,
+    };
+}
 
 enum class Subchannel {
     MM,
     EM,
     EE,
+    EM_3lep,
     Single_E,
     Single_M,
     None,
@@ -32,7 +35,8 @@ void ThreeTop::Init(TTree* tree)
 
     if (!isMC_
         || groupName_.find("ttbar") != std::string::npos
-        || groupName_.find("wjet") != std::string::npos) {
+        || groupName_.find("wjet") != std::string::npos
+        || groupName_.find("DY") != std::string::npos) {
         use_nonprompt = true;
         createTree("Nonprompt_Dilepton", Channel::Nonprompt_Dilepton);
         createTree("Nonprompt_Multi", Channel::Nonprompt_Multi);
@@ -40,8 +44,6 @@ void ThreeTop::Init(TTree* tree)
     if (!isMC_) { // Charge Mis-id Fake Rate
         createTree("OS_Charge_MisId", Channel::OS_MisId);
     }
-
-    rTop.setup(fReader);
 
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
@@ -57,10 +59,20 @@ void ThreeTop::SetupOutTreeBranches(TTree* tree)
     LOG_FUNC << "Start of SetupOutTreeBranches";
     BaseSelector::SetupOutTreeBranches(tree);
     tree->Branch("TightMuon", "ParticleOut", &o_tightMuons);
-    tree->Branch("TightElectron", "ElectronOut", &o_tightElectrons);
+    tree->Branch("TightElectron", "ParticleOut", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
-    tree->Branch("BJets", "JetOut", &o_bJets);
-    tree->Branch("Tops", "TopOut", &o_top);
+    // tree->Branch("BJets", "JetOut", &o_bJets);
+    // tree->Branch("Tops", "TopOut", &o_top);
+
+    if (isMC_) {
+        tree->Branch("wgt_nobtag", &o_wgt_nobtag);
+        tree->Branch("bwgt_cb_l", &o_bwgt_loose);
+        tree->Branch("bwgt_cb_m", &o_bwgt_medium);
+        tree->Branch("bwgt_cb_t", &o_bwgt_tight);
+    }
+    if (year_ == Year::yr2018) {
+        tree->Branch("hasHEMJet", &o_hasHEMJet);
+    }
 
     tree->Branch("HT", &o_ht);
     tree->Branch("HT_b", &o_htb);
@@ -82,7 +94,7 @@ void ThreeTop::clearParticles()
 {
     LOG_FUNC << "Start of clearParticles";
     BaseSelector::clearParticles();
-    rTop.clear();
+    // rTop.clear();
     LOG_FUNC << "End of clearParticles";
 }
 
@@ -102,6 +114,10 @@ void ThreeTop::clearOutputs()
     o_nb_loose.clear();
     o_nb_medium.clear();
     o_nb_tight.clear();
+    o_bwgt_loose.clear();
+    o_bwgt_medium.clear();
+    o_bwgt_tight.clear();
+    o_wgt_nobtag.clear();
 
     LOG_FUNC << "End of clearOutputs";
 }
@@ -117,25 +133,10 @@ void ThreeTop::ApplyScaleFactors()
     (*weight) *= sfMaker.getPartonShower();
     (*weight) *= sfMaker.getTriggerSF(elec, muon);
     (*weight) *= jet.getScaleFactor();
-    (*weight) *= jet.getTotalBTagWeight("M");
     (*weight) *= elec.getScaleFactor();
     (*weight) *= muon.getScaleFactor();
-    // (*weight) *= rTop.getScaleFactor();
+    (*weight) *= jet.getTotalBTagWeight("M");
     LOG_FUNC << "End of ApplyScaleFactors";
-}
-
-void ThreeTop::xor_lists(Particle& part, std::vector<size_t>& outlist)
-{
-    outlist.clear();
-    auto tight = part.begin(Level::Tight);
-    for (auto fake = part.begin(Level::Fake); fake != part.end(Level::Fake); ++fake) {
-        if (tight == part.end(Level::Tight) || (*tight) > (*fake)) {
-            outlist.push_back(*fake);
-        } else {
-            tight++;
-        }
-    }
-    part.moveLevel(Level::Fake, Level::Tight);
 }
 
 void ThreeTop::ApplyChannelScaleFactors()
@@ -144,13 +145,22 @@ void ThreeTop::ApplyChannelScaleFactors()
         return;
     } else if ((*currentChannel_) == Channel::Nonprompt_Dilepton ||
                (*currentChannel_) == Channel::Nonprompt_Multi) {
-        for (auto i: fake_mu) {
-            (*weight) *= sfMaker.getNonpromptFR(muon.eta(i), muon.pt(i), PID::Muon);
+        int sign = -1;
+        auto muon_tight = muon.list(Level::Tight);
+        for (auto fake: muon.list(Level::Fake)) {
+            if (std::find(muon_tight.begin(), muon_tight.end(), fake) == muon_tight.end()) {
+                (*weight) *= sfMaker.getNonpromptFR(muon.eta(fake), muon.pt(fake), PID::Muon);
+                sign *= -1;
+            }
         }
-        for (auto i: fake_el) {
-            (*weight) *= sfMaker.getNonpromptFR(elec.eta(i), elec.pt(i), PID::Electron);
+        auto elec_tight = elec.list(Level::Tight);
+        for (auto fake: elec.list(Level::Fake)) {
+            if (std::find(elec_tight.begin(), elec_tight.end(), fake) == elec_tight.end()) {
+                (*weight) *= sfMaker.getNonpromptFR(elec.eta(fake), elec.pt(fake), PID::Electron);
+                sign *= -1;
+            }
         }
-        (*weight) *= std::pow(-1, fake_mu.size()+fake_el.size()+1);
+        (*weight) *= sign;
     } else if ((*currentChannel_) == Channel::OS_MisId) {
         float tmp_weight = 0;
         for (auto i : elec.list(Level::Tight)) {
@@ -160,25 +170,18 @@ void ThreeTop::ApplyChannelScaleFactors()
     }
 }
 
-void ThreeTop::setOtherGoodParticles(size_t syst)
-{
-    LOG_FUNC << "Start of setOtherGoodParticles";
-    rTop.setGoodParticles(syst);
-    LOG_FUNC << "End of setOtherGoodParticles";
-}
-
 void ThreeTop::setSubChannel()
 {
     LOG_FUNC << "Start of setSubChannel";
     subChannel_ = Subchannel::None;
 
     if(nLeps(Level::Fake) >= 2) {
-        if (muon.size(Level::Fake) * elec.size(Level::Fake) > 0) {
-            subChannel_ = Subchannel::EM;
-        } else if (elec.size(Level::Fake) >= 2) {
-            subChannel_ = Subchannel::EE;
-        }  else {
+        if (elec.size(Level::Fake) == 0) {
             subChannel_ = Subchannel::MM;
+        } else if (muon.size(Level::Fake) == 0){
+            subChannel_ = Subchannel::EE;
+        } else {
+            subChannel_ = Subchannel::EM;
         }
     }
     LOG_FUNC << "End of setSubChannel";
@@ -188,8 +191,7 @@ bool ThreeTop::getTriggerValue()
 {
     if (subChannel_ == Subchannel::EE) {
         if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::EE)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
+            return trig_cuts.pass_any_mc({Subchannel::EE, Subchannel::Single_E});
         } else if (year_ == Year::yr2018) { // 2018 uses just EGamma not double vs single EG datasets
             return (trig_cuts.pass_cut(Subchannel::EE)
                     || trig_cuts.pass_cut(Subchannel::Single_E));
@@ -200,8 +202,7 @@ bool ThreeTop::getTriggerValue()
         }
     } else if (subChannel_ == Subchannel::MM) {
         if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::MM)
-                    || trig_cuts.pass_cut(Subchannel::Single_M));
+            return (trig_cuts.pass_any_mc({Subchannel::MM, Subchannel::Single_M}));
         } else if (trig_cuts.dataset_or_trig(Subchannel::MM)) {
             return trig_cuts.pass_cut(Subchannel::MM);
         } else {
@@ -209,9 +210,7 @@ bool ThreeTop::getTriggerValue()
         }
     } else if (subChannel_ == Subchannel::EM) {
         if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::EM)
-                    || trig_cuts.pass_cut(Subchannel::Single_M)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
+            return (trig_cuts.pass_any_mc({Subchannel::EM, Subchannel::Single_M, Subchannel::Single_E}));
         } else if (trig_cuts.dataset_or_trig(Subchannel::EM)) {
             return trig_cuts.pass_cut(Subchannel::EM);
         } else if (trig_cuts.dataset_or_trig(Subchannel::Single_M)) {
@@ -234,9 +233,16 @@ bool ThreeTop::isSameSign(Level level)
     for (size_t idx : elec.list(level)) {
         q_total += elec.charge(idx);
     }
-    return abs(q_total) == 1 || abs(q_total) == 2;
+    size_t nl = nLeps(level);
+    if (nl == 2) {
+        return abs(q_total) == 2;
+    } else if (nl == 3) {
+        return abs(q_total) == 1;
+    } else if (nl == 4) {
+        return abs(q_total) == 0;
+    }
+    return false;
 }
-
 
 
 bool ThreeTop::getCutFlow()
@@ -247,24 +253,29 @@ bool ThreeTop::getCutFlow()
 
     if (!baseline_cuts()) return false;
 
-    if (signal_cuts())
+    if (signal_cuts()) {
         (*currentChannel_) = (nLeps(Level::Tight) == 2) ? Channel::SS_Dilepton : Channel::SS_Multi;
-
-    if (nonprompt_cuts()) {
-        xor_lists(muon, fake_mu);
-        xor_lists(elec, fake_el);
+        return true;
+    } else if (nonprompt_cuts()) {
+        // xor_lists(muon, fake_mu);
+        // xor_lists(elec, fake_el);
         (*currentChannel_) = (nLeps(Level::Fake) == 2) ? Channel::Nonprompt_Dilepton : Channel::Nonprompt_Multi;
-    }
-
-    if (charge_misid_cuts())
+        return true;
+    } else if (charge_misid_cuts()) {
         (*currentChannel_) = Channel::OS_MisId;
-
-    if (trees.find(*currentChannel_) == trees.end()) {
-        return false;
+        return true;
     }
 
-    LOG_FUNC << "End of passSelection";
-    return true;
+    return false;
+}
+
+bool ThreeTop::passPreselection()
+{
+    return (trig_cuts.pass_any_trig()
+            && metfilters.pass()
+            && (muon.size() + elec.size() >= 2)
+            && (jet.size() >= 1)
+            );
 }
 
 bool ThreeTop::baseline_cuts()
@@ -274,15 +285,14 @@ bool ThreeTop::baseline_cuts()
     CutInfo cuts;
 
     passCuts &= cuts.setCut("passPreselection", true);
-    passCuts &= cuts.setCut("passMETFilter", metfilters.pass());
 
     passCuts &= cuts.setCut("passLeadPt", getLeadPt() > 25);
     passCuts &= cuts.setCut("passFakeLeptonNum", nLeps(Level::Fake) >= 2);
 
     passCuts &= cuts.setCut("passTrigger", getTriggerValue());
-    passCuts &= cuts.setCut("passJetNumber", jet.size(Level::Tight) >= 1);
+    passCuts &= cuts.setCut("passJetNumber", jet.size(Level::Loose) >= 1);
     passCuts &= cuts.setCut("passMetCut", met.pt() > 25);
-    passCuts &= cuts.setCut("passHTCut", jet.getHT(Level::Tight) > 250);
+    passCuts &= cuts.setCut("passHTCut", jet.getHT(Level::Loose) > 50);
     passCuts &= cuts.setCut("passLowMassCut", !muon.isInMassRange(Level::Loose, 0., 12.) && !elec.isInMassRange(Level::Loose, 0., 12.));
 
     LOG_FUNC << "End of baseline_cuts";
@@ -295,7 +305,7 @@ bool ThreeTop::signal_cuts()
     bool passCuts = true;
     CutInfo cuts;
 
-    passCuts &= cuts.setCut("pass2Or3Leptons", nLeps(Level::Tight) == 2 || nLeps(Level::Tight) == 3);
+    passCuts &= cuts.setCut("pass2Or3Leptons", nLeps(Level::Tight) >= 2);
     passCuts &= cuts.setCut("passVetoFakeLeptons", nLeps(Level::Tight) == nLeps(Level::Fake));
     passCuts &= cuts.setCut("passSameSign;", isSameSign(Level::Tight));
 
@@ -303,7 +313,7 @@ bool ThreeTop::signal_cuts()
     cuts.setCut("pass2TightLeps", nLeps(Level::Tight) == 2);
     fillCutFlow(Channel::SS_Dilepton, cuts);
     cuts.cuts.pop_back();
-    cuts.setCut("pass3TightLeps", nLeps(Level::Tight) == 3);
+    cuts.setCut("pass3+TightLeps", nLeps(Level::Tight) >= 3);
     fillCutFlow(Channel::SS_Multi, cuts);
 
     LOG_FUNC << "End of signal_cuts";
@@ -316,6 +326,7 @@ bool ThreeTop::nonprompt_cuts()
     bool passCuts = true;
     CutInfo cuts;
 
+    passCuts &= cuts.setCut("pass2Or3Leptons", nLeps(Level::Fake) >= 2);
     passCuts &= cuts.setCut("passMoreFakeLeptons", nLeps(Level::Fake) != nLeps(Level::Tight));
     passCuts &= cuts.setCut("passSameSign;", isSameSign(Level::Fake));
 
@@ -323,7 +334,7 @@ bool ThreeTop::nonprompt_cuts()
     cuts.setCut("pass2FakeLeps", nLeps(Level::Fake) == 2);
     fillCutFlow(Channel::Nonprompt_Dilepton, cuts);
     cuts.cuts.pop_back();
-    cuts.setCut("pass3FakeLeps", nLeps(Level::Fake) == 3);
+    cuts.setCut("pass3+FakeLeps", nLeps(Level::Fake) >= 3);
     fillCutFlow(Channel::Nonprompt_Multi, cuts);
 
     LOG_FUNC << "End of nonprompt_cuts";
@@ -336,7 +347,7 @@ bool ThreeTop::charge_misid_cuts()
     bool passCuts = true;
     CutInfo cuts;
 
-    passCuts &= cuts.setCut("pass2Or3Leptons", nLeps(Level::Tight) >= 2);
+    passCuts &= cuts.setCut("pass2OrMoreLeptons", nLeps(Level::Tight) >= 2);
     passCuts &= cuts.setCut("passVetoFakeLeptons", nLeps(Level::Tight) == nLeps(Level::Fake));
     passCuts &= cuts.setCut("pass1Electron", elec.size(Level::Tight) >= 1);
     passCuts &= cuts.setCut("passOppositeSign;", !isSameSign(Level::Tight));
@@ -348,32 +359,19 @@ bool ThreeTop::charge_misid_cuts()
     return passCuts;
 }
 
-// bool ThreeTop::opposite_sign()
-// {
-//     LOG_FUNC << "Start of charge_misid_cuts";
-//     bool passCuts = true;
-//     CutInfo cuts;
 
-//     passCuts &= cuts.setCut("pass2Or3Leptons", nLeps(Level::Tight) >= 2);
-//     passCuts &= cuts.setCut("passVetoFakeLeptons", nLeps(Level::Tight) == nLeps(Level::Fake));
-//     passCuts &= cuts.setCut("passOppositeSign;", !isSameSign(Level::Tight));
-
-//     // Fill Cut flow
-//     fillCutFlow(Channel::OS_MisId, cuts);
-
-//     LOG_FUNC << "End of charge_misid_cuts";
-//     return passCuts;
-// }
 
 void ThreeTop::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
-    muon.fillOutput(*o_tightMuons, Level::Tight, event_bitmap);
-    elec.fillElectron(*o_tightElectrons, Level::Tight, event_bitmap);
+    muon.fillOutput(*o_tightMuons, Level::Fake, event_bitmap);
+    elec.fillOutput(*o_tightElectrons, Level::Fake, event_bitmap);
 
-    rTop.fillTop(*o_top, Level::Loose, event_bitmap);
-    jet.fillJet(*o_jets, Level::Tight, event_bitmap);
-    jet.fillJet(*o_bJets, Level::Bottom, event_bitmap);
+    o_hasHEMJet = jet.size(Level::Loose_inHEM) > 0;
+
+    // rTop.fillTop(*o_top, Level::Loose, event_bitmap);
+    jet.fillJet(*o_jets, Level::Loose, event_bitmap);
+    // jet.fillJet(*o_bJets, Level::Bottom, event_bitmap);
     float muonMass = muon.massInRange(Level::Loose);
     float elecMass = elec.massInRange(Level::Loose);
     float zmass = (muonMass < 0) ? elecMass : muonMass;
@@ -385,15 +383,22 @@ void ThreeTop::FillValues(const Bitmap& event_bitmap)
         }
         setupSyst(systNum);
 
-        o_ht.push_back(jet.getHT(Level::Tight, syst));
+        o_ht.push_back(jet.getHT(Level::Loose, syst));
         o_htb.push_back(jet.getHT(Level::Bottom, syst));
         o_met.push_back(met.pt());
         o_metphi.push_back(met.phi());
-        o_centrality.push_back(jet.getCentrality(Level::Tight, syst));
+        o_centrality.push_back(jet.getCentrality(Level::Loose, syst));
 
         o_nb_loose.push_back(jet.n_loose_bjet.at(syst));
         o_nb_medium.push_back(jet.n_medium_bjet.at(syst));
         o_nb_tight.push_back(jet.n_tight_bjet.at(syst));
+
+        if (isMC_) {
+            o_wgt_nobtag.push_back(o_weight[systNum]/jet.getTotalBTagWeight("M"));
+            o_bwgt_loose.push_back(jet.getCutBasedBTagWeight("L"));
+            o_bwgt_medium.push_back(jet.getCutBasedBTagWeight("M"));
+            o_bwgt_tight.push_back(jet.getCutBasedBTagWeight("T"));
+        }
 
         o_nloose_mu.push_back(muon.size(Level::Loose)-muon.size(Level::Fake));
         o_nloose_el.push_back(elec.size(Level::Loose)-elec.size(Level::Fake));
@@ -427,4 +432,3 @@ void ThreeTop::printStuff()
     std::cout << std::endl;
     LOG_FUNC << "End of printStuff";
 }
-

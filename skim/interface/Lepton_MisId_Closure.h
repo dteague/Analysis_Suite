@@ -1,10 +1,10 @@
 #ifndef LEPTON_MISID_CLOSURE_H_
 #define LEPTON_MISID_CLOSURE_H_
 
-#include "analysis_suite/skim/interface/BaseSelector.h"
+#include "analysis_suite/skim/interface/DileptonBase.h"
 #include "analysis_suite/skim/interface/Output.h"
 
-class Closure_MisId : public BaseSelector {
+class Closure_MisId : public DileptonBase {
 public:
     void Init(TTree* tree) override;
     bool getCutFlow() override;
@@ -17,13 +17,10 @@ public:
 
 private:
     void printStuff();
-    bool isSameSign();
+    float get_mass();
+
     bool measurement_cuts();
     bool closure_cuts();
-    void setSubChannel();
-    float getLeadPt();
-    float get_mass();
-    bool getTriggerValue();
 
     LeptonOut* o_tightMuons;
     LeptonOut* o_tightElectrons;

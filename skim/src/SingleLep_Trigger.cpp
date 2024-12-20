@@ -2,10 +2,12 @@
 
 #include "analysis_suite/skim/interface/logging.h"
 
-enum class Channel {
-    Measurement,
-    None,
-};
+namespace Channel {
+    enum  {
+        Measurement,
+        None,
+    };
+}
 
 enum class Subchannel {
     E, M,

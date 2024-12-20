@@ -2,10 +2,12 @@
 
 #include "analysis_suite/skim/interface/logging.h"
 
-enum class Channel {
-    Signal,
-    None,
-};
+namespace Channel {
+    enum  {
+        Signal,
+        None,
+    };
+}
 
 void BEfficiency::Init(TTree* tree)
 {

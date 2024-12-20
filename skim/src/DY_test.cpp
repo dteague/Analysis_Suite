@@ -3,23 +3,20 @@
 #include"analysis_suite/skim/interface/logging.h"
 #include"analysis_suite/skim/interface/CommonFuncs.h"
 
-enum class Channel {
-    OS_FF,
-    OS_TF,
-    OS_TT,
-    None,
-};
-
-enum class Subchannel {
-    MM,
-    None,
-};
+namespace Channel {
+    enum {
+        OS_FF,
+        OS_TF,
+        OS_TT,
+        None,
+    };
+}
 
 void DY_test::Init(TTree* tree)
 {
     LOG_FUNC << "Start of Init";
     met_type = MET_Type::PUPPI;
-    BaseSelector::Init(tree);
+    DileptonBase::Init(tree);
 
     // Charge Mis-id Fake Rate
     createTree("OS_FF", Channel::OS_FF);
@@ -109,36 +106,6 @@ void DY_test::setOtherGoodParticles(size_t syst)
 }
 
 
-bool DY_test::isSameSign()
-{
-    int q_total = 0;
-    for (size_t idx : muon.list(Level::Fake)) {
-        q_total += muon.charge(idx);
-    }
-    for (size_t idx : elec.list(Level::Fake)) {
-        q_total += elec.charge(idx);
-    }
-    // if 2 leptons, SS -> +1 +1 / -1 -1 -> abs(q) == 2
-    // if 3 leptons, SS -> +1 +1 -1 / -1 -1 +1 -> abs(q) == 1
-    // OS cases are 0 and 3, so no overlap
-    return abs(q_total) == 1 || abs(q_total) == 2;
-}
-
-void DY_test::setSubChannel()
-{
-    LOG_FUNC << "Start of setSubChannel";
-    subChannel_ = Subchannel::None;
-
-    if(nLeps(Level::Fake) == 2) {
-        if (muon.size(Level::Fake) == 2) {
-            subChannel_ = Subchannel::MM;
-        }
-    }
-    LOG_FUNC << "End of setSubChannel";
-}
-
-
-
 bool DY_test::getCutFlow()
 {
     (*currentChannel_) = Channel::None;
@@ -188,14 +155,6 @@ bool DY_test::closure_cuts() {
     fillCutFlow(Channel::OS_TT, cuts);
 
     return passCuts;
-}
-
-float DY_test::getLeadPt()
-{
-    if (subChannel_ == Subchannel::MM) {
-        return muon.pt(Level::Fake, 0);
-    }
-    return 0.;
 }
 
 float DY_test::get_mass() {

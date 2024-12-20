@@ -24,6 +24,6 @@ T* createObject(List list, std::string name, Args... args)
     return obj;
 }
 
-float deltaR(float eta1, float eta2, float phi1, float phi2);
+float deltaR2(float eta1, float eta2, float phi1, float phi2);
 
 #endif // COMMONFUNCS_H_

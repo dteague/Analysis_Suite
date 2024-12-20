@@ -47,6 +47,7 @@ public:
     static eVar currentVar;
     static Systematic currentSyst;
     static bool isMC;
+    static std::unordered_map<Systematic, std::string> jecSyst_to_string;
 
 protected:
     auto getScaleFile(std::string group, std::string filename)
@@ -59,6 +60,9 @@ protected:
 
     std::string systName(WeightHolder& weight) { return weight.systName(currentSyst, currentVar); }
     bool isJECSyst() {return std::find(jec_systs.begin(), jec_systs.end(), currentSyst) != jec_systs.end(); }
+
+
+
 };
 
 #endif // SYSTEMATIC_H_

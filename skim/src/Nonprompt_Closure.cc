@@ -2,29 +2,22 @@
 
 #include "analysis_suite/skim/interface/logging.h"
 
-enum class Channel {
-    TightTight,
-    TightFake,
-    FakeFake,
-    DY_Tight,
-    DY_Fake,
-    None,
-};
-
-enum class Subchannel {
-    MM,
-    EM,
-    EE,
-    Single_E,
-    Single_M,
-    None,
-};
+namespace Channel {
+    enum {
+        TightTight,
+        TightFake,
+        FakeFake,
+        DY_Tight,
+        DY_Fake,
+        None,
+    };
+}
 
 void Nonprompt_Closure::Init(TTree* tree)
 {
     LOG_FUNC << "Start of Init";
     met_type = MET_Type::PF;
-    BaseSelector::Init(tree);
+    DileptonBase::Init(tree);
 
 
     if (groupName_.find("ttbar") != std::string::npos ||
@@ -57,8 +50,6 @@ void Nonprompt_Closure::Init(TTree* tree)
         sfMaker.setup_prescale();
     }
 
-    #include"analysis_suite/skim/interface/trigger_template.h"
-
     LOG_FUNC << "End of Init";
 }
 
@@ -66,20 +57,24 @@ void Nonprompt_Closure::SetupOutTreeBranches(TTree* tree)
 {
     LOG_FUNC << "Start of SetupOutTreeBranches";
     BaseSelector::SetupOutTreeBranches(tree);
-    // tree->Branch("LooseMuon", "LeptonOut_Fake", &o_looseMuons);
     tree->Branch("FakeMuon", "LeptonOut_Fake", &o_fakeMuons);
     tree->Branch("TightMuon", "LeptonOut_Fake", &o_tightMuons);
-    // tree->Branch("LooseElectron", "LeptonOut_Fake", &o_looseElectrons);
     tree->Branch("FakeElectron", "LeptonOut_Fake", &o_fakeElectrons);
     tree->Branch("TightElectron", "LeptonOut_Fake", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
-    tree->Branch("BJets", "JetOut", &o_bJets);
 
+    if (isMC_) {
+        tree->Branch("wgt_nobtag", &o_wgt_nobtag);
+        tree->Branch("bwgt_cb_l", &o_bwgt_loose);
+        tree->Branch("bwgt_cb_m", &o_bwgt_medium);
+        tree->Branch("bwgt_cb_t", &o_bwgt_tight);
+    }
     tree->Branch("HT", &o_ht);
     tree->Branch("HT_b", &o_htb);
     tree->Branch("Met", &o_met);
     tree->Branch("Met_phi", &o_metphi);
     tree->Branch("N_bloose", &o_nb_loose);
+    tree->Branch("N_bmedium", &o_nb_medium);
     tree->Branch("N_btight", &o_nb_tight);
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
@@ -99,7 +94,12 @@ void Nonprompt_Closure::clearOutputs()
     o_met.clear();
     o_metphi.clear();
     o_nb_loose.clear();
+    o_nb_medium.clear();
     o_nb_tight.clear();
+    o_bwgt_loose.clear();
+    o_bwgt_medium.clear();
+    o_bwgt_tight.clear();
+    o_wgt_nobtag.clear();
     LOG_FUNC << "End of clearOutputs";
 }
 
@@ -153,60 +153,6 @@ void Nonprompt_Closure::setSubChannel()
     LOG_FUNC << "End of setSubChannel";
 }
 
-bool Nonprompt_Closure::isSameSign()
-{
-    int q_total = 0;
-    for (size_t idx : muon.list(Level::Fake)) {
-        q_total += muon.charge(idx);
-    }
-    for (size_t idx : elec.list(Level::Fake)) {
-        q_total += elec.charge(idx);
-    }
-    // if 2 leptons, SS -> +1 +1 / -1 -1 -> abs(q) == 2
-    // OS cases are 0 and 3, so no overlap
-    return abs(q_total) == 1 || abs(q_total) == 2;
-}
-
-bool Nonprompt_Closure::getTriggerValue()
-{
-    if (subChannel_ == Subchannel::EE) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::EE)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (year_ == Year::yr2018) { // 2018 uses just EGamma not double vs single EG datasets
-            return (trig_cuts.pass_cut(Subchannel::EE)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::EE)) {
-            return trig_cuts.pass_cut(Subchannel::EE);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_E);
-        }
-    } else if (subChannel_ == Subchannel::MM) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::MM)
-                    || trig_cuts.pass_cut(Subchannel::Single_M));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::MM)) {
-            return trig_cuts.pass_cut(Subchannel::MM);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_M);
-        }
-    } else if (subChannel_ == Subchannel::EM) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::EM)
-                    || trig_cuts.pass_cut(Subchannel::Single_M)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::EM)) {
-            return trig_cuts.pass_cut(Subchannel::EM);
-        } else if (trig_cuts.dataset_or_trig(Subchannel::Single_M)) {
-            return trig_cuts.pass_cut(Subchannel::Single_M);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_E);
-        }
-    } else {
-        return false;
-    }
-}
-
 bool Nonprompt_Closure::getCutFlow()
 {
     LOG_FUNC << "Start of passSelection";
@@ -246,7 +192,7 @@ bool Nonprompt_Closure::closure_cuts()
     passCuts &= cuts.setCut("passLeadPtCut", getLeadPt() > 25);
     passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
 
-    passCuts &= cuts.setCut("passSSLeptons", isSameSign());
+    passCuts &= cuts.setCut("passSSLeptons", isSameSign(Level::Fake));
     passCuts &= cuts.setCut("passLowMassVeto", !muon.isInMassRange(Level::Loose, 0., 12.) && !elec.isInMassRange(Level::Loose, 0., 12.));
     passCuts &= cuts.setCut("passZVeto", !muon.isInMassRange(Level::Loose) && !elec.isInMassRange(Level::Loose));
     // passCuts &= cuts.setCut("passJetNumber", jet.size(Level::Tight) >= 2);
@@ -304,18 +250,6 @@ bool Nonprompt_Closure::dy_closure_cuts()
     return passCuts;
 }
 
-float Nonprompt_Closure::getLeadPt()
-{
-    if (subChannel_ == Subchannel::MM) {
-        return muon.rawpt(Level::Fake, 0);
-    } else if (subChannel_ == Subchannel::EE) {
-        return elec.rawpt(Level::Fake, 0);
-    } else if(subChannel_ == Subchannel::EM){
-        return std::max(muon.rawpt(Level::Fake, 0), elec.rawpt(Level::Fake, 0));
-    }
-    return 0.;
-}
-
 void Nonprompt_Closure::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
@@ -324,18 +258,29 @@ void Nonprompt_Closure::FillValues(const Bitmap& event_bitmap)
     muon.fillLepton_Iso( *o_tightMuons, jet, Level::Tight, event_bitmap);
     // elec.fillLepton_Iso(*o_looseElectrons, jet, Level::LooseNotFake, event_bitmap);
     elec.fillLepton_Iso(*o_fakeElectrons, jet, Level::FakeNotTight, event_bitmap);
-    elec.fillLepton_Iso( *o_tightElectrons, jet, Level::Tight, event_bitmap);
-    jet.fillJet(*o_jets, Level::Tight, event_bitmap);
-    jet.fillJet(*o_bJets, Level::Bottom, event_bitmap);
+    elec.fillLepton_Iso(*o_tightElectrons, jet, Level::Tight, event_bitmap);
+    jet.fillJet(*o_jets, Level::Loose, event_bitmap);
+    // jet.fillJet(*o_bJets, Level::Bottom, event_bitmap);
 
-    for (size_t syst = 0; syst < numSystematics(); ++syst) {
-        setupSyst(syst);
+    for (size_t systNum = 0; systNum < numSystematics(); ++systNum) {
+        size_t syst = syst_to_index.at(systNum);
+        if (syst == 0 && systNum != 0) {
+            continue;
+        }
+        setupSyst(systNum);
 
-        o_ht.push_back(jet.getHT(Level::Tight, syst));
+        if (isMC_) {
+            o_wgt_nobtag.push_back(o_weight[systNum]/jet.getTotalBTagWeight("M"));
+            o_bwgt_loose.push_back(jet.getCutBasedBTagWeight("L"));
+            o_bwgt_medium.push_back(jet.getCutBasedBTagWeight("M"));
+            o_bwgt_tight.push_back(jet.getCutBasedBTagWeight("T"));
+        }
+        o_ht.push_back(jet.getHT(Level::Loose, syst));
         o_htb.push_back(jet.getHT(Level::Bottom, syst));
         o_met.push_back(met.pt());
         o_metphi.push_back(met.phi());
         o_nb_loose.push_back(jet.n_loose_bjet.at(syst));
+        o_nb_medium.push_back(jet.n_medium_bjet.at(syst));
         o_nb_tight.push_back(jet.n_tight_bjet.at(syst));
     }
     LOG_FUNC << "End of FillValues";

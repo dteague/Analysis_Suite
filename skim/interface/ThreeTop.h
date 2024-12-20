@@ -3,7 +3,6 @@
 
 #include "analysis_suite/skim/interface/BaseSelector.h"
 #include "analysis_suite/skim/interface/Output.h"
-#include "analysis_suite/skim/interface/ResolvedTop.h"
 
 class ThreeTop : public BaseSelector {
 public:
@@ -15,7 +14,7 @@ public:
     void ApplyChannelScaleFactors() override;
     void clearParticles() override;
     void clearOutputs() override;
-    void setOtherGoodParticles(size_t syst) override;
+    bool passPreselection() override;
     ClassDefOverride(ThreeTop, 0);
 
 private:
@@ -35,10 +34,8 @@ private:
     float muPt(size_t idx) { return muon.size(Level::Fake) > idx ? muon.pt(Level::Fake, idx) : -1; }
     float elPt(size_t idx) { return elec.size(Level::Fake) > idx ? elec.pt(Level::Fake, idx) : -1; }
 
-    ResolvedTop rTop;
-
     ParticleOut* o_tightMuons;
-    ElectronOut* o_tightElectrons;
+    ParticleOut* o_tightElectrons;
     JetOut* o_jets;
     JetOut* o_bJets;
     TopOut* o_top;
@@ -53,8 +50,12 @@ private:
     std::vector<std::vector<Float_t>> o_nb_weight;
     std::vector<Int_t> o_nloose_mu,o_nloose_el;
     std::vector<Bool_t> o_pass_zveto;
+    std::vector<Float_t> o_wgt_nobtag;
 
     std::vector<size_t> fake_el, fake_mu;
+
+    bool o_hlt_e, o_hlt_m, o_hlt_ee, o_hlt_em, o_hlt_mm;
+    bool o_hasHEMJet;
 
     bool use_nonprompt = false;
     // TrigEff trigEff_leadPt;

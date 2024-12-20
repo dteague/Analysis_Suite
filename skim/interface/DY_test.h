@@ -1,11 +1,11 @@
 #ifndef DY_TEST_H_
 #define DY_TEST_H_
 
-#include "analysis_suite/skim/interface/BaseSelector.h"
+#include "analysis_suite/skim/interface/DileptonBase.h"
 #include "analysis_suite/skim/interface/Output.h"
 
-class DY_test : public BaseSelector {
- public:
+class DY_test : public DileptonBase {
+public:
     void Init(TTree* tree) override;
     bool getCutFlow() override;
     void FillValues(const Bitmap& event_bitmap) override;
@@ -18,11 +18,9 @@ class DY_test : public BaseSelector {
 
  private:
     void printStuff();
-    bool isSameSign();
-    bool closure_cuts();
-    void setSubChannel();
-    float getLeadPt();
     float get_mass();
+
+    bool closure_cuts();
 
     LeptonOut_Fake *o_tightMuons, *o_fakeMuons;
     JetOut* o_jets;

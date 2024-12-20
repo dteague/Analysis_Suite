@@ -1,5 +1,4 @@
 #include "analysis_suite/skim/interface/Jet.h"
-#include "analysis_suite/skim/interface/CommonFuncs.h"
 
 void Jet::setup(TTreeReader& fReader, std::string data_run, std::vector<Systematic> used_jec_systs_)
 {
@@ -10,14 +9,6 @@ void Jet::setup(TTreeReader& fReader, std::string data_run, std::vector<Systemat
     if (isMC) {
         hadronFlavour.setup(fReader, "Jet_hadronFlavour");
         genJetIdx.setup(fReader, "Jet_genJetIdx");
-        rawFactor.setup(fReader, "Jet_rawFactor");
-        rho.setup(fReader, "fixedGridRhoFastjetAll");
-        // Stuff for Met recalc
-        t1_rawpt.setup(fReader, "CorrT1METJet_rawPt");
-        t1_eta.setup(fReader, "CorrT1METJet_eta");
-        t1_phi.setup(fReader, "CorrT1METJet_phi");
-        t1_area.setup(fReader, "CorrT1METJet_area");
-        t1_muonSub.setup(fReader, "CorrT1METJet_muonSubtrFactor");
     }
     neHEF.setup(fReader, "Jet_neHEF");
     neEmEF.setup(fReader, "Jet_neEmEF");
@@ -25,8 +16,6 @@ void Jet::setup(TTreeReader& fReader, std::string data_run, std::vector<Systemat
     chHEF.setup(fReader, "Jet_chHEF");
     chEmEF.setup(fReader, "Jet_chEmEF");
     nConstituents.setup(fReader, "Jet_nConstituents");
-    muonSubtrFactor.setup(fReader, "Jet_muonSubtrFactor");
-    area.setup(fReader, "Jet_area");
 
     setup_map(Level::Loose_inHEM);
     setup_map(Level::Loose);
@@ -62,7 +51,6 @@ void Jet::setup(TTreeReader& fReader, std::string data_run, std::vector<Systemat
 
     used_jec_systs = used_jec_systs_;
 
-
     if (isMC) {
         // Pileup Weights
         auto jmar_set = getScaleFile("JME", "jmar");
@@ -92,19 +80,26 @@ void Jet::setup(TTreeReader& fReader, std::string data_run, std::vector<Systemat
     std::string veto_map_name = "Summer19UL"+yearNum.at(year_)+"_V1";
     veto_map = WeightHolder(veto_set->at(veto_map_name), Systematic::Nominal, {"jetvetomap", "", ""});
 
-    m_jet_scales[Systematic::Nominal] = {{eVar::Nominal, std::vector<float>()}};
-    for (auto syst : used_jec_systs) {
-        m_jet_scales[syst] = {
-            {eVar::Up, std::vector<float>()},
-            {eVar::Down, std::vector<float>()}
-        };
-    }
+    jec.init(fReader, used_jec_systs);
 }
+
+void Jet::setup_jets(GenericParticle& genJet, size_t run)
+{
+    if (year_ != Year::yr2018) {
+        applyHEMVeto= false;
+    } else if (isMC) {
+        applyHEMVeto= 1.0*std::rand()/RAND_MAX < 0.64;
+    } else {
+        applyHEMVeto= run >= 319077;
+    }
+    jec.setupJEC(*this, genJet);
+
+}
+
 
 void Jet::fillJet(JetOut& output, Level level, const Bitmap& event_bitmap)
 {
     output.clear();
-    const auto central = m_jet_scales.at(Systematic::Nominal).at(eVar::Nominal);
     for (size_t idx = 0; idx < size(); ++idx) {
         bool pass = fillParticle(output, level, idx, event_bitmap);
         if (pass) {
@@ -120,10 +115,10 @@ void Jet::fillJet(JetOut& output, Level level, const Bitmap& event_bitmap)
             output.mass_shift.push_back(std::vector<Float_t>());
             for (size_t n_syst=0; n_syst < used_jec_systs.size(); ++n_syst) {
                 auto syst = used_jec_systs.at(n_syst);
-                output.pt_shift.back().push_back(m_pt.at(idx)*m_jet_scales[syst][eVar::Up][idx]);
-                output.pt_shift.back().push_back(m_pt.at(idx)*m_jet_scales[syst][eVar::Down][idx]);
-                output.mass_shift.back().push_back(m_mass.at(idx)*m_jet_scales[syst][eVar::Up][idx]);
-                output.mass_shift.back().push_back(m_mass.at(idx)*m_jet_scales[syst][eVar::Down][idx]);
+                output.pt_shift.back().push_back(pt_shift(idx, syst, eVar::Up));
+                output.pt_shift.back().push_back(pt_shift(idx, syst, eVar::Down));
+                output.mass_shift.back().push_back(mass_shift(idx, syst, eVar::Up));
+                output.mass_shift.back().push_back(mass_shift(idx, syst, eVar::Down));
             }
         }
     }
@@ -213,12 +208,7 @@ float Jet::getCentrality(const std::vector<size_t>& jet_list)
 void Jet::setSyst(size_t syst)
 {
     Particle::setSyst(syst);
-
-    if (currentSyst == Systematic::Nominal || isJECSyst()) {
-        m_jec = &m_jet_scales[currentSyst][currentVar];
-    } else {
-        m_jec = &m_jet_scales[Systematic::Nominal][eVar::Nominal];
-    }
+    jec.set_syst(isJECSyst());
 }
 
 float Jet::getScaleFactor()
@@ -283,7 +273,7 @@ float Jet::getCutBasedBTagWeight(std::string btag_wp)
 
 std::complex<float> Jet::get_momentum_change()
 {
-    return m_met_change[currentSyst][currentVar];
+    return jec.get_met_change();
 }
 
 bool Jet::passVeto(float eta, float phi)
@@ -302,130 +292,3 @@ bool Jet::passVeto(float eta, float phi)
 }
 
 
-void Jet::setupJEC(GenericParticle& genJet, size_t run)
-{
-    if (year_ != Year::yr2018) {
-        applyHEMVeto= false;
-    } else if (isMC) {
-        applyHEMVeto= 1.0*std::rand()/RAND_MAX < 0.64;
-    } else {
-        applyHEMVeto= run >= 319077;
-    }
-
-    m_met_change[Systematic::Nominal][eVar::Nominal] = std::polar(0.f, 0.f);
-
-    if (!isMC) {
-        m_jet_scales[Systematic::Nominal][eVar::Nominal].assign(size(), 1);
-    } else {
-        for (auto& [syst, var_scales] : m_jet_scales ) {
-            for (auto& [var, scales] : var_scales) {
-                scales.resize(size());
-                m_met_change[syst][var] = std::polar(0.f, 0.f);
-            }
-        }
-    }
-
-    for(size_t i = 0; i < size(); ++i) {
-        auto jer = get_jer(m_pt.at(i), eta(i), i, genJet, false);
-        float central = jer.at(0);
-
-        m_jet_scales[Systematic::Nominal][eVar::Nominal][i] = central;
-        for (auto syst: used_jec_systs) {
-            if (syst == Systematic::Jet_JER) {
-                m_jet_scales[syst][eVar::Up][i] = jer.at(1);
-                m_jet_scales[syst][eVar::Down][i] = jer.at(2);
-            } else {
-                float jec_unc = get_jec_unc(m_pt.at(i), eta(i), jec_unc_vec[syst]);
-                m_jet_scales[syst][eVar::Down][i] = central*(1-jec_unc);
-                m_jet_scales[syst][eVar::Up][i] = central*(1+jec_unc);
-            }
-        }
-        if ((m_pt.at(i)*(1-muonSubtrFactor.at(i)) > 15) && (neEmEF.at(i)+chEmEF.at(i) < 0.9)) {
-            fix_met(rawPt(i), m_pt.at(i), eta(i), phi(i), area.at(i), muonSubtrFactor.at(i), jer);
-        }
-    }
-
-    for(size_t i = 0; i < t1_rawpt.size(); ++i) {
-        float jec_pt = t1_rawpt.at(i)*jec_total->evaluate({t1_area.at(i), t1_eta.at(i), t1_rawpt.at(i), *rho});
-        if (jec_pt*(1-t1_muonSub.at(i)) > 15) {
-            auto jer = get_jer(jec_pt, t1_eta.at(i), i, genJet, true);
-            fix_met(t1_rawpt.at(i), jec_pt, t1_eta.at(i), t1_phi.at(i), t1_area.at(i), t1_muonSub.at(i), jer);
-
-        }
-    }
-
-}
-
-std::vector<float> Jet::get_jer(float pt, float eta, size_t idx, GenericParticle& genJets, bool isLowPt)
-{
-
-    if (!isMC) {
-        return {1.0};
-    }
-
-    float resolution = jet_resolution.evaluate({eta, pt, *rho});
-    float pt_ratio = 100;
-    bool matched_gen = false;
-    float rand = 1.;
-
-    if (!isLowPt) {
-        size_t g = genJetIdx.at(idx);
-        pt_ratio = (genJetIdx.at(idx) != -1) ? 1-genJets.pt(g)/pt : 0.;
-        matched_gen = (genJetIdx.at(idx) != -1)
-            && (deltaR2(eta, genJets.eta(g), phi(idx), genJets.phi(g)) < 0.04) // (0.4/2)**2
-            && (fabs(pt_ratio) < 3*resolution);
-    } else {
-        float gen_dR = 0.04;
-        for (size_t i=0; i < genJets.size(); ++i) {
-            float dr = deltaR2(eta, genJets.eta(i), t1_phi.at(idx), genJets.phi(i));
-            if (dr < gen_dR) {
-                gen_dR = dr;
-                pt_ratio = 1-genJets.pt(i)/pt;
-                matched_gen = (fabs(pt_ratio) < 3*resolution); // Already required dR<0.2 by def
-            }
-        }
-    }
-
-    if (!matched_gen) {
-        std::normal_distribution<> gaussian{0, resolution};
-        rand = gaussian(gen);
-    }
-
-    std::vector<float> output;
-    for (auto var : all_vars) {
-        float scale = jer_scale.evaluate({eta, jer_scale.name_by_var.at(var)});
-        if (matched_gen) {
-            output.push_back(1 + (scale-1)*pt_ratio);
-        } else if (scale > 1.) {
-            output.push_back(1 + rand*sqrt(pow(scale,2) - 1));
-        } else {
-            output.push_back(1);
-        }
-    }
-    return output;
-}
-
-float Jet::get_jec_unc(float pt, float eta, correction::Correction::Ref& jec_unc)
-{
-    return jec_unc->evaluate({eta, pt});
-}
-
-void Jet::fix_met(float raw_pt, float pt, float eta, float phi, float area, float muonSub, std::vector<float> jer_)
-{
-    float jec_l1 = jec_l1_total->evaluate({area, eta, raw_pt, *rho});
-    float l1_pt = raw_pt*(jec_l1*(1-muonSub) + muonSub);
-    float met_pt = pt*(1-muonSub)+raw_pt*muonSub;
-
-    float central = jer_.at(0);
-    m_met_change[Systematic::Nominal][eVar::Nominal] += std::polar(central*met_pt-l1_pt, phi);
-    for (auto syst: used_jec_systs) {
-        if (syst == Systematic::Jet_JER) {
-            m_met_change[syst][eVar::Up] += std::polar(jer_.at(1)*met_pt-l1_pt, phi);
-            m_met_change[syst][eVar::Down] += std::polar(jer_.at(2)*met_pt-l1_pt, phi);
-        } else {
-            float jec_unc = get_jec_unc(met_pt, eta, jec_unc_vec[syst]);
-            m_met_change[syst][eVar::Down] += std::polar((central-jec_unc)*met_pt-l1_pt, phi);
-            m_met_change[syst][eVar::Up] += std::polar((central+jec_unc)*met_pt-l1_pt, phi);
-        }
-    }
-}

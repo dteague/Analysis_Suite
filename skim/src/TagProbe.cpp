@@ -3,10 +3,12 @@
 #include"analysis_suite/skim/interface/logging.h"
 #include"analysis_suite/skim/interface/CommonFuncs.h"
 
-enum class Channel {
-    OS,
-    None,
-};
+namespace Channel {
+    enum {
+        OS,
+        None,
+    };
+}
 
 enum class Subchannel {
     MM,

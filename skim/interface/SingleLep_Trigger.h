@@ -7,7 +7,7 @@
 #include <set>
 
 class SingleLep_Trigger : public BaseSelector {
- public:
+public:
     virtual void Init(TTree* tree) override;
     virtual bool getCutFlow() override;
     virtual void FillValues(const Bitmap& event_bitmap) override;

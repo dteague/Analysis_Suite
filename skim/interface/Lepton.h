@@ -36,14 +36,15 @@ public:
     float getMT(Level level, size_t i, float met, float met_phi) const { return getMT(idx(level, i), met, met_phi); }
 
     float ptRatio(size_t i) const { return 1/(1+ptRatio_.at(i)); }
-    float ptRatio2(size_t i, Particle& jets) const {
+    float ptRatio2(size_t i, Jet& jets);
+    float ptRatio3(size_t i, Particle& jets) const {
         if (jetIdx.at(i) < 0) {
             return 1/(1+ptRatio_.at(i));
         } else {
             return m_pt.at(i)/jets.pt(jetIdx.at(i));
         }
     }
-
+    virtual float tthMVA_(size_t i) { return mvaTTH.at(i); }
     virtual void setupGoodLists(Particle& jets, GenParticle& gen) override
     {
         fakePtFactor.assign(size(), 1.);
@@ -87,7 +88,6 @@ protected:
 
     TRArray<Int_t> genPartIdx;
     TRArray<UChar_t> genPartFlav;
-
 
     PID id;
 

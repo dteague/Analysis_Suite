@@ -3,10 +3,12 @@
 #include"analysis_suite/skim/interface/logging.h"
 #include"analysis_suite/skim/interface/CommonFuncs.h"
 
-enum class Channel {
-    Signal,
-    None,
-};
+namespace Channel {
+    enum {
+        Signal,
+        None,
+    };
+}
 
 enum class Subchannel {
     MM,
@@ -63,7 +65,7 @@ void Trigger_Eff::SetupOutTreeBranches(TTree* tree)
     LOG_FUNC << "Start of SetupOutTreeBranches";
     BaseSelector::SetupOutTreeBranches(tree);
     tree->Branch("TightMuon", "ParticleOut", &o_tightMuons);
-    tree->Branch("TightElectron", "ElectronOut", &o_tightElectrons);
+    tree->Branch("TightElectron", "ParticleOut", &o_tightElectrons);
 
     tree->Branch("Met", &o_met);
     tree->Branch("Met_phi", &o_metphi);
@@ -206,7 +208,7 @@ void Trigger_Eff::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
     muon.fillOutput(*o_tightMuons, Level::Tight, event_bitmap);
-    elec.fillElectron(*o_tightElectrons, Level::Tight, event_bitmap);
+    elec.fillOutput(*o_tightElectrons, Level::Tight, event_bitmap);
 
     for (size_t systNum = 0; systNum < numSystematics(); ++systNum) {
         size_t syst = syst_to_index.at(systNum);

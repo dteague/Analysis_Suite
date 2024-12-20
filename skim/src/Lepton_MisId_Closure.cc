@@ -3,27 +3,20 @@
 #include"analysis_suite/skim/interface/logging.h"
 #include"analysis_suite/skim/interface/CommonFuncs.h"
 
-enum class Channel {
-    OS_MR,
-    OS_CR,
-    SS_CR,
-    None,
-};
-
-enum class Subchannel {
-    MM,
-    EM,
-    EE,
-    Single_E,
-    Single_M,
-    None,
-};
+namespace Channel {
+    enum {
+        OS_MR,
+        OS_CR,
+        SS_CR,
+        None,
+    };
+}
 
 void Closure_MisId::Init(TTree* tree)
 {
     LOG_FUNC << "Start of Init";
     met_type = MET_Type::PUPPI;
-    BaseSelector::Init(tree);
+    DileptonBase::Init(tree);
 
     // Charge Mis-id Fake Rate
     createTree("SS", Channel::SS_CR);
@@ -33,7 +26,6 @@ void Closure_MisId::Init(TTree* tree)
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
     }
 
-#include "analysis_suite/skim/interface/trigger_template.h"
     LOG_FUNC << "End of Init";
 }
 
@@ -88,85 +80,13 @@ void Closure_MisId::ApplyScaleFactors()
     LOG_FUNC << "End of ApplyScaleFactors";
 }
 
-bool Closure_MisId::isSameSign()
-{
-    int q_total = 0;
-    for (size_t idx : muon.list(Level::Tight)) {
-        q_total += muon.charge(idx);
-    }
-    for (size_t idx : elec.list(Level::Tight)) {
-        q_total += elec.charge(idx);
-    }
-    // if 2 leptons, SS -> +1 +1 / -1 -1 -> abs(q) == 2
-    // if 3 leptons, SS -> +1 +1 -1 / -1 -1 +1 -> abs(q) == 1
-    // OS cases are 0 and 3, so no overlap
-    return abs(q_total) == 1 || abs(q_total) == 2;
-}
-
-void Closure_MisId::setSubChannel()
-{
-    LOG_FUNC << "Start of setSubChannel";
-    subChannel_ = Subchannel::None;
-
-    if(nLeps(Level::Tight) == 2) {
-        if (muon.size(Level::Tight) == 2) {
-            subChannel_ = Subchannel::MM;
-        } else if (elec.size(Level::Tight) == 2) {
-            subChannel_ = Subchannel::EE;
-        }  else {
-            subChannel_ = Subchannel::EM;
-        }
-    }
-    LOG_FUNC << "End of setSubChannel";
-}
-
-bool Closure_MisId::getTriggerValue()
-{
-    if (subChannel_ == Subchannel::EE) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::EE)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (year_ == Year::yr2018) {
-            return (trig_cuts.pass_cut(Subchannel::EE)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::EE)) {
-            return trig_cuts.pass_cut(Subchannel::EE);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_E);
-        }
-    } else if (subChannel_ == Subchannel::MM) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::MM)
-                    || trig_cuts.pass_cut(Subchannel::Single_M));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::MM)) {
-            return trig_cuts.pass_cut(Subchannel::MM);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_M);
-        }
-    } else if (subChannel_ == Subchannel::EM) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::EM)
-                    || trig_cuts.pass_cut(Subchannel::Single_M)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::EM)) {
-            return trig_cuts.pass_cut(Subchannel::EM);
-        } else if (trig_cuts.dataset_or_trig(Subchannel::Single_M)) {
-            return trig_cuts.pass_cut(Subchannel::Single_M);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_E);
-        }
-    } else {
-        return false;
-    }        
-}
-
 bool Closure_MisId::getCutFlow()
 {
     (*currentChannel_) = Channel::None;
     setSubChannel();
 
     if (closure_cuts()) {
-        (*currentChannel_) = (isSameSign()) ? Channel::SS_CR : Channel::OS_CR;
+        (*currentChannel_) = (isSameSign(Level::Tight)) ? Channel::SS_CR : Channel::OS_CR;
     }
     if(measurement_cuts()) {
         (*currentChannel_) = Channel::OS_MR;
@@ -234,18 +154,6 @@ bool Closure_MisId::measurement_cuts() {
     fillCutFlow(Channel::OS_MR, cuts);
 
     return passCuts;
-}
-
-float Closure_MisId::getLeadPt()
-{
-    if (subChannel_ == Subchannel::MM) {
-        return muon.pt(Level::Tight, 0);
-    } else if (subChannel_ == Subchannel::EE) {
-        return elec.pt(Level::Tight, 0);
-    } else if (subChannel_ == Subchannel::EM) {
-        return std::max(muon.pt(Level::Tight, 0), elec.pt(Level::Tight, 0));
-    }
-    return 0.;
 }
 
 float Closure_MisId::get_mass() {

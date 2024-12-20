@@ -48,8 +48,8 @@ void Met::setupMet(Jet& jet, UInt_t run, int nVertices)
             (*corr_phi) = (currentVar == eVar::Up) ? *m_jer_phi_up : *m_jer_phi_down;
         }
         else {
-            auto met_vec = std::polar(*m_raw_pt, *m_raw_phi) - jet.get_momentum_change();
-            // auto met_vec = std::polar(*m_pt, *m_phi) - jet.get_momentum_change();
+            // auto met_vec = std::polar(*m_raw_pt, *m_raw_phi) - jet.get_momentum_change();
+            auto met_vec = std::polar(*m_pt, *m_phi) - jet.get_momentum_change();
             (*corr_pt) = std::abs(met_vec);
             (*corr_phi) = std::arg(met_vec);
         }

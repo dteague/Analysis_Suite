@@ -27,7 +27,7 @@ private:
     size_t get_trigger();
     bool apply_trigger();
     LeptonOut_Fake *o_fakeMuons, *o_tightMuons;
-    ElectronOut_Fake *o_fakeElectrons, *o_tightElectrons;
+    LeptonOut_Fake *o_fakeElectrons, *o_tightElectrons;
     JetOut* o_jets;
 
     TRVariable<Float_t> Pileup_nTrueInt;
@@ -37,6 +37,9 @@ private:
     std::vector<Float_t> o_ht, o_met, o_metphi;
     std::vector<Float_t> bjet_scales;
     Int_t hlt_loPt_prescale, hlt_hiPt_prescale;
+    std::vector<Float_t> o_bwgt_loose, o_bwgt_medium, o_bwgt_tight;
+    std::vector<Float_t> o_wgt_nobtag;
+    std::vector<size_t> o_nb_loose, o_nb_medium, o_nb_tight;
 };
 
 

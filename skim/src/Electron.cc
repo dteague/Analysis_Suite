@@ -31,10 +31,6 @@ void Electron::setup(TTreeReader& fReader)
         auto corr_set = getScaleFile("EGM", "electron");
         electron_scale = WeightHolder(corr_set->at("UL-Electron-ID-SF"), Systematic::Electron_Scale,
                                       {"sf", "sfup", "sfdown"});
-        dEscaleDown.setup(fReader, "Electron_dEscaleDown");
-        dEscaleUp.setup(fReader, "Electron_dEscaleUp");
-        dEsigmaDown.setup(fReader, "Electron_dEsigmaDown");
-        dEsigmaUp.setup(fReader, "Electron_dEsigmaUp");
         genPartFlav.setup(fReader, "Electron_genPartFlav");
         auto tth_set = getScaleFile("USER", "tthMVA_scales");
         electron_tthMVA = WeightHolder(tth_set->at("NUM_mvaTTH_DEN_isElectron"), Systematic::Electron_tthMVA,
@@ -54,19 +50,6 @@ void Electron::setup(TTreeReader& fReader)
 
 }
 
-
-void Electron::fillElectron(ElectronOut& output, Level level, const Bitmap& event_bitmap)
-{
-    output.clear();
-    for (size_t idx = 0; idx < size(); ++idx) {
-        bool pass = fillParticle(output, level, idx, event_bitmap);
-        if (pass) {
-            output.dEScale.push_back(std::make_pair(dEscaleDown.at(idx), dEscaleUp.at(idx)));
-            output.dESigma.push_back(std::make_pair(dEsigmaDown.at(idx), dEsigmaUp.at(idx)));
-        }
-    }
-}
-
 void Electron::fillElectron_Endcap(ElectronOut_Endcap& output, Level level, const Bitmap& event_bitmap)
 {
     output.clear();
@@ -80,30 +63,6 @@ void Electron::fillElectron_Endcap(ElectronOut_Endcap& output, Level level, cons
             output.sip3d.push_back(sip3d.at(idx));
             output.mvaTTH.push_back(tth_mva_vec[idx]);
             output.truth.push_back(genPartFlav.at(idx));
-        }
-    }
-}
-
-void Electron::fillElectron_Iso(ElectronOut_Fake& output, Jet& jet, Level level, const Bitmap& event_bitmap)
-{
-    output.clear();
-    for (size_t idx = 0; idx < size(); ++idx) {
-        bool pass = fillParticle(output, level, idx, event_bitmap);
-        if (pass) {
-            output.rawPt.push_back(m_pt.at(idx));
-            output.ptRatio.push_back(ptRatio(idx));
-            output.ptRatio2.push_back(ptRatio2(idx, jet));
-            output.old_mvaTTH.push_back(mvaTTH.at(idx));
-            output.mvaTTH.push_back(tth_mva_vec[idx]);
-            output.iso.push_back(iso.at(idx));
-            if (jetIdx.at(idx) != -1) {
-                output.jet_btag.push_back(jet.btag.at(jetIdx.at(idx)));
-            } else {
-                output.jet_btag.push_back(-1.);
-            }
-            if (isMC) {
-                output.jet_flav.push_back(static_cast<Int_t>(genPartFlav.at(idx)));
-            }
         }
     }
 }
@@ -164,7 +123,7 @@ void Electron::createFakeList(Particle& jets)
             && tightCharge.at(i) == 2
             && passTriggerRequirements(i) // Nonmva
             && m_pt.at(i)*getFakePtFactor(i) > 20
-            && (ptRatio(i) > ptRatioCut || passJetIsolation(i)) // MVA
+            // && (ptRatio(i) > ptRatioCut || passJetIsolation(i)) // MVA
             )
             {
                 m_partList[Level::Fake]->push_back(i);

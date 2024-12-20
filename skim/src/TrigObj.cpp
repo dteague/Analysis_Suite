@@ -53,7 +53,7 @@ void TrigObj::match_muon(Muon& muon)
         float trig_phi = phi(i);
         float trig_eta = eta(i);
         for (auto mu : muon.list(Level::Loose)) {
-            float dr2 = deltaR(muon.eta(mu), trig_eta, muon.phi(mu), trig_phi);
+            float dr2 = deltaR2(muon.eta(mu), trig_eta, muon.phi(mu), trig_phi);
             if (minDr > dr2) {
                 minIdx = mu;
                 minDr = dr2;
@@ -95,7 +95,7 @@ void TrigObj::match_electron(Electron& elec)
         float trig_phi = phi(i);
         float trig_eta = eta(i);
         for (auto el : elec.list(Level::Loose)) {
-            float dr2 = deltaR(elec.eta(el), trig_eta, elec.phi(el), trig_phi);
+            float dr2 = deltaR2(elec.eta(el), trig_eta, elec.phi(el), trig_phi);
             if (minDr > dr2) {
                 minIdx = el;
                 minDr = dr2;

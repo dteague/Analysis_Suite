@@ -10,4 +10,5 @@
   <class name="TwoLepton"/>
   <class name="TagProbe"/>
   <class name="Trigger_Eff"/>
+  <class name="BScale"/>
 </lcgdict>

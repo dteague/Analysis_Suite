@@ -32,6 +32,16 @@ void Lepton::setup(std::string name, TTreeReader& fReader)
     setup_map(Level::Tight);
 }
 
+float Lepton::ptRatio2(size_t i, Jet& jets) {
+    if (jetIdx.at(i) < 0 && closeJet_by_lepton.find(i) == closeJet_by_lepton.end()) {
+        return ptRatio(i);
+    } else if (jetIdx.at(i) < 0) {
+        return ptRatio(i)/jets.jec_shift(closeJet_by_lepton[i]);
+    } else {
+        return ptRatio(i)/jets.jec_shift(jetIdx.at(i));
+    }
+}
+
 void Lepton::fillLepton(LeptonOut& output, Level level, const Bitmap& event_bitmap)
 {
     output.clear();
@@ -52,7 +62,8 @@ void Lepton::fillLepton_Iso(LeptonOut_Fake& output, Jet& jet, Level level, const
             output.rawPt.push_back(m_pt.at(idx));
             output.ptRatio.push_back(ptRatio(idx));
             output.ptRatio2.push_back(ptRatio2(idx, jet));
-            output.mvaTTH.push_back(mvaTTH.at(idx));
+            output.ptRatio3.push_back(ptRatio3(idx, jet));
+            output.mvaTTH.push_back(tthMVA_(idx));
             output.iso.push_back(iso.at(idx));
             if (jetIdx.at(idx) != -1) {
                 output.jet_btag.push_back(jet.btag.at(jetIdx.at(idx)));
@@ -69,20 +80,20 @@ void Lepton::fillLepton_Iso(LeptonOut_Fake& output, Jet& jet, Level level, const
 std::pair<size_t, float> Lepton::getCloseJet(size_t lidx, const Particle& jet)
 {
     size_t minIdx = SIZE_MAX;
-    float minDr = 100;
+    float minDr = 0.16; // 0.4^2
     float lphi = phi(lidx);
     float leta = eta(lidx);
     for (size_t jidx = 0; jidx < jet.size(); jidx++) {
-        float dr2 = deltaR(jet.eta(jidx), leta, jet.phi(jidx), lphi);
+        float dr2 = deltaR2(jet.eta(jidx), leta, jet.phi(jidx), lphi);
         if (minDr > dr2) {
             minIdx = jidx;
             minDr = dr2;
         }
     }
 
-    if (minIdx != SIZE_MAX)
+    if (minIdx != SIZE_MAX) {
         closeJet_by_lepton[lidx] = minIdx;
-
+    }
     return std::make_pair(minIdx, minDr);
 }
 

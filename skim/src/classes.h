@@ -9,6 +9,7 @@
 #include "analysis_suite/skim/interface/TwoLepton.h"
 #include "analysis_suite/skim/interface/TagProbe.h"
 #include "analysis_suite/skim/interface/trigger_eff.h"
+#include "analysis_suite/skim/interface/BScale.h"
 
 namespace {
 namespace {
@@ -23,5 +24,6 @@ namespace {
     TwoLepton pTwoLepton;
     TagProbe pTagProbe;
     Trigger_Eff pTrigger_Eff;
+    BScale pBScale;
 } // namespace
 } // namespace

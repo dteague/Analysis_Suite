@@ -26,7 +26,7 @@ void Muon::setup(TTreeReader& fReader)
     if (isMC) {
         auto corr_set = getScaleFile("MUO", "muon_Z");
         muon_scale = WeightHolder(corr_set->at("NUM_MediumID_DEN_genTracks"), Systematic::Muon_Scale,
-                                  {"sf", "systup", "systdown"});
+                                  {"nominal", "systup", "systdown"});
         auto tth_set = getScaleFile("USER", "tthMVA_scales");
         muon_tthMVA = WeightHolder(tth_set->at("NUM_mvaTTH_DEN_isMuon"), Systematic::Muon_tthMVA,
                                    {"value", "systup", "systdown"});
@@ -82,7 +82,7 @@ void Muon::createFakeList(Particle& jets)
             && tightCharge.at(i) == 2
             && mediumId.at(i)
             && sip3d.at(i) < 4
-            && (ptRatio(i) > ptRatioCut || passJetIsolation(i))
+            // && (ptRatio(i) > ptRatioCut || passJetIsolation(i))
             && m_pt.at(i)*getFakePtFactor(i) > 20 // Total pt threshold
             )
             {
@@ -115,7 +115,7 @@ float Muon::getScaleFactor()
     std::string syst_mva = systName(muon_tthMVA);
     for (auto midx : list(Level::Fake)) {
         float pt = (m_pt.at(midx) >= 20) ? m_pt.at(midx) : 20.;
-        weight *= muon_scale.evaluate({yearMap.at(year_)+"_UL", fabs(eta(midx)), pt, syst});
+        weight *= muon_scale.evaluate({fabs(eta(midx)), pt, syst});
         weight *= muon_tthMVA.evaluate({fabs(eta(midx)), pt, syst_mva});
     }
     return weight;

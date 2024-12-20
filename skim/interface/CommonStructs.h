@@ -10,7 +10,6 @@
 
 #include <set>
 
-enum class Channel;
 enum class Subchannel;
 
 struct TriggerInfo {
@@ -45,6 +44,27 @@ struct TriggerInfo {
 
         for (auto trig : trigs[chan]) {
             if (*trig) return true;
+        }
+        return false;
+    }
+
+    bool pass_any_mc(std::vector<Subchannel> chans) {
+        for (auto chan : chans) {
+            for (auto trig : trigs[chan]) {
+                if (*trig) return true;
+            }
+        }
+        return false;
+    }
+
+    bool pass_any_trig() {
+        for(auto& [chan, chan_trig]: trigs) {
+            if (!pass_dataset(chan)) { // Dataset correct for the channel
+                continue;
+            }
+            for (auto trig: chan_trig) {
+                if (*trig) return true;
+            }
         }
         return false;
     }

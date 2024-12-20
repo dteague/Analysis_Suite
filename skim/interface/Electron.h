@@ -8,9 +8,7 @@ class Electron : public Lepton {
 public:
     void setup(TTreeReader& fReader);
 
-    void fillElectron(ElectronOut& output, Level level, const Bitmap& event_bitmap);
     void fillElectron_Endcap(ElectronOut_Endcap& output, Level level, const Bitmap& event_bitmap);
-    void fillElectron_Iso(ElectronOut_Fake& output, Jet& jet, Level level, const Bitmap& event_bitmap);
     void fillElectron_small(LeptonOut_small& output, Level level, const Bitmap& event_bitmap);
 
     virtual void createLooseList() override;
@@ -19,6 +17,7 @@ public:
     virtual float getScaleFactor() override;
     virtual bool passJetIsolation(size_t idx) const override;
     bool passTriggerRequirements(size_t i);
+    virtual float tthMVA_(size_t i) override {return tth_mva_vec.at(i); }
     // Float_t pt(size_t idx) const { return m_pt.at(idx) / eCorr.at(idx); };
     // Float_t pt(Level level, size_t i) const { return pt(idx(level, i)); }
 
@@ -38,8 +37,6 @@ public:
 
     TRArray<Float_t> iso_chg, mva_vals;
     TRArray<UChar_t> jetNDauCharged;
-
-    TRArray<Float_t> dEscaleDown, dEscaleUp, dEsigmaDown, dEsigmaUp;
 
     TRArray<Bool_t> mva_l;
     TRArray<Bool_t> mva_80;

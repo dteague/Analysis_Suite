@@ -27,6 +27,7 @@ public:
 private:
     TRVariable<float> m_pt;
     TRVariable<float> m_phi;
+    TRVariable<float> m_raw_pt, m_raw_phi;
     std::unordered_map<MET_Type, std::string> met_name = {
         {MET_Type::PUPPI, "PuppiMET"},
         {MET_Type::PF, "MET"},

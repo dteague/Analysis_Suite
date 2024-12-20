@@ -20,7 +20,7 @@
 #include "analysis_suite/skim/interface/CommonStructs.h"
 #include "analysis_suite/skim/interface/Bar.h"
 
-enum class Channel;
+typedef unsigned int Chan;
 enum class Subchannel;
 
 class BaseSelector : public TSelector {
@@ -58,9 +58,10 @@ protected:
     size_t numSystematics() { return systematics_.size()*2 - 1; }
     virtual void clearParticles();
     virtual void clearOutputs(){};
+    virtual bool passPreselection() { return trig_cuts.pass_any_trig() && metfilters.pass(); };
     void setupSyst(size_t systNum);
 
-    void createTree(std::string name, Channel chan)
+    void createTree(std::string name, Chan chan)
     {
         trees.emplace(chan, TreeInfo(name, outdir, fOutput));
         SetupOutTreeBranches(trees.at(chan).tree);
@@ -70,7 +71,7 @@ protected:
         trig_cuts.setup_channel(sChan, dataset, fReader, trigs);
     }
 
-    void fillCutFlow(Channel chan, CutInfo& cuts) {
+    void fillCutFlow(Chan chan, CutInfo& cuts) {
         if (trees.find(chan) != trees.end())
             trees.at(chan).fillCutFlow(cuts, *weight);
     }
@@ -91,7 +92,7 @@ protected:
     TFile* outfile;
     Long64_t stop_point = -1;
 
-    std::map<Channel, TreeInfo> trees;
+    std::map<Chan, TreeInfo> trees;
 
     TRVariable<Float_t> genWeight;
     TRVariable<Int_t> PV_npvs;
@@ -107,8 +108,8 @@ protected:
     std::vector<Float_t> o_weight;
 
     // Current channel and all channels
-    Channel* currentChannel_;
-    std::vector<Channel> o_channels;
+    Chan* currentChannel_;
+    std::vector<Chan> o_channels;
 
     // Systs that change stuff
     std::vector<size_t> syst_to_index = { 0 };
@@ -129,7 +130,7 @@ protected:
     GenJet rGenJet;
     Met met;
 
-    MET_Type met_type = MET_Type::PUPPI;
+    MET_Type met_type = MET_Type::PF;
 
     TriggerInfo trig_cuts;
 

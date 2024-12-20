@@ -6,6 +6,20 @@ from copy import deepcopy
 
 from analysis_suite.plotting.plotter import GraphInfo
 
+main_plots = [
+    GraphInfo('njets', '$N_{j}$', axis.Regular(12, 0, 12), 'NJets'),
+    GraphInfo('nloosebjets', '$N_{looseb}$', axis.Regular(8, 0, 8), 'NlooseBJets'),
+    GraphInfo('nmediumbjets', '$N_{mediumb}$', axis.Regular(8, 0, 8), 'NmediumBJets'),
+    GraphInfo('ntightbjets', '$N_{tightb}$', axis.Regular(7, 0, 7), 'NtightBJets'),
+    GraphInfo('ht', '$H_{T}$ (GeV)', axis.Regular(20, 0, 1500), 'HT'),
+    GraphInfo('ht_b', '$H_{T}(b)$ (GeV)', axis.Regular(20, 0, 1200), 'HT_b'),
+    GraphInfo('met', '$p_{T}^{miss}$ (GeV)', axis.Regular(20, 0, 500), 'Met'),
+    GraphInfo('centrality', '$H_{T}/E$', axis.Regular(20, 0, 1), 'centrality'),
+    GraphInfo('l1Pt', '$p_{T}(l_{1})$ (GeV)', axis.Regular(20, 0, 500), 'l1Pt'),
+    GraphInfo('l2Pt', '$p_{T}(l_{2})$ (GeV)', axis.Regular(20, 0, 200), 'l2Pt'),
+
+]
+
 plots = [
     GraphInfo('njets', '$N_{j}$', axis.Regular(12, 0, 12), 'NJets'),
     # GraphInfo('nboostedtops', '$N_{t}$', axis.Regular(4, 0, 4), 'NResolvedTops'),
@@ -103,7 +117,7 @@ plots_ttz =  [
     GraphInfo('l1Pt', '$p_{T}(l_{1})$ (GeV)', axis.Regular(15, 0.1, 200), 'l1Pt'),
     GraphInfo('l2Pt', '$p_{T}(l_{2})$ (GeV)', axis.Regular(15, 0, 150), 'l2Pt'),
     GraphInfo('lepMass', '$M_{\ell\ell}$ (GeV)', axis.Regular(15, 0, 750), 'lep_mass'),
-    GraphInfo('ZMass', '$M_{Z}$ (GeV)', axis.Regular(15, 75, 105), 'ZMass'),
+    # GraphInfo('ZMass', '$M_{Z}$ (GeV)', axis.Regular(15, 75, 105), 'ZMass'),
     # GraphInfo('met1cos', r'$\cos(\theta_{met\ell1})$', axis.Regular(15, -1, 1), 'cosdphi_1'),
     # GraphInfo('met2cos', r'$\cos(\theta_{met\ell2})$', axis.Regular(15, -1, 1), 'cosdphi_2'),
     # GraphInfo('mT_lin_1', '$M_{Tlin}(\ell_{1})$', axis.Regular(20, 0, 200), 'mT_lin_1'),
@@ -111,10 +125,10 @@ plots_ttz =  [
 
     # GraphInfo('jetMass', '$M_{jj}$ (GeV)', axis.Regular(15, 0, 1500), 'jetMass'),
     # GraphInfo('jetDR', '$\Delta R_{jj}$', axis.Regular(15, 0, 6), 'jetDR'),
-    GraphInfo('lepDR', '$\Delta R_{\ell\ell}$', axis.Regular(15, 0, 6), 'lepDR'),
-    GraphInfo('lepcos', r'$\cos(\theta_{\ell\ell})$', axis.Regular(15, -1, 1), 'LepCos'),
-    GraphInfo('jet1cos', r'$\cos(\theta_{j\ell1})$', axis.Regular(15, -1, 1), 'JetLep1_Cos'),
-    GraphInfo('jet2cos', r'$\cos(\theta_{j\ell2})$', axis.Regular(15, -1, 1), 'JetLep2_Cos'),
+    # GraphInfo('lepDR', '$\Delta R_{\ell\ell}$', axis.Regular(15, 0, 6), 'lepDR'),
+    # GraphInfo('lepcos', r'$\cos(\theta_{\ell\ell})$', axis.Regular(15, -1, 1), 'LepCos'),
+    # GraphInfo('jet1cos', r'$\cos(\theta_{j\ell1})$', axis.Regular(15, -1, 1), 'JetLep1_Cos'),
+    # GraphInfo('jet2cos', r'$\cos(\theta_{j\ell2})$', axis.Regular(15, -1, 1), 'JetLep2_Cos'),
 ]
 
 combine = {
@@ -125,3 +139,51 @@ combine = {
     'signal' : ("Signal", GraphInfo('yield', '$H_{T}(b)$ (GeV)', axis.Variable([0, 1000, 2000]), 'HT_b')),
 }
 
+dilepton = [
+    GraphInfo("HT", r"$H_{T}$", axis.Regular(25, 0, 1500), lambda vg : vg.get_hist('HT')),
+    GraphInfo("Met", r"Met", axis.Regular(25, 0, 500), lambda vg : vg.get_hist('Met')),
+    GraphInfo('nelectrons', '$N_{e}$', axis.Regular(3, 0, 3), lambda vg: (vg.TightElectron.num(), vg.scale)),
+    GraphInfo('centrality', '$H_{T}/E$', axis.Regular(20, 0, 1), lambda vg: vg.get_hist('Centrality')),
+    # GraphInfo('l1Pt', '$p_{T}(l_{1})$ (GeV)', axis.Regular(25, 0, 500), lambda vg: vg.TightLepton.get_hist('pt', 0)),
+    # GraphInfo('l2Pt', '$p_{T}(l_{2})$ (GeV)', axis.Regular(25, 0, 200), lambda vg: vg.TightLepton.get_hist('pt', 1)),
+    GraphInfo("Njet", r"$N_{j}$", axis.Regular(9, 0, 9), lambda vg : (vg.Jets.num(), vg.scale)),
+    GraphInfo("Nbjet", r"$N_{b}$", axis.Regular(5, 0, 5), lambda vg: vg.get_hist('NBjets_medium')),
+    # GraphInfo("Nbjet", r"$N_{b}$", axis.Regular(5, 0, 5), lambda vg: (vg['NBjets_medium'], vg['wgt_nobtag']*vg.get_sf("Nominal"))),
+    # GraphInfo("Nloose", r"$N_{loose}$", axis.Regular(3, 0, 3), lambda vg: (vg['N_loose_el']+vg['N_loose_mu'], vg.scale)),
+    # GraphInfo("j1disc", r"$disc(j_{1})$", axis.Regular(25, 0, 1), lambda vg: vg.Jets.get_hist("discriminator", -1)),
+    # GraphInfo("flavor", r'flavor', axis.Regular(7, 0, 7), lambda vg: vg.Jets.get_hist("flavor", -1)),
+    # GraphInfo("j2disc", r"$disc(j_{2})$", axis.Regular(25, 0, 1), lambda vg: vg.Jets.get_hist("discriminator", 1)),
+    # GraphInfo("j3disc", r"$disc(j_{3})$", axis.Regular(25, 0, 1), lambda vg: vg.Jets.get_hist("discriminator", 2)),
+    # GraphInfo("j4disc", r"$disc(j_{4})$", axis.Regular(25, 0, 1), lambda vg: vg.Jets.get_hist("discriminator", 3)),
+]
+
+multi = [
+    GraphInfo("HT", r"$H_{T}$", axis.Regular(25, 0, 1500), lambda vg : vg.get_hist('HT')),
+    GraphInfo("Met", r"Met", axis.Regular(25, 0, 500), lambda vg : vg.get_hist('Met')),
+    GraphInfo('nelectrons', '$N_{e}$', axis.Regular(4, 0, 4), lambda vg: (vg.TightElectron.num(), vg.scale)),
+    GraphInfo('l1Pt', '$p_{T}(l_{1})$ (GeV)', axis.Regular(25, 0, 500), lambda vg: vg.TightLepton.get_hist('pt', 0)),
+    GraphInfo('l2Pt', '$p_{T}(l_{2})$ (GeV)', axis.Regular(25, 0, 200), lambda vg: vg.TightLepton.get_hist('pt', 1)),
+    GraphInfo('l3Pt', '$p_{T}(l_{3})$ (GeV)', axis.Regular(25, 0, 200), lambda vg: vg.TightLepton.get_hist('pt', 2)),
+    GraphInfo("Njet", r"$N_{j}$", axis.Regular(7, 2, 9), lambda vg : (vg.Jets.num(), vg.scale)),
+    GraphInfo("Nbjet", r"$N_{b}$", axis.Regular(4, 1, 5), lambda vg: vg.get_hist('NBjets_medium')),
+    GraphInfo("Nloose", r"$N_{loose}$", axis.Regular(3, 0, 3), lambda vg: (vg['N_loose_el']+vg['N_loose_mu'], vg.scale)),
+]
+
+ttzCR = [
+    GraphInfo("HT", r"$H_{T}$", axis.Regular(25, 0, 1500), lambda vg : vg.get_hist('HT')),
+    GraphInfo("Met", r"Met", axis.Regular(25, 0, 500), lambda vg : vg.get_hist('Met')),
+    GraphInfo('nelectrons', '$N_{e}$', axis.Regular(4, 0, 4), lambda vg: (vg.TightElectron.num(), vg.scale)),
+    GraphInfo('l1Pt', '$p_{T}(l_{1})$ (GeV)', axis.Regular(25, 0, 500), lambda vg: vg.TightLepton.get_hist('pt', 0)),
+    GraphInfo('l2Pt', '$p_{T}(l_{2})$ (GeV)', axis.Regular(25, 0, 200), lambda vg: vg.TightLepton.get_hist('pt', 1)),
+    # GraphInfo('l3Pt', '$p_{T}(l_{3})$ (GeV)', axis.Regular(25, 0, 200), lambda vg: vg.TightLepton.get_hist('pt', 2)),
+
+    # GraphInfo("mu_mass", "", axis.Regular(25, 75, 105), lambda vg : (vg.dimass('TightMuon', 0, "TightMuon", 1), vg.scale)),
+    GraphInfo("Njet", r"$N_{j}$", axis.Regular(8, 0, 8), lambda vg : (vg.Jets.num(), vg.scale)),
+    # GraphInfo("ZMass", r"$M_{Z}$", axis.Regular(25, 75, 105), lambda vg : vg.get_hist("Zmass")),
+    GraphInfo("Nbjet", r"$N_{b}$", axis.Regular(4, 0, 4), lambda vg: vg.get_hist('NBjets_medium')),
+    GraphInfo("Nloose", r"$N_{loose}$", axis.Regular(3, 0, 3), lambda vg: (vg['N_loose_el']+vg['N_loose_mu'], vg.scale)),
+    # GraphInfo("", r"", axis.Regular(), ),
+    # GraphInfo("", r"", axis.Regular(), ),
+
+
+]

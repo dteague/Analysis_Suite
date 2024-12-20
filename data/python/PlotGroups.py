@@ -21,14 +21,37 @@ info ={
         "Members": ["tttt",],
         "Combine": 'TTTT',
     },
-    "tttj": {
+    "tttj_nlo": {
         "Name": r"t\bar{t}tj",
-        "Members": ["tttj",]
+        "Members": ['tttj_m', 'tttj_p'],
+        "Combine": 'TTTJ',
     },
-
-    "tttw": {
+    "tttj_lo": {
+        "Name": r"t\bar{t}tj",
+        "Members": ['tttj'],
+        "Combine": 'TTTJ',
+    },
+    "tttw_nlo": {
         "Name": r"t\bar{t}tW",
-        "Members": ["tttw",]
+        "Members": ['tttw_m', 'tttw_p'],
+        "Combine": 'TTTW',
+    },
+    "tttw_lo": {
+        "Name": r"t\bar{t}tW",
+        "Members": ['tttw'],
+        "Combine": 'TTTW',
+    },
+    "ttt_lo": {
+        "Composite": True,
+        "Name": "ttt",
+        "Members": ["tttj_lo", "tttw_lo"],
+        "Combine": 'TTT',
+    },
+    "ttt_nlo": {
+        "Composite": True,
+        "Name": "ttt",
+        "Members": ["tttj_nlo", "tttw_nlo"],
+        "Combine": 'TTT',
     },
 
     "ttw": {
@@ -41,7 +64,7 @@ info ={
     },
     "tth": {
         "Name": r"t\bar{t}H", 
-        "Members": ["tth"]
+        "Members": ["tth", 'tth_bb']
     },
 
     "ttXY": {
@@ -56,7 +79,7 @@ info ={
         ]
     },
     "vv_inc": {
-        "Name": "vv",
+        "Name": "VV",
         "Members": [
             "zz",
             "wz",
@@ -64,18 +87,20 @@ info ={
         ],
     },
     "vv": {
-        "Name": "vv",
+        "Name": "VV",
         "Members": [
             "vh2nonbb",
             "zz4l",
             "wpwpjj_ewk",
             "ww_doubleScatter",
             "wzTo3lnu",
+            "ssww",
         ],
     },
     "vv_nowz": {
         "Name": "vv",
         "Members": [
+            "ssww",
             "vh2nonbb",
             "zz4l",
             "wpwpjj_ewk",
@@ -93,25 +118,14 @@ info ={
 	        "wwg",
         ],
     },
-
-    "ttt": {
-        "Name": "ttt",
-        "Members": ["tttj", "tttw"]
-    },
-
-    "other": {
-        "Style": "fill-hotpink",
-        "Name": "Nonprompt",
+    "vv+vvv": {
+          "Composite": True,
+        "Name": r"VV(V)",
         "Members": [
-            'ttbar',
-            "DYm50",
-            "DYm10-50",
-            # "wjets",
-            "tzq",
-            # "ttjet"
+            "vvv",
+            "vv_nowz",
         ]
     },
-
     "ttX": {
         "Composite": True,
         "Name": r"t\bar{t}H",
@@ -119,6 +133,13 @@ info ={
             "ttw",
             "ttz",
             "tth"
+        ]
+    },
+    'twz': {
+        "Members": [
+            'twz_wl',
+            'twz_tl',
+            'twz_twl',
         ]
     },
     "rare": {
@@ -129,7 +150,9 @@ info ={
             "vv",
             "st_twll",
 	        "ggh2zz",
-            'tzq'
+            'tzq',
+            'twz',
+            'thq',
         ]
     },
     "rare_nowz": {
@@ -140,7 +163,20 @@ info ={
             "vv_nowz",
             "st_twll",
 	        "ggh2zz",
-            'tzq'
+            'tzq',
+            'twz',
+            'thq',
+        ]
+    },
+    "misc": {
+        "Composite": True,
+        "Name": r"Rare",
+        "Members": [
+            "st_twll",
+	        "ggh2zz",
+            'tzq',
+            'twz',
+            'thq',
         ]
     },
     'wz': {
@@ -287,14 +323,6 @@ info ={
             "DY_2J",
         ]
     },
-    "VV": {
-        "Name": r"VV",
-        "Members": [
-            "ww",
-            "zz",
-            "wz",
-        ]
-    },
 
     "data" : {
         "Name": r"Data",
@@ -317,6 +345,11 @@ info ={
         "Name": r'Nonprompt',
         "Members": ['ttbar_lep', "wjet_ht", 'DY', 'DY_J'],
     },
+    'large_Xsec': {
+        "Composite": True,
+        "Name": r'Nonprompt',
+        "Members": ['ttbar_lep', "wjet_ht", 'DY_ht', 'DY', 'DY_J'],
+    },
     "all": {
         "Composite": True,
         "Name": "All",
@@ -328,7 +361,6 @@ info ={
             "xg",
             "vv",
             "vvv",
-            "other",
         ],
     }
 }

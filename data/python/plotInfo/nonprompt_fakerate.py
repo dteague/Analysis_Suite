@@ -8,8 +8,12 @@ from analysis_suite.plotting.plotter import GraphInfo
 #[15, 20, 25, 35, 55, 100]
 pt_binning = axis.Variable([20, 25, 30, 35, 40, 45, 50, 100])
 np_ptbins = {
-    "Electron": axis.Variable([20, 25, 40, 50, 100]), # axis.Variable([20, 30, 45, 70]),
-    "Muon": axis.Variable([20, 30, 40, 50, 100]), #axis.Variable([20, 35, 70])
+    # "Electron": axis.Variable([20, 25, 40, 50, 100]), # axis.Variable([20, 30, 45, 70]),
+    # "Muon": axis.Variable([20, 30, 40, 50, 100]), #axis.Variable([20, 35, 70])
+    "Electron": axis.Variable([20, 25, 35, 45, 100]), # axis.Variable([20, 30, 45, 70]),
+    "Muon": axis.Variable([20, 30, 45, 60, 100]), #axis.Variable([20, 35, 70])
+    # "Electron": axis.Variable([20, 100]), # axis.Variable([20, 30, 45, 70]),
+    # "Muon": axis.Variable([20, 100]), #axis.Variable([20, 35, 70])
 }
 
 np_etabins = {
@@ -47,7 +51,7 @@ nonprompt = {
         GraphInfo("mt_fix", '$M_{{T}}({}_{{tight}})$', axis.Regular(12, 0, 120),
                   lambda vg, btag, hlt : (vg['AllLepton']['mt_fix', 0], vg.scale*vg[hlt])),
         GraphInfo("mass", '$M_{{T}}({}_{{tight}})$', axis.Regular(25, 0, 350),
-                  lambda vg, btag, hlt : (vg.mass("AllLepton", 0, 'Jets', 0), vg.scale*vg[hlt])),
+                  lambda vg, btag, hlt : (vg.dimass("AllLepton", 0, 'Jets', 0), vg.scale*vg[hlt])),
         GraphInfo("pt", '$p_{{T}}({}_{{tight}})$', axis.Regular(30, 0, 150),
                   lambda vg, btag, hlt : (vg['AllLepton']['pt', 0], vg.scale*vg[hlt])),
         GraphInfo("met", '$MET_{{Puppi}}$', axis.Regular(30, 0, 150),
@@ -92,11 +96,24 @@ nonprompt = {
         GraphInfo("mt", '$M_{{T}}({})$', axis.Regular(30, 0, 150), lambda vg : vg['AllLepton'].get_hist('mt', 0)),
         GraphInfo("mt_fake", '$M_{{T}}({})$', axis.Regular(30, 0, 150), lambda vg : vg['FakeLepton'].get_hist('mt', 0)),
         GraphInfo("mt_tight", '$M_{{T}}({})$', axis.Regular(30, 0, 150), lambda vg : vg['TightLepton'].get_hist('mt', 0)),
-        GraphInfo("met", '$MET_{{Puppi}}$', axis.Regular(20, 0, 50), lambda vg : vg.get_hist("Met")),
-        GraphInfo("metphi", '$\phi(MET)$', axis.Regular(20, -np.pi, np.pi), lambda vg : vg.get_hist("Met_phi")),
         GraphInfo("ptRatio", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['AllLepton'].get_hist("ptRatio", 0)),
         GraphInfo("ptRatio_fake", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['FakeLepton'].get_hist("ptRatio", 0)),
         GraphInfo("ptRatio_tight", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['TightLepton'].get_hist("ptRatio", 0)),
+        GraphInfo("iso", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['AllLepton'].get_hist('iso', 0)),
+        GraphInfo("iso_tight", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['TightLepton'].get_hist('iso', 0)),
+        GraphInfo("iso_fake", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['FakeLepton'].get_hist('iso', 0)),
+        GraphInfo("j_btag1", "", axis.Regular(50, 0, 1), lambda vg : vg["Jets"].get_hist("discriminator", 0)),
+        GraphInfo("j_btag1_tight", "", axis.Regular(50, 0, 1), lambda vg : (vg["Jets"]['discriminator', 0][vg['TightLepton'].num()==1], vg.scale[vg['TightLepton'].num()==1])),
+        GraphInfo("j_btag1_fake", "", axis.Regular(50, 0, 1), lambda vg : (vg["Jets"]['discriminator', 0][vg['TightLepton'].num()==0], vg.scale[vg['TightLepton'].num()==0])),
+        GraphInfo("l_btag", "", axis.Regular(50, 0, 1), lambda vg : vg["AllLepton"].get_hist("jet_btag", 0)),
+        GraphInfo("l_btag_tight", "", axis.Regular(50, 0, 1), lambda vg : vg["TightLepton"].get_hist("jet_btag", 0)),
+        GraphInfo("l_btag_fake", "", axis.Regular(50, 0, 1), lambda vg : vg["FakeLepton"].get_hist("jet_btag", 0)),
+        GraphInfo("Nbjet", r"$N_{{b}}$", axis.Regular(4, 0, 4), lambda vg: vg.get_hist("N_bmedium")),
+        GraphInfo("njets", '$N_{{j}}$', axis.Regular(6, 0, 6), lambda vg : (vg.Jets.num(), vg.scale)),
+        GraphInfo("met", '$MET_{{Puppi}}$', axis.Regular(20, 0, 50), lambda vg : vg.get_hist("Met")),
+        GraphInfo("ht", '$H_T$', axis.Regular(30, 0, 300), lambda vg : vg.get_hist("HT")),
+        GraphInfo("metphi", '$\phi(MET)$', axis.Regular(20, -np.pi, np.pi), lambda vg : vg.get_hist("Met_phi")),
+        # GraphInfo("Nbjet", r"$N_{b}$", axis.Regular(4, 0, 4), lambda vg: (vg.BJets.num(), vg.scale)),
         # GraphInfo("ptRatio2", "ptRatio2", axis.Regular(24, 0, 1.2), lambda vg: vg['FakeLepton'].get_hist("ptRatio2", 0)),
         # GraphInfo("flav_split", "flavor", axis.Regular(25, 0, 1), lambda vg: vg['AllLepton'].get_hist("jet_btag", 0)),
         # GraphInfo("flav_split_tight", "flavor", axis.Regular(25, 0, 1), lambda vg: vg['TightLepton'].get_hist("jet_btag", 0)),
@@ -115,6 +132,7 @@ nonprompt = {
         GraphInfo("metphi", '$\phi(MET)$', axis.Regular(20, -np.pi, np.pi), lambda vg : vg.get_hist("Met_phi")),
         GraphInfo("njets", '$N_j$', axis.Regular(6, 0, 6), lambda vg : (vg.Jets.num(), vg.scale)),
 
+        GraphInfo("Nbjet", r"$N_{b}$", axis.Regular(4, 0, 4), lambda vg: vg.get_hist("N_bmedium")),
         # GraphInfo("flav_split", "flavor", axis.Regular(23, 0, 23), lambda vg: vg['AllLepton'].get_hist("jet_flav", -1)),
         # GraphInfo("flav_split_tight", "flavor", axis.Regular(23, 0, 23), lambda vg: vg['TightLepton'].get_hist("jet_flav", -1)),
     ],
@@ -143,8 +161,10 @@ nonprompt = {
         GraphInfo("mt", '$M_{{T}}({})$', axis.Regular(30, 0, 150), lambda vg,chan : vg[chan].get_hist('mt', 0)),
         GraphInfo("pt", '$p_{{T}}({})$', axis.Regular(12, 0, 120), lambda vg, chan : vg[chan].get_hist('pt', 0)),
         GraphInfo("eta", '$\eta({})$', axis.Regular(12, -2.5, 2.5), lambda vg, chan : vg[chan].get_hist('eta', 0)),
-        GraphInfo("mass_z", '$M({0}, {0})$', axis.Regular(20, 70, 110), lambda vg, chan : (vg.mass(op_chan[chan], 0, op_chan[chan], 1), vg.scale)),
+        GraphInfo("mass_z", '$M({0}, {0})$', axis.Regular(20, 70, 110), lambda vg, chan : (vg.dimass(op_chan[chan], 0, op_chan[chan], 1), vg.scale)),
         GraphInfo("pt_z1", '$p_{{T}}({}_{{lead}})$', axis.Regular(15, 0, 150), lambda vg, chan : vg[op_chan[chan]].get_hist('pt', 0)),
         GraphInfo("pt_z2", '$p_{{T}}({}_{{sublead}})$', axis.Regular(10, 0, 100), lambda vg, chan : vg[op_chan[chan]].get_hist('pt', 1)),
+        GraphInfo("njets", '$N_j$', axis.Regular(6, 0, 6), lambda vg, chan : (vg.Jets.num(), vg.scale)),
+
     ],
 }

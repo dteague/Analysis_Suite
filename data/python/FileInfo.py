@@ -176,7 +176,7 @@ info = {
     "ssww" : {
         "cross_section" : 0.02794,
         "Source of cross section" : "AN2018-062",
-        "DAS": 'WpWpJJ_EWK-QCD_Tune.*',
+        "DAS": 'SSWW_Tune.*',
     },
 
     ## VV Inclusive
@@ -237,6 +237,28 @@ info = {
         "Source of cross section" : "MCM",
         "DAS": 'tZq_ll_4f_ckm_NLO_Tune.*',
     },
+    "twz_wl" : {
+        "cross_section" : 0.003004 ,
+        "Source of cross section" : "MCM",
+        "DAS": 'TWZToLL_thad_Wlept_5f_DR_Tune.*',
+    },
+    "twz_tl" : {
+        "cross_section" : 0.003004 ,
+        "Source of cross section" : "MCM",
+        "DAS": 'TWZToLL_tlept_Whad_5f_DR_Tune.*',
+    },
+    "twz_twl" : {
+        "cross_section" : 0.0015,
+        "Source of cross section" : "MCM",
+        "DAS": 'TWZToLL_tlept_Wlept_5f_DR_Tune.*',
+    },
+    "thq" : {
+        "cross_section" : 0.07096,
+        "Source of cross section" : "MCM",
+        "DAS": 'THQ_ctcvcp_4f_Hincl_Tune.*',
+    },
+
+
     "wjets" : {
         # "cross_section" : 61334.9,
         "cross_section" : 66680.0,

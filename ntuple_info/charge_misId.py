@@ -7,7 +7,7 @@ color_by_group = {
         "DY_ht": "goldenrod",
         "DY": "goldenrod",
         "ttbar_lep": 'royalblue',
-        "VV": 'mediumorchid',
+        "vv_inc": 'mediumorchid',
         'charge_flip': 'seagreen',
     }
 

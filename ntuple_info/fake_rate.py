@@ -5,8 +5,8 @@ import analysis_suite.commons.user as user
 color_by_group = {
     "data": "black",
     "qcd": "grey",
-    "qcd_em": "grey",
-    "qcd_mu": "grey",
+    "qcd_em": "lightgrey",
+    "qcd_mu": "darkgrey",
     "ewk": "orange",
     "wjet_ht": "olive",
     "wjets": "olive",
@@ -17,13 +17,16 @@ color_by_group = {
     "DY_ht": "goldenrod",
     "DY": "goldenrod",
     "DY_J": "goldenrod",
-    "VV": 'mediumorchid',
+    "vv_inc": 'mediumorchid',
     "wz": 'mediumorchid',
 
     "ttbar_2l2n": 'blue',
     "ttbar_semilep": 'mediumblue',
     "ttbar_hadronic": 'cornflowerblue',
 }
+
+ptratio = 0.0
+btag = 0.25
 
 pt_correction = NtupleInfo(
     filename = user.hdfs_workspace / 'singleLep/{year}/{workdir}/',
@@ -54,7 +57,10 @@ sideband = NtupleInfo(
 measurement = NtupleInfo(
     filename = user.hdfs_workspace / 'fake_rate_mcm/{year}/{workdir}/',
     trees = ['Measurement'],
-    # part_cut=[['AllLepton', 'pt', lambda var: var > 20]],
+    part_cut=[['AllLepton', 'pt', lambda var: var > 20],
+              ['FakeElectron', 'jet_btag', lambda var: var < btag],
+              ['FakeElectron', 'ptRatio', lambda var: var > ptratio]
+              ],
     cut=[lambda vg: vg['AllLepton'].num()==1],
     branches = [
         lambda vg : vg.mergeParticles("Electron", "FakeElectron", "TightElectron"),
@@ -89,7 +95,10 @@ closure_tf = NtupleInfo(
 closure_tt = NtupleInfo(
     filename = user.hdfs_workspace / 'fake_rate_closure/{year}/{workdir}/',
     trees = ['Closure_FF', 'Closure_TF', 'Closure_TT'],
-    part_cut=[['AllLepton', 'pt', lambda var: var > 20]],
+    part_cut=[['AllLepton', 'pt', lambda var: var > 20],
+              ['FakeElectron', 'jet_btag', lambda var: var < btag],
+              ['FakeElectron', 'ptRatio', lambda var: var > ptratio]
+              ],
     cut = [
         lambda vg : vg.Jets.num() >= 1,
         lambda vg : vg["HT"] > 125,

@@ -64,9 +64,9 @@ class Systematic:
                 self.systs[yr][chan] = syst
         return self
 
-    def get_name(self, year):
+    def get_name(self, year, with_lowess=True):
         name = self.dan_name
-        if "JEC" in name or "JER" in name:
+        if ("JEC" in name or "JER" in name) and with_lowess:
             if not self.corr:
                 name += year[:4]
             name += "LOWESS"

@@ -13,12 +13,14 @@ import analysis_suite.commons.user as user
 from analysis_suite.plotting.plotter import GraphInfo
 import analysis_suite.commons.configs as config
 from analysis_suite.commons.histogram import Histogram
-from analysis_suite.commons.plot_utils import hep, plot, plot_colorbar
+from analysis_suite.commons.plot_utils import cms_label, plot, plot_colorbar, nonratio_plot, ratio_plot
 from analysis_suite.commons.constants import lumi, all_eras
 from analysis_suite.commons.info import GroupInfo
 import analysis_suite.data.plotInfo.nonprompt_fakerate as pinfo
 from analysis_suite.plotting.plotter import Plotter
-from analysis_suite.commons.plot_utils import plot, nonratio_plot, ratio_plot, hep
+
+
+formatter = {'extra_format': 'pdf',}
 
 info = NtupleInfo(
     filename = user.hdfs_area / 'workspace/dilep_trigeff/{year}/{workdir}/',
@@ -117,7 +119,7 @@ def get_totalEff(passhist, allhist):
 
 def getEff(year):
 
-    filename = info.get_filename(year=year)
+    filename = info.get_filename(year=year, workdir='231218')
     print(filename)
 
     groups = info.get_info().setup_groups([mc, 'data'])
@@ -148,7 +150,7 @@ def getEff(year):
 
 def plot_1d(plotname, h_pass, h_all, ratio, graph, effs=None, ylim=None):
     with ratio_plot(plotname, graph.axis_name, graph.edges(), ratio_bot=0.93, ratio_top=1.07, pad_label='Efficiency',
-                    subpad_label='Scale Factor', zero_bot=ylim is None) as ax:
+                    subpad_label='Scale Factor', zero_bot=ylim is None, **formatter) as ax:
         pad, subpad = ax
 
         h_pass.color = 'b'
@@ -166,7 +168,7 @@ def plot_1d(plotname, h_pass, h_all, ratio, graph, effs=None, ylim=None):
         ratio.plot_points(subpad)
         subpad.plot([graph.edges()[0], graph.edges()[-1]], [eff_val, eff_val], color='r')
         subpad.text((graph.edges()[-1]+3*graph.edges()[0])/4, 1.02, f'${round(eff_val, 3)}\pm{round(err_val, 3)}$')
-        hep.cms.label(ax=pad, lumi=lumi[year], data=True)
+        cms_label(ax=pad, year=year, hasData=True)
     return eff_val, err_val
 
 def build_pt2d(sf, syst):
@@ -248,13 +250,13 @@ for year in all_eras:
                 data_eff = Histogram.efficiency(passhists['data'], allhists['data'])
                 scale = data_eff/mc_eff
                 scales[chan] = scale.hist
-                with plot(chan_dir/f'2d_scale_{chan}.png') as ax:
+                with plot(chan_dir/f'2d_scale_{chan}.png', **formatter) as ax:
                     if chan == 'EM':
                         ax.set_xlabel(f"$p_{{T}}({latex_name['EE']})$ [GeV]")
                         ax.set_ylabel(f"$p_{{T}}({latex_name['MM']})$ [GeV]")
                     else:
-                        ax.set_xlabel(f"$p_{{T}}(lead {latex_name[chan]})$ [GeV]")
-                        ax.set_ylabel(f"$p_{{T}}(sub {latex_name[chan]})$ [GeV]")
+                        ax.set_xlabel(f"$p_{{T}}({latex_name[chan]}_{{lead}})$ [GeV]")
+                        ax.set_ylabel(f"$p_{{T}}({latex_name[chan]}_{{sub}})$ [GeV]")
                         graph_dim = len(graph.edges())
                         for i in range(0, graph_dim):
                             for j in range(i+2, graph_dim):
@@ -262,8 +264,9 @@ for year in all_eras:
                     mesh = scale.plot_2d(ax)
 
                     plot_colorbar(mesh, ax)
+                    cms_label(ax, year=year, hasData=True)
                 continue
-            continue
+            # continue
             mc_eff = Histogram.efficiency(passhists[mc], allhists[mc])
             mc_eff.set_plot_details(["MC Efficiency", 'b'])
             data_eff = Histogram.efficiency(passhists['data'], allhists['data'])
@@ -276,4 +279,4 @@ for year in all_eras:
             scale_err = tot_scale*np.sqrt((data_err/data_effi)**2+(mc_err/mc_effi)**2)
             plot_1d(chan_dir/f'{name}_scale_{chan}.png', data_eff, mc_eff, scale, graph, (tot_scale, scale_err), ylim=(0.8, 1.1))
 
-    make_scalefactor(year, scales['EE'], scales['EM'], scales['MM'])
+    # make_scalefactor(year, scales['EE'], scales['EM'], scales['MM'])

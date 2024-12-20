@@ -29,22 +29,8 @@ def get_list_systs(infile, tool, systs=["all"], **kwargs):
     allSysts = list()
 
     if tool == 'flatten':
-        if infile.is_dir():
-            all_files = list(infile.glob('*root'))
-        else:
-            all_files = [infile]
-
-        for file_ in all_files:
-            with uproot.open(file_) as f:
-                for group in [k for k in f.keys() if "/" not in k]:
-                    all_systs = [name.member("fName") for name in f[group]['Systematics']]
-                    good_systs = {}
-                    for name in f[group]["Syst_Index"]:
-                        novelNum = int(name.member("fTitle"))
-                        if novelNum not in good_systs:
-                            good_systs[novelNum] = all_systs[int(name.member("fName"))]
-                    allSysts = np.concatenate((allSysts, list(good_systs.values())))
-                    allSysts = np.unique(allSysts)
+        from analysis_suite.data.systs import get_change_systs
+        allSysts = np.concatenate((['Nominal'], get_change_systs()))
     elif tool == 'mva':
         allSysts = ["_".join(f.stem.split('_')[1:-1]) for f in infile.glob("**/processed*root")]
         allSysts = np.unique(allSysts)

@@ -61,6 +61,8 @@ class NtupleGetter(BaseGetter):
         self._scale = ak.to_numpy(self.tree['weight'].array()[:, self.syst_unique])
         self.is_jec_unc = "JER" in self.systName or "JEC" in self.systName
 
+        # self._scale = ak.to_numpy(self.tree['wgt_nobtag'].array()[:,0])
+
         if group == "data":
             pass
         elif "sumweight" in f[group]:
@@ -89,7 +91,7 @@ class NtupleGetter(BaseGetter):
         elif not self.exists(key):
             raise AttributeError(f"{key} not found")
         elif key not in self.arr:
-            if "/" in key or key in self.single_branch or "hlt" in key:
+            if "/" in key or 'vector' not in self.tree[key].typename:
                 self.arr[key] = self._get_var_nosyst(key)
             else:
                 self.arr[key] = self._get_var(key)
@@ -198,7 +200,7 @@ class NtupleGetter(BaseGetter):
         cos_dphi = np.cos(self[part1]["phi", idx1] - self[part2]["phi", idx2])
         return (cos_dphi + sinh_eta) / cosh_eta
 
-    def mass(self, part1, idx1, part2, idx2):
+    def dimass(self, part1, idx1, part2, idx2):
         """Calculates the mass between two particles in the event
 
         Parameters
@@ -373,6 +375,16 @@ class Particle(ParticleBase):
             return self._get_val('pt_fix', *args)
         else:
             return self._get_val("pt", *args)
+
+    # Special function for allowing jec in pt
+    def mass(self, *args):
+        if self.vg.is_jec_unc and "Jet" in self.name:
+            if f'{self.name}/mass_fix' not in  self.vg.arr:
+                self.vg.arr[f'{self.name}/mass_fix'] = self.vg.tree[f"{self.name}/mass_shift"].array()[:, :, self.vg.syst-1]
+                self.vg.branches.append(f'{self.name}/mass_fix')
+            return self._get_val('mass_fix', *args)
+        else:
+            return self._get_val("mass", *args)
 
     @property
     def mask(self):

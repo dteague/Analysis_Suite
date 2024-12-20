@@ -31,7 +31,9 @@ args = parser.parse_args()
 with open(user.analysis_area/'data'/'.analyze_info', 'w') as f:
     f.write(args.analysis)
 
-farmout_requirements = '(MY.RequiresSharedFS=!=true || TARGET.HasAFS_OSG) && (TARGET.OSG_major=!=undefined || TARGET.HAS_OSG_WN_CLIENT=?=True || TARGET.IS_GLIDEIN=?=true) && (TARGET.HasParrotCVMFS=?=true || (TARGET.CMS_CVMFS_Exists && TARGET.CMS_CVMFS_Revision >= 112885 )) && (TARGET.OpSysMajorVer == 7)'
+# farmout_requirements = '(MY.RequiresSharedFS=!=true || TARGET.HasAFS_OSG) && (TARGET.HAS_OSG_WN_CLIENT=?=True || TARGET.IS_GLIDEIN=?=true) && (TARGET.HasParrotCVMFS=?=true || (TARGET.CMS_CVMFS_Exists && TARGET.CMS_CVMFS_Revision >= 128927 )) && (TARGET.OpSysMajorVer == 9)'
+
+
 
 for typ in args.types:
     for year in args.years:
@@ -51,8 +53,9 @@ for typ in args.types:
         farmout_call += f' --infer-cmssw-path'
         farmout_call += f' --fwklite analyze.py'
         farmout_call += f' --input-basenames-not-unique'
-        farmout_call += f' --base-requirements="{farmout_requirements}"'
-        # farmout_call += f' --use-singularity=CentOS7'
+        # farmout_call += f' --base-requirements="{farmout_requirements}"'
+        # farmout_call += f' --use-singularity=rhel9'
+        farmout_call += f' --opsys=AlmaLinux9'
         farmout_call += f' --output-dir={user.eos_area/analysis_dir}'
         farmout_call += " --resubmit-failed-jobs" if args.rerun else ""
         # print(farmout_call)

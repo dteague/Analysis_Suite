@@ -7,6 +7,9 @@ params_first = {
     'min_child_weight': 1.0, 'n_estimators': 500, 'subsample': 0.9
 }
 signal_first = "4top_sig"
+groups_first = {
+    "Signal": ['4top'], 'Background': ['tttj_nlo', 'tttw_nlo']
+}
 
 
 # Second Training
@@ -17,3 +20,6 @@ params_second = {
     'min_child_weight': 1.0, 'n_estimators': 500, 'subsample': 0.9
 }
 signal_second = "3top_sig"
+groups_second = {
+    "Signal": ['tttj_nlo', 'tttw_nlo'], "NotTrained": ['4top'],
+}

@@ -64,12 +64,14 @@ def get_cli():
                             help='Type of file in the analysis change')
         parser.add_argument('-r', '--region', default='Signal',
                             help='Region that this histogram will be plotted from')
+        parser.add_argument('-rt', '--region_type', default='info',
+                            help='Region that this histogram will be plotted from')
     else:
         pass
 
     # Combos
     if len(sys.argv) > 1 and (sys.argv[1] == "plot" or sys.argv[1] == "combine"):
-        parser.add_argument("-sig", "--signal", type=str, default='',
+        parser.add_argument("-sig", "--signal", type=str, default='ttt_nlo',
                             help="Name of the group to be made into the Signal")
 
     return parser.parse_args()
@@ -85,6 +87,9 @@ def setup(workdir):
     combine = 'combine_info.py'
     if not (workdir/combine).exists():
         shutil.copy(user.analysis_area/'data/templates'/combine, workdir/combine)
+    scales = 'scales.py'
+    if not (workdir/scales).exists():
+        shutil.copy(user.analysis_area/'data/templates'/scales, workdir/scales)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from dataclasses import dataclass, InitVar, asdict
 
 from .dataholder import MLHolder
 
+formatter = {'extra_format': 'pdf',}
 
 def fom_metric(y_pred, dtrain):
     # prev = fom_metric.prev
@@ -109,7 +110,10 @@ class XGBoostMaker(MLHolder):
         y_test = self.validation_set.classID
         w_test = abs(self.validation_set.scale_factor.to_numpy())
         # w_test = self.validation_set.scale_factor
-
+        print(len(x_train), len(x_test))
+        for year, setter in self.test_sets.items():
+            print(year, len(setter))
+        exit()
         _, group_tot = np.unique(y_train, return_counts=True)
         # print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
         # print(group_tot)
@@ -166,11 +170,14 @@ class XGBoostMaker(MLHolder):
 
     def plot_training_progress(self):
         for typ in self.results['validation_0'].keys():
-            from analysis_suite.commons.plot_utils import plot, color_options
-            with plot(f"{self.outdir}/{typ}_training.png") as ax:
+            from analysis_suite.commons.plot_utils import plot, color_options, cms_label
+            with plot(self.outdir/f"{typ}_training.png", **formatter) as ax:
                 ax.plot(self.results['validation_0'][typ], label='Training Set')
                 ax.plot(self.results['validation_1'][typ], label='Validation Set')
+                ax.set_xlabel("Training Epoch")
+                ax.set_ylabel(typ)
                 ax.legend()
+                cms_label(ax)
 
     def approx_likelihood(self, var, bins, year, comb_bkg=True):
         use_set = self.test_sets[year]

@@ -12,7 +12,7 @@ from copy import copy
 from analysis_suite.plotting.plotter import GraphInfo
 import analysis_suite.commons.configs as config
 from analysis_suite.commons.histogram import Histogram
-from analysis_suite.commons.plot_utils import hep, plot, plot_colorbar
+from analysis_suite.commons.plot_utils import plot, plot_colorbar, cms_label
 from analysis_suite.commons.constants import lumi
 from analysis_suite.commons.info import GroupInfo
 import analysis_suite.data.plotInfo.nonprompt_fakerate as pinfo
@@ -31,12 +31,14 @@ def get_fake_rate(part, fake_rate, idx, name="Muon"):
     else:
         pt_axis, eta_axis = fake_rate.axes
         npt, neta = fake_rate.axes.size
-        fake_rate = fake_rate.valutes()
+        fake_rate = fake_rate.values()
     ptbin = np.digitize(part['pt', idx], pt_axis.edges) - 1
     ptbin = np.where(ptbin >= npt, npt-1, ptbin)
     etabin = np.digitize(part.abseta(idx), eta_axis.edges) - 1
     return fake_rate.flatten()[etabin + neta*ptbin]
 
+
+formatter = {'extra_format': 'pdf',}
 
 latex_chan = {"Electron": "e", "Muon": "\mu",
               "EE": 'ee', "EM": 'e\mu', 'MM': '\mu\mu'}
@@ -49,6 +51,8 @@ bjet_cuts = {
 }
 trig_cuts = {"Muon": 20, "Electron": 25}
 
+close_btag_cut = 0.1
+
 def eff_err2(top, bot, bot_w2):
     alf = (1-0.682689492137)/2
     pas = top*bot/(bot_w2+1e-6)+1
@@ -59,57 +63,36 @@ def eff_err2(top, bot, bot_w2):
     return ((eff-lo)**2 + (hi-eff)**2)/2
 
 
-def plot_project(filename, tight, loose, axis, axis_label, lumi):
-    with plot(filename) as ax:
+def plot_project(filename, tight, loose, axis, axis_label, lumi, data):
+    with plot(filename, **formatter) as ax:
         eff_hist = Histogram.efficiency(tight.project(axis), loose.project(axis))
         eff_hist.plot_points(ax)
         ax.set_xlabel(axis_label)
-        hep.cms.label(ax=ax, lumi=lumi)
+        ax.set_ylabel("Fake Rate")
+        cms_label(ax, lumi=lumi, hasData=data)
 
 def plot_fr_diff(filename, data_ewk, qcd, axis_label, lumi):
     data_ewk.name = "Data-EWK"
     qcd.name = "QCD"
     qcd.color = 'r'
 
-    with plot(filename) as ax:
+    with plot(filename, **formatter) as ax:
         data_ewk.plot_points(ax, capsize=1)
         qcd.plot_points(ax, capsize=1)
         ax.legend()
         ax.set_xlabel(axis_label)
-        hep.cms.label(ax=ax, lumi=lumi)
+        ax.set_ylabel("Fake Rate")
+        cms_label(ax, lumi=lumi, hasData=True)
 
-def fit_template(data, qcd, ewk, fit_type="chi2"):
-    def log_gamma(val):
-        return val*np.log(val)-val+0.5*np.log(2*np.pi*val)
 
-    def log_poisson(obs, mean):
-        return (mean-obs)-obs*np.log(mean/obs)+0.5*np.log(2*np.pi*obs)
-
-    def log_gaussian(f, err_ratio):
-        return 0.5*((f-1)/err_ratio)**2+0.5*np.log(2*np.pi*err_ratio**2)
-
-    def log_norm(f, val, err):
-        return 0.5*((np.log(f*val)-val)/err)**2 + np.log(f*val*err)
-
-    def likelihood(factors, data, qcd, ewk):
-        mc = factors[0]*qcd.vals + factors[1]*ewk.vals
-        base = np.sum(log_poisson(data.vals, mc))
-        err_qcd = log_gaussian(factors[0], factors[2])
-        err_ewk = log_gaussian(factors[1], factors[3])
-        return base+err_qcd+err_ewk
-
+def fit_template(data, qcd, ewk):
     def chi2(factors, data, qcd, ewk):
         mc = qcd.hist*factors[0] + ewk.hist*factors[1]
         tot_diff2 = np.where(data.vals < 0.1, 0, (data.vals - mc.view().value)**2)
         return np.sum(tot_diff2/(mc.view().value+1e-6))
 
     start_val = np.sum(data.vals)/(np.sum(qcd.vals+ewk.vals))
-    if fit_type == "chi2":
-        res = minimize(chi2, (start_val, start_val), args=(data, qcd, ewk), method='Nelder-Mead',)
-    elif fit_type == "ml":
-        res = minimize(likelihood, (1, 1, 0.1, 0.1), args=(data, qcd, ewk), method='Nelder-Mead')
-    elif fit_type == "signal":
-        res = minimize(chi2_single, (start_val), args=(data, qcd, ewk), method='Nelder-Mead')
+    res = minimize(chi2, (start_val, start_val), args=(data, qcd, ewk), method='Nelder-Mead',)
     return res.x
 
 def fit_fakes(data, mc):
@@ -166,15 +149,16 @@ def scale_hlt(vg):
 
 def flip_fake(vg):
     vg.scale = (-1, (vg['FakeMuon'].num() == 2)+(vg['FakeElectron'].num() == 2))
-    # vg.scale = (-1, (vg['FakeLepton'].num() == 2))
 
-def fr_plot(name, ratio, chan, **kwargs):
+
+def fr_plot(name, ratio, chan, year, hasData, **kwargs):
     part = latex_chan[chan]
-    with plot(name) as ax:
+    with plot(name, **formatter) as ax:
         mesh = ratio.plot_2d(ax, **kwargs)
         ax.set_xlabel(f"$p_{{T}}({part})$ [GeV]")
         ax.set_ylabel(f"$|\eta({part})|$")
         plot_colorbar(mesh, ax)
+        cms_label(ax, year=year, hasData=hasData)
 
 def fix_negative(data_ewk, qcd):
     axes = data_ewk.axes
@@ -185,7 +169,7 @@ def fix_negative(data_ewk, qcd):
 
 
 def plot_ptcorr(filename, pt, bins, lumi, chan, fact=None):
-    with plot(filename) as ax:
+    with plot(filename, **formatter) as ax:
         print_spot= (max(pt) + min(pt))/2
         width = (bins[1]-bins[0])/2
 
@@ -200,16 +184,18 @@ def plot_ptcorr(filename, pt, bins, lumi, chan, fact=None):
         ax.text(0.65, print_spot, r"$p_{T}$")
         ax.set_xlabel("$disc_{TTH}$")
         ax.set_ylabel(f"$mean(p_{{T}}({chan}))$")
-        hep.cms.label(ax=ax, lumi=lumi, data=True)
+        cms_label(ax, lumi=lumi, hasData=True)
 
-def plot_ptcorr_2d(filename, vals, x, y):
-    with plot(filename) as ax:
+
+def plot_ptcorr_2d(filename, vals, x, y, year):
+    with plot(filename, **formatter) as ax:
         # xx = np.tile(mva_bin, (len(pt_bin)-1, 1))
         # yy = np.tile(pt_bin, (len(mva_bin)-1, 1)).T
         # print(xx, yy, vals)
         mesh = ax.pcolormesh(x, y, vals, shading='flat')
         # mesh = ax.contourf(mva_bin[:-1], pt_bin[:-1], vals, 100)
         plot_colorbar(mesh, ax)
+        cms_label(ax, year=year)
 
 #--------------------------------------------------------------------------
 
@@ -335,6 +321,7 @@ def sideband(workdir, year, input_dir, fake_qcd):
         plotter.mask_part(chan, 'pt',  lambda var : var > 20)
 
     plotter.cut(lambda vg : vg['TightLepton'].num() == 1, groups=['data', "ewk"])
+    plotter.cut(lambda vg : vg['Jets']['pt', 0] > 40)
     if fake_qcd:
         plotter.cut(lambda vg : vg['FakeLepton'].num() == 1, groups=['qcd'])
     else:
@@ -355,7 +342,8 @@ def sideband(workdir, year, input_dir, fake_qcd):
                 print(chan, f'{pt_lo}-{pt_hi}', f'{eta_lo}-{eta_hi}')
                 plotter.mask(lambda vg : vg[chan].num() == 1)
                 plotter.mask(lambda vg : vg[chan]['pt', 0] >= pt_lo, clear=False)
-                plotter.mask(lambda vg : vg[chan]['pt', 0] < pt_hi, clear=False)
+                if pt_hi != pt_bins[-1]:
+                    plotter.mask(lambda vg : vg[chan]['pt', 0] < pt_hi, clear=False)
                 plotter.mask(lambda vg : vg[chan]['abseta', 0] >= eta_lo, clear=False)
                 plotter.mask(lambda vg : vg[chan]['abseta', 0] < eta_hi, clear=False)
 
@@ -367,7 +355,7 @@ def sideband(workdir, year, input_dir, fake_qcd):
 
                 # calculate templated fit
                 tightmt = plotter.get_hists(f'mt')
-                qcd_f, ewk_f = fit_template(tightmt['data'], tightmt['qcd'], tightmt["ewk"], fit_type="chi2")
+                qcd_f, ewk_f = fit_template(tightmt['data'], tightmt['qcd'], tightmt["ewk"])
                 print(qcd_f, ewk_f)
                 plotter.scale_hists('ewk', ewk_f)
                 plotter.scale_hists('qcd', qcd_f)
@@ -376,15 +364,15 @@ def sideband(workdir, year, input_dir, fake_qcd):
                 mc_scale_factors[chan]['qcd'].append(qcd_f)
 
                 for graph in graphs:
-                    plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}_{int(pt_lo)}_{eta_lo}{fake_name}.png', chan=latex_chan[chan], region='$SB[{}]$')
+                    plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}_{int(pt_lo)}_{eta_lo}{fake_name}.png', chan=latex_chan[chan], region='$SB[{}]$', **formatter)
 
         for name, val in mc_scale_factors[chan].items():
             print(name, val)
             mc_scale_factors[chan][name] = np.reshape(val, (len(pt_bins)-1, len(eta_bins)-1))
 
         scales = mc_scale_factors[chan]
-        plot_ptcorr_2d(plot_dir/f'qcd_fact_{chan}{fake_name}.png', scales['qcd'], eta_bins, pt_bins)
-        plot_ptcorr_2d(plot_dir/f'ewk_fact_{chan}{fake_name}.png', scales['ewk'], eta_bins, pt_bins)
+        plot_ptcorr_2d(plot_dir/f'qcd_fact_{chan}{fake_name}.png', scales['qcd'], eta_bins, pt_bins, year)
+        plot_ptcorr_2d(plot_dir/f'ewk_fact_{chan}{fake_name}.png', scales['ewk'], eta_bins, pt_bins, year)
 
     pickle.dump(mc_scale_factors, open(workdir/f"mc_scales{fake_name}_{year}.pickle", "wb"))
 
@@ -404,40 +392,66 @@ def mt_split(workdir, year, input_dir):
         GraphInfo("mt", '$M_{{T}}({})$', axis.Regular(30, 0, 150), lambda vg : vg['AllLepton'].get_hist('mt', 0)),
         GraphInfo("mt_tight", '$M_{{T}}({})$', axis.Regular(30, 0, 150), lambda vg : vg['TightLepton'].get_hist('mt', 0)),
         GraphInfo("mt_fake", '$M_{{T}}({})$', axis.Regular(30, 0, 150), lambda vg : vg['FakeLepton'].get_hist('mt', 0)),
-        GraphInfo("lepjet_mass", '$M_{{\ell,j}}$', axis.Regular(40, 0, 200), lambda vg : (vg.mass('AllLepton', 0, "Jets", 0), vg.scale)),
-        GraphInfo("btag", "flavor", axis.Regular(80, 0, 0.4), lambda vg: vg['AllLepton'].get_hist("jet_btag", 0)),
-        GraphInfo("btag_tight", "flavor", axis.Regular(80, 0, 0.4), lambda vg: vg['TightLepton'].get_hist("jet_btag", 0)),
-        GraphInfo("btag_jet", "flavor", axis.Regular(80, 0, 1), lambda vg: vg['Jets'].get_hist('discriminator', 0)),
-        GraphInfo("mvaTTH", "mvaTTH", axis.Regular(80, -1, 1), lambda vg: vg['FakeLepton'].get_hist('mvaTTH', 0)),
-        GraphInfo("ptRatio", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['FakeLepton'].get_hist("ptRatio", 0)),
-        # GraphInfo("ptRatio2", "ptRatio2", axis.Regular(24, 0, 1.2), lambda vg: vg['FakeLepton'].get_hist("ptRatio2", 0)),
-        GraphInfo("pt", '$M_{{T}}({})$', axis.Regular(40, 0, 200), lambda vg : vg['AllLepton'].get_hist('pt', 0)),
-        GraphInfo("pt_tight", '$M_{{T}}({})$', axis.Regular(40, 0, 200), lambda vg : vg['TightLepton'].get_hist('pt', 0)),
-        GraphInfo("pt_fake", '$M_{{T}}({})$', axis.Regular(40, 0, 200), lambda vg : vg['FakeLepton'].get_hist('pt', 0)),
-        GraphInfo("met", '$MET_{{Puppi}}$', axis.Regular(20, 0, 50), lambda vg : vg.get_hist("Met")),
+
+        GraphInfo("lepjet_mass", '$M_{{\ell,j}}$', axis.Regular(40, 0, 200), lambda vg : (vg.dimass('AllLepton', 0, "Jets", 0), vg.scale)),
         GraphInfo("ht", '$H_T$', axis.Regular(30, 0, 300), lambda vg : vg.get_hist("HT")),
+        # GraphInfo("mvaTTH_tight", "mvaTTH", axis.Regular(80, -1, 1), lambda vg: vg['TightLepton'].get_hist('mvaTTH', 0)),
+        # GraphInfo("mvaTTH_fake", "mvaTTH", axis.Regular(80, -1, 1), lambda vg: vg['FakeLepton'].get_hist('mvaTTH', 0)),
         GraphInfo("dr", '$H_T$', axis.Regular(30, 0, 6), lambda vg : (vg.dr('AllLepton', 0, "Jets", 0), vg.scale)),
+
+        GraphInfo("pt", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['AllLepton'].get_hist('pt', 0)),
+        GraphInfo("pt_fake", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['FakeLepton'].get_hist('pt', 0)),
+        GraphInfo("pt_tight", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['TightLepton'].get_hist('pt', 0)),
+
+        # GraphInfo("eta", '$\eta({})$', axis.Regular(25, -2.5, 2.5), lambda vg : vg['AllLepton'].get_hist('eta', 0)),
+        # GraphInfo("eta_tight", '$\eta({})$', axis.Regular(25, -2.5, 2.5), lambda vg : vg['TightLepton'].get_hist('eta', 0)),
+
+        GraphInfo("rawpt", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['AllLepton'].get_hist('rawPt', 0)),
+        GraphInfo("rawpt_fake", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['FakeLepton'].get_hist('rawPt', 0)),
+        GraphInfo("rawpt_tight", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['TightLepton'].get_hist('rawPt', 0)),
+
+        GraphInfo("met", '$MET_{{Puppi}}$', axis.Regular(20, 0, 50), lambda vg : vg.get_hist("Met")),
         GraphInfo("metphi", '$\phi(MET)$', axis.Regular(20, -np.pi, np.pi), lambda vg : vg.get_hist("Met_phi")),
+
+        GraphInfo("ptRatio", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['AllLepton'].get_hist("ptRatio", 0)),
+        GraphInfo("ptRatio_fake", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['FakeLepton'].get_hist("ptRatio", 0)),
+        GraphInfo("ptRatio_tight", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['TightLepton'].get_hist("ptRatio", 0)),
+
+        GraphInfo("ptRatio2", "ptRatio2", axis.Regular(24, 0, 1.2), lambda vg: vg['AllLepton'].get_hist("ptRatio2", 0)),
+        GraphInfo("ptRatio2_fake", "ptRatio2", axis.Regular(24, 0, 1.2), lambda vg: vg['FakeLepton'].get_hist("ptRatio2", 0)),
+        GraphInfo("ptRatio2_tight", "ptRatio2", axis.Regular(24, 0, 1.2), lambda vg: vg['TightLepton'].get_hist("ptRatio2", 0)),
+
+        GraphInfo("cosdphi", "cosdphi", axis.Regular(50, -1, 1), lambda vg: (np.cos(vg["Met_phi"]-vg['AllLepton']['phi', 0]), vg.scale)),
+        GraphInfo("cosdphi_tight", "cosdphi", axis.Regular(50, -1, 1), lambda vg: (np.cos(vg["Met_phi"][vg['TightLepton'].num()==1]-vg['TightLepton']['phi', 0]), vg.scale[vg['TightLepton'].num()==1])),
+        GraphInfo("cosdphi_fake", "cosdphi", axis.Regular(50, -1, 1), lambda vg: (np.cos(vg["Met_phi"][vg['FakeLepton'].num()==1]-vg['FakeLepton']['phi', 0]), vg.scale[vg['FakeLepton'].num()==1])),
+        # GraphInfo("iso", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['AllLepton'].get_hist('iso', 0)),
+        # GraphInfo("iso_tight", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['TightLepton'].get_hist('iso', 0)),
+        # GraphInfo("iso_fake", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['FakeLepton'].get_hist('iso', 0)),
+
+        GraphInfo("j_btag", "", axis.Regular(50, 0, 1), lambda vg : vg["Jets"].get_hist("discriminator", 0)),
+        GraphInfo("j_btag_tight", "", axis.Regular(50, 0, 1), lambda vg : (vg["Jets"]['discriminator', 0][vg['TightLepton'].num()==1], vg.scale[vg['TightLepton'].num()==1])),
+        GraphInfo("j_btag_fake", "", axis.Regular(50, 0, 1), lambda vg : (vg["Jets"]['discriminator', 0][vg['TightLepton'].num()==0], vg.scale[vg['TightLepton'].num()==0])),
+
+        GraphInfo("l_btag", "", axis.Regular(50, 0, 1), lambda vg : vg["AllLepton"].get_hist("jet_btag", 0)),
+        GraphInfo("l_btag_tight", "", axis.Regular(50, 0, 1), lambda vg : vg["TightLepton"].get_hist("jet_btag", 0)),
+        GraphInfo("l_btag_fake", "", axis.Regular(50, 0, 1), lambda vg : vg["FakeLepton"].get_hist("jet_btag", 0)),
     ]
 
     # Load MC scale factors
     with open(workdir/f"mc_scales_{year}.pickle", "rb") as f:
         normal_factors = pickle.load(f)
-
-    with open(workdir/f"mc_scales_fake_{year}.pickle", "rb") as f:
-        fake_factors = pickle.load(f)
+        # print(normal_factors)
+    # with open(workdir/f"mc_scales_fake_{year}.pickle", "rb") as f:
+    #     fake_factors = pickle.load(f)
 
     plotter = Plotter(filename, groups, ntuple=ntuple, year=year)
     plotter.set_groups(bkg=mc)
 
-    for chan in chans:
-        plotter.mask_part(chan, 'pt',  lambda var : var > 20)
-
+    # plotter.cut(lambda vg : vg["HT"] > 40)
+    plotter.cut(lambda vg : vg['Jets']['pt', 0] > 40)
     # plotter.mask_part('AllLepton', 'pt', lambda var : var > 20)
     # plotter.mask_part('Electron', 'mvaTTH', lambda var : var > -0.95)
     # plotter.mask_part('FakeLepton', 'ptRatio', lambda var : var > 0.6)
-    plotter.cut(lambda vg: vg["AllLepton"].num() == 1)
-
 
     if year == '2016':
         bcuts = {"Muon": "loose", "Electron": "none"}
@@ -465,65 +479,69 @@ def mt_split(workdir, year, input_dir):
         latex = latex_chan[chan]
         for i in range(len(pt_bins)-1):
             pt_lo, pt_hi = pt_bins[i], pt_bins[i+1]
-            for j in range(len(eta_bins)-1):
-                eta_lo, eta_hi = eta_bins[j], eta_bins[j+1]
+            # for j in range(len(eta_bins)-1):
+            #     eta_lo, eta_hi = eta_bins[j], eta_bins[j+1]
 
-                print(chan, f'{pt_lo}-{pt_hi}', j, i)
-                plotter.mask(lambda vg : vg[chan].num() == 1)
-                plotter.mask(lambda vg : vg["Jets"]["discriminator", 0] > bjet_cuts[bcuts[chan]][year], clear=False)
-                plotter.mask(lambda vg : vg[chan]['abseta', 0] >= eta_lo, clear=False)
-                plotter.mask(lambda vg : vg[chan]['abseta', 0] < eta_hi, clear=False)
-                plotter.mask(lambda vg : vg[chan]['pt', 0] >= pt_lo, clear=False)
-                # if pt_hi != pt_bins[-1]:
-                #     plotter.mask(lambda vg : vg[chan]['pt', 0] < pt_hi, clear=False)
+            # print(chan, f'{pt_lo}-{pt_hi}', j, i)
+            print(chan, f'{pt_lo}-{pt_hi}', i)
+            plotter.mask(lambda vg : vg[chan].num() == 1)
+            # plotter.mask(lambda vg : vg["Jets"]["discriminator", 0] > bjet_cuts[bcuts[chan]][year], clear=False)
+            # plotter.mask(lambda vg : vg[chan]['abseta', 0] >= eta_lo, clear=False)
+            # plotter.mask(lambda vg : vg[chan]['abseta', 0] < eta_hi, clear=False)
+            plotter.mask(lambda vg : vg[chan]['pt', 0] >= pt_lo, clear=False)
+            # if pt_hi != pt_bins[-1]:
+            #     plotter.mask(lambda vg : vg[chan]['pt', 0] < pt_hi, clear=False)
+            if pt_hi != pt_bins[-1]:
                 plotter.mask(lambda vg : vg[chan]['pt', 0] < pt_hi, clear=False)
-                if pt_lo >= 50:
-                    plotter.mask(lambda vg: vg[chan]['mt', 0] < 50, clear=False)
+            # if pt_lo >= 50:
+            #     plotter.mask(lambda vg: vg[chan]['mt', 0] < 50, clear=False)
 
-                mt[0].bin_tuple = axis.Regular(10, 0, round5(pt_lo))
-                mt[1].bin_tuple = axis.Regular(10, 0, round5(pt_lo))
-                mt[2].bin_tuple = axis.Regular(10, 0, round5(pt_lo))
+            # mt[0].bin_tuple = axis.Regular(10, 0, round5(pt_lo))
+            # mt[1].bin_tuple = axis.Regular(10, 0, round5(pt_lo))
+            # mt[2].bin_tuple = axis.Regular(10, 0, round5(pt_lo))
 
-                plotter.fill_hists(mt)
+            plotter.fill_hists(mt)
 
-                loosemt = plotter.get_hists(f'mt')
-                tightmt = plotter.get_hists(f'mt_tight')
-                q_fact, e_fact = fit_template(tightmt['data'], tightmt['qcd'], tightmt["ewk"], fit_type="chi2")
-                print(q_fact, e_fact)
-                d_l, d_t = np.sum(loosemt['data'].vals), np.sum(tightmt['data'].vals)
-                dl_err, dt_err = np.sum(loosemt['data'].sumw2), np.sum(tightmt['data'].sumw2)
-                e_l, e_t = np.sum(loosemt['ewk'].vals), np.sum(tightmt['ewk'].vals)
-                el_err, et_err = np.sum(loosemt['ewk'].sumw2), np.sum(tightmt['ewk'].sumw2)
-                q_l, q_t = np.sum(loosemt['qcd'].vals), np.sum(tightmt['qcd'].vals)
-                ql_err, qt_err = np.sum(loosemt['qcd'].sumw2), np.sum(tightmt['qcd'].sumw2)
+            # loosemt = plotter.get_hists(f'mt')
+            # tightmt = plotter.get_hists(f'mt_tight')
+            # q_fact, e_fact = fit_template(tightmt['data'], tightmt['qcd'], tightmt["ewk"])
+            # print(q_fact, e_fact)
+            # d_l, d_t = np.sum(loosemt['data'].vals), np.sum(tightmt['data'].vals)
+            # dl_err, dt_err = np.sum(loosemt['data'].sumw2), np.sum(tightmt['data'].sumw2)
+            # e_l, e_t = np.sum(loosemt['ewk'].vals), np.sum(tightmt['ewk'].vals)
+            # el_err, et_err = np.sum(loosemt['ewk'].sumw2), np.sum(tightmt['ewk'].sumw2)
+            # q_l, q_t = np.sum(loosemt['qcd'].vals), np.sum(tightmt['qcd'].vals)
+            # ql_err, qt_err = np.sum(loosemt['qcd'].sumw2), np.sum(tightmt['qcd'].sumw2)
 
-                factor = normal_factors[chan]['ewk'][i,j]
-                method1 = (d_t-factor*e_t)/(d_l-factor*e_l)
-                pteta_loose.hist[i, j] = (d_l - factor*e_l, dl_err+factor**2*el_err)
-                pteta_tight.hist[i, j] = (d_t - factor*e_t, dt_err+factor**2*et_err)
-                pteta_qcd_loose.hist[i, j] = (q_l, ql_err)
-                pteta_qcd_tight.hist[i, j] = (q_t, qt_err)
+            # factor = normal_factors[chan]['ewk'][i,j]
+            # method1 = (d_t-factor*e_t)/(d_l-factor*e_l)
+            # pteta_loose.hist[i, j] = (d_l - factor*e_l, dl_err+factor**2*el_err)
+            # pteta_tight.hist[i, j] = (d_t - factor*e_t, dt_err+factor**2*et_err)
+            # pteta_qcd_loose.hist[i, j] = (q_l, ql_err)
+            # pteta_qcd_tight.hist[i, j] = (q_t, qt_err)
 
-                factor = fake_factors[chan]['ewk'][i,j]
-                method2 = (d_t-factor*e_t)/(d_l-factor*e_l)
+            # factor = fake_factors[chan]['ewk'][i,j]
+            # method2 = (d_t-factor*e_t)/(d_l-factor*e_l)
 
-                method3 = q_t/q_l
+            # method3 = q_t/q_l
 
-                factor = e_fact
-                method4 = (d_t-factor*e_t)/(d_l-factor*e_l)
+            # factor = e_fact
+            # method4 = (d_t-factor*e_t)/(d_l-factor*e_l)
 
-                output[chan]['data_ewk'].append(method1)
-                output[chan]['de_fake'].append(method2)
-                output[chan]['qcd'].append(method3)
-                output[chan]['de_refit'].append(method4)
+            # output[chan]['data_ewk'].append(method1)
+            # output[chan]['de_fake'].append(method2)
+            # output[chan]['qcd'].append(method3)
+            # output[chan]['de_refit'].append(method4)
 
-                print(f'{method1:0.4f}', f'{method2:0.4f}', f'{method3:0.4f}', f'{method4:0.4f}')
-                plotter.scale_hists('qcd', normal_factors[chan]['qcd'][i,j])
-                plotter.scale_hists('ewk', normal_factors[chan]['ewk'][i,j])
+            # print(f'{method1:0.4f}', f'{method2:0.4f}', f'{method3:0.4f}', f'{method4:0.4f}')
+            # plotter.scale_hists('qcd', normal_factors[chan]['qcd'][i,j])
+            # plotter.scale_hists('ewk', normal_factors[chan]['ewk'][i,j])
+            plotter.scale_hists('qcd', normal_factors[chan]['qcd'][i,0])
+            plotter.scale_hists('ewk', normal_factors[chan]['ewk'][i,0])
 
-                for graph in mt:
-                    plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{pt_lo}_{eta_lo}_{chan}.png', chan=latex, region=f'$MR[{latex}]$')
-
+            for graph in mt:
+                plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{pt_lo}_{chan}.png', chan=latex, region=f'$MR[{latex}]$')
+        continue
         fr_qcd = Histogram.efficiency(pteta_qcd_tight, pteta_qcd_loose)
         fr_ewk = Histogram.efficiency(pteta_tight, pteta_loose)
 
@@ -546,7 +564,7 @@ def mt_split(workdir, year, input_dir):
         fr_plot(plot_dir/f'fr_ewk_{chan}.png', fr_ewk, chan, vmin=0, vmax=0.4)
         print("fr", np.array2string(fr_ewk.vals, separator=','))
 
-
+    exit()
     with open(workdir/f"fr_test_{year}.pickle", "wb") as f:
         for chan in chans:
             for name, hist in output[chan].items():
@@ -561,30 +579,66 @@ def closure_test(workdir, year, input_dir):
     plot_dir.mkdir(exist_ok=True)
 
     mc_list = ["ttbar_lep", "wjet_ht",]
-    chans = ['MM', 'EE', 'EM']
+    # chans = ['MM', 'EE', 'EM']
+    chans = ['EE']
     graphs = pinfo.nonprompt['Closure']
 
     # Load MC scale factors
     fake_rates = dict()
-    with open(workdir/f"fr_test_{year}.pickle", "rb") as f:
+    with open(workdir/f"fr_{year}_new.pickle", "rb") as f:
         fake_rates = pickle.load(f)
-        # fake_rates['Electron']['data_ewk'][-1, 0] = 0.14
-        # fake_rates['Electron']['data_ewk'][-1, 1] = 0.14
-        # fake_rates['Electron']['data_ewk'][-1, 2] = 0.14
-        # fake_rates['Electron']['data_ewk'][-1] = fake_rates['Electron']['qcd'][-1]
 
 
     graphs = [
         GraphInfo("pt", '$p_{{T}}(\ell)$', axis.Regular(20, 0, 200), lambda vg : vg['AllLepton'].get_hist('pt', 0)),
         GraphInfo("eta", '$\eta(\ell)$', axis.Regular(20, -2.5, 2.5), lambda vg : vg['AllLepton'].get_hist('eta', 0)),
         GraphInfo("ht", '$H_T$', axis.Regular(20, 0, 750), lambda vg : vg.get_hist("HT")),
+        GraphInfo("Nbjet", r"$N_{{b}}$", axis.Regular(4, 0, 4), lambda vg: vg.get_hist("N_bmedium")),
+        GraphInfo("njets", '$N_{{j}}$', axis.Regular(6, 0, 6), lambda vg : (vg.Jets.num(), vg.scale)),
+        GraphInfo("ptRatio", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['AllLepton'].get_hist("ptRatio", -1)),
+        GraphInfo("iso", '$iso({})$', axis.Regular(20, 0, 0.4), lambda vg : vg['AllLepton'].get_hist('iso', -1)),
+        GraphInfo("l_btag", "", axis.Regular(25, 0, 1), lambda vg : vg["AllLepton"].get_hist("jet_btag", -1)),
     ]
+    tf_graphs = [
+        GraphInfo("pt", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['AllLepton'].get_hist('pt', 0)),
+        GraphInfo("pt_fake", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['FakeLepton'].get_hist('pt', 0)),
+        GraphInfo("pt_tight", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['TightLepton'].get_hist('pt', 0)),
 
+        GraphInfo("rawpt", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['AllLepton'].get_hist('rawPt', 0)),
+        GraphInfo("rawpt_fake", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['FakeLepton'].get_hist('rawPt', 0)),
+        GraphInfo("rawpt_tight", '$p_{{T}}({})$', axis.Regular(20, 0, 100), lambda vg : vg['TightLepton'].get_hist('rawPt', 0)),
+
+        GraphInfo("ptRatio", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['AllLepton'].get_hist("ptRatio", 0)),
+        GraphInfo("ptRatio_fake", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['FakeLepton'].get_hist("ptRatio", 0)),
+        GraphInfo("ptRatio_tight", "ptRatio", axis.Regular(24, 0, 1.2), lambda vg: vg['TightLepton'].get_hist("ptRatio", 0)),
+
+        GraphInfo("iso", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['AllLepton'].get_hist('iso', 0)),
+        GraphInfo("iso_tight", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['TightLepton'].get_hist('iso', 0)),
+        GraphInfo("iso_fake", '$iso({})$', axis.Regular(50, 0, 0.01), lambda vg : vg['FakeLepton'].get_hist('iso', 0)),
+
+        GraphInfo("l_btag", "", axis.Regular(50, 0, 1), lambda vg : vg["AllLepton"].get_hist("jet_btag", 0)),
+        GraphInfo("l_btag_tight", "", axis.Regular(50, 0, 1), lambda vg : vg["TightLepton"].get_hist("jet_btag", 0)),
+        GraphInfo("l_btag_fake", "", axis.Regular(50, 0, 1), lambda vg : vg["FakeLepton"].get_hist("jet_btag", 0)),
+    ]
+    # # TF Setup
+    # ntuple_tf = config.get_ntuple('fake_rate', 'closure_tf')
+    # groups = ntuple_tf.get_info().setup_groups(['data']+mc_list)
+    # filename = ntuple_tf.get_filename(year=year, workdir=input_dir)
+
+    # plotter_tf = Plotter(filename, groups, ntuple=ntuple_tf, year=year)
+    # plotter_tf.set_groups(bkg=mc_list, data='data')
+    # for chan in ['Electron', "Muon"]:
+    #     plotter_tf.mask(lambda vg : vg[f'Fake{chan}'].num() == 1)
+    #     plotter_tf.mask(lambda vg : vg[f'N_bmedium'] == 2, clear=False)
+    #     plotter_tf.fill_hists(tf_graphs)
+    #     for graph in tf_graphs:
+    #         plotter_tf.plot_stack(graph.name, plot_dir/f'{graph.name}_2b_{chan}.png', **formatter)
+    # exit()
     ntuple_tt = config.get_ntuple('fake_rate', 'closure_tt')
-    groups = ntuple_tt.get_info().setup_groups(['nonprompt', 'nonprompt_mc'] + mc_list)
+    groups = ntuple_tt.get_info(keep_dd_data=True).setup_groups(['nonprompt', 'nonprompt_mc'] + mc_list)
     filename = ntuple_tt.get_filename(year=year, workdir=input_dir)
     for fake_type in fake_rates['Electron'].keys():
-        if fake_type != "data_ewk": continue
+        if fake_type != "ewk": continue
         print()
         print(fake_type)
         plotter_tt = Plotter(filename, groups, ntuple=ntuple_tt, year=year)
@@ -594,14 +648,15 @@ def closure_test(workdir, year, input_dir):
         plotter_tt.cut(lambda vg : vg["AllLepton"].num() == 2)
 
         for chan in ["Muon", 'Electron']:
-            print(fake_rates[chan][fake_type])
-            plotter_tt.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan][fake_type]), groups=['nonprompt', 'nonprompt_mc'])
-            plotter_tt.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan][fake_type], i=1), groups=['nonprompt', 'nonprompt_mc'])
+            # print(fake_rates[chan][fake_type])
+            plotter_tt.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan][fake_type].hist), groups=['nonprompt', 'nonprompt_mc'])
+            plotter_tt.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan][fake_type].hist, i=1), groups=['nonprompt', 'nonprompt_mc'])
         plotter_tt.scale(lambda vg : flip_fake(vg), groups=['nonprompt', 'nonprompt_mc'])
 
         for chan in chans:
             print(chan)
             plotter_tt.mask(lambda vg : vg["Muon"].num() == chan.count('M'))
+            # plotter_tt.mask(lambda vg : vg['N_bmedium'] == 2, clear=False)
             data, np_mc, mc = 0, 0, 0
             for vg, mem, group in plotter_tt.getters(keys=True):
                 if group == "nonprompt":
@@ -619,27 +674,29 @@ def closure_test(workdir, year, input_dir):
                 hists = plotter.get_hists(var)
                 np_h = hists[np_name].vals
                 mc_h = hists['wjet_ht'].vals + hists['ttbar_lep'].vals
-                mc_err = hists['wjet_ht'].sumw2 + hists['ttbar_lep'].sumw2
                 pchi2 = np.sum((mc_h-np_h)**2/(mc_h+1e-5))
-                print(var, pchi2/(len(np_h)-1), stats.chi2.sf(pchi2, len(np_h)-1))
+                pchi2_norm = np.sum((mc_h-np_h*sum(mc_h)/sum(np_h))**2/(mc_h+1e-5))
+                print(var, pchi2/(len(np_h)-1), stats.chi2.sf(pchi2, len(np_h)-1), pchi2_norm/(len(np_h)-1))
 
             plotter_tt.set_groups(bkg=mc_list, data='nonprompt')
             plotter_tt.fill_hists(graphs)
-            # for graph in graphs:
-            #     plotter_tt.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}_{fake_type}.png', chan=latex_chan[chan], region='$CR[{}]$')
-            get_chi2(plotter_tt, 'pt', 'nonprompt')
-            get_chi2(plotter_tt, 'eta', 'nonprompt')
+            for graph in graphs:
+                plotter_tt.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}_{fake_type}.png', chan=latex_chan[chan], region='$CR[{}]$', **formatter)
+            # get_chi2(plotter_tt, 'pt', 'nonprompt')
+            # get_chi2(plotter_tt, 'eta', 'nonprompt')
             get_chi2(plotter_tt, 'ht', 'nonprompt')
+            get_chi2(plotter_tt, 'Nbjet', 'nonprompt')
 
             plotter_tt.set_groups(bkg=mc_list, data='nonprompt_mc')
             plotter_tt.fill_hists(graphs)
-            # for graph in graphs:
-            #     plotter_tt.plot_stack(graph.name, plot_dir/f'{graph.name}_fromMC_{chan}_{fake_type}.png', chan=latex_chan[chan], region='$CR[{}]$')
+            for graph in graphs:
+                plotter_tt.plot_stack(graph.name, plot_dir/f'{graph.name}_fromMC_{chan}_{fake_type}.png', chan=latex_chan[chan], region='$CR[{}]$', **formatter)
 
-            get_chi2(plotter_tt, 'pt', 'nonprompt_mc')
-            get_chi2(plotter_tt, 'eta', 'nonprompt_mc')
+            # get_chi2(plotter_tt, 'pt', 'nonprompt_mc')
+            # get_chi2(plotter_tt, 'eta', 'nonprompt_mc')
             get_chi2(plotter_tt, 'ht', 'nonprompt_mc')
-
+            get_chi2(plotter_tt, 'Nbjet', 'nonprompt_mc')
+            print()
 
 def closure_dy(workdir, year, input_dir):
     plot_dir = workdir / f'CR_DY_{year}'
@@ -650,54 +707,66 @@ def closure_dy(workdir, year, input_dir):
 
     # Load MC scale factors
     fake_rates = dict()
-    with open(workdir/f"fr_test_{year}.pickle", "rb") as f:
+    with open(workdir/f"fr_{year}.pickle", "rb") as f:
         fake_rates = pickle.load(f)
 
     ntuple = config.get_ntuple('fake_rate', 'dy_tight')
-    groups = ntuple.get_info().setup_groups(['data', "VV", 'nonprompt', 'DY_J', 'nonprompt_mc'])
+    groups = ntuple.get_info(keep_dd_data=True).setup_groups(['data', "vv_inc", 'nonprompt', 'DY_J', 'nonprompt_mc'])
     filename = ntuple.get_filename(year=year, workdir=input_dir)
     for fake_type in fake_rates['Electron'].keys():
-        if fake_type != "data_ewk": continue
-        print()
-        print(fake_type)
+        if fake_type != "qcd": continue
         plotter = Plotter(filename, groups, ntuple=ntuple, year=year)
 
         for chan in ['Electron', "Muon"]:
             plotter.mask_part(chan, 'pt',  lambda var : var > 20)
+            # plotter.mask_part(f'Fake{chan}', 'jet_btag', lambda var : var < close_btag_cut)
         plotter.cut(lambda vg : vg["AllLepton"].num() == 3)
         plotter.cut(lambda vg : vg["Met"] < 75)
+        # plotter.cut(lambda vg : vg["HT"] > 0)
 
         for chan in ["Muon", 'Electron']:
-            print(fake_rates[chan][fake_type])
-            plotter.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan][fake_type]), groups='nonprompt')
-            plotter.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan][fake_type]), groups='nonprompt_mc')
+            plotter.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan][fake_type].hist), groups='nonprompt')
+            plotter.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan][fake_type].hist), groups='nonprompt_mc')
+
 
         for chan in chans:
             print(chan)
             plotter.mask(lambda vg : vg[chan].num() == 1)
+            # for vg, key, group in plotter.getters(keys=True):
+            #     print(key, group, np.sum(vg.scale), len(vg.scale))
 
             def get_chi2(plotter, var, np_name):
                 hists = plotter.get_hists(var)
                 np_h = hists[np_name].vals
                 mc_h = hists['DY_J'].vals
-                print((np_h-mc_h)**2/(mc_h+1e-5))
                 pchi2 = np.sum((mc_h-np_h)**2/(mc_h+1e-5))
-                print(var, pchi2/(len(np_h)-1), stats.chi2.sf(pchi2, len(np_h)-1))
+                print(var, pchi2/(len(np_h)-1))
+
+            def get_chi2_data(plotter, var):
+                hists = plotter.get_hists(var)
+                mc_h = hists["nonprompt"].vals+hists['vv_inc'].vals
+                data_h = hists['data'].vals
+                pchi2 = np.sum((mc_h-data_h)**2/(data_h+1e-5))
+                print(var, pchi2/(np.count_nonzero(data_h)-1))
 
             # nonprompt+VV vs data
-            plotter.set_groups(bkg=['nonprompt', 'VV'], data='data')
+            plotter.set_groups(bkg=['nonprompt', 'vv_inc'], data='data')
             plotter.fill_hists(graphs, chan)
-            # for graph in graphs:
-            #     plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}_{fake_type}_data.png', chan=latex_chan[chan])
+            get_chi2_data(plotter, 'mass_z')
+            get_chi2_data(plotter, 'met')
+            get_chi2_data(plotter, 'mt')
+
+            for graph in graphs:
+                plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}_{fake_type}_data.png', chan=latex_chan[chan], **formatter)
 
             # MC vs MC
             plotter.set_groups(bkg=['DY_J'], data='nonprompt_mc')
             plotter.fill_hists(graphs, chan)
-            get_chi2(plotter, 'mass_z', 'nonprompt_mc')
-            get_chi2(plotter, 'met', 'nonprompt_mc')
-            get_chi2(plotter, 'mt', 'nonprompt_mc')
-            # for graph in graphs:
-            #     plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}_{fake_type}_mc.png', chan=latex_chan[chan])
+            # get_chi2(plotter, 'mass_z', 'nonprompt_mc')
+            # get_chi2(plotter, 'met', 'nonprompt_mc')
+            # get_chi2(plotter, 'mt', 'nonprompt_mc')
+            for graph in graphs:
+                plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}_{fake_type}_mc.png', chan=latex_chan[chan], **formatter)
 
 def measurement(workdir, year, input_dir, fake_qcd):
     plot_dir = workdir / f'MR_{year}'
@@ -715,30 +784,29 @@ def measurement(workdir, year, input_dir, fake_qcd):
     # Load MC scale factors
     with open(workdir/f"mc_scales_{year}.pickle", "rb") as f:
         mc_scale_factors = pickle.load(f)
-
     if fake_qcd:
         with open(workdir/f"mc_scales_fake_{year}.pickle", "rb") as f:
             tmp = pickle.load(f)
             for chan in chans:
-                mc_scale_factors[chan]['ewk'] = tmp[chan]['ewk']# *tmp[chan]['data_mc_scale']
+                mc_scale_factors[chan]['ewk'] = tmp[chan]['ewk']
     fake_name = '_fake' if fake_qcd else ""
 
     plotter = Plotter(filename, groups, ntuple=ntuple, year=year)
-    # plotter.cut(lambda vg : (vg["AllLepton"]["mt", 0] < 55))
     plotter.set_groups(bkg=mc)
 
     for chan in chans:
         for reg in mc:
             plotter.scale(lambda vg : scale_template(vg, chan, mc_scale_factors[chan][reg]), groups=reg)
 
-    plotter.mask_part('AllLepton', 'pt', lambda var : var > 20)
-    # plotter.mask_part('FakeLepton', 'ptRatio', lambda var : var > 0.6)
+    # plotter.mask_part('AllLepton', 'pt', lambda var : var > 20)
+    # plotter.mask_part('FakeLepton', 'jet_btag', lambda var : var < close_btag_cut)
     plotter.cut(lambda vg: vg["AllLepton"].num() == 1)
-    plotter.cut(lambda vg: (vg['AllLepton']['pt', 0] < 50) + (vg['AllLepton']['mt', 0] < 50))
-
+    plotter.cut(lambda vg : vg['Jets']['pt', 0] > 40)
+    # plotter.cut(lambda vg: (vg['AllLepton']['pt', 0] < 50) + (vg['AllLepton']['mt', 0] < 50))
+    # plotter.cut(lambda vg: (vg['AllLepton']['mt', 0] < 50))
 
     if year == '2016':
-        bcuts = {"Muon": "loose", "Electron": "none"}
+        bcuts = {"Muon": "loose", "Electron": "loose"}
     if year == '2017':
         bcuts = {"Muon": "loose", "Electron": "loose"}
     elif year == '2018':
@@ -758,37 +826,44 @@ def measurement(workdir, year, input_dir, fake_qcd):
         ]
 
         plotter.mask(lambda vg : vg[chan].num() == 1)
-        plotter.mask(lambda vg : vg["Jets"]["discriminator", 0] > bjet_cuts[bcuts[chan]][year], clear=False)
+        bcut = bcuts[chan]
+        if bcut != 'none':
+            plotter.mask(lambda vg: vg[f"N_b{bcut}"] > 0, clear=False)
+        # plotter.mask(lambda vg : vg["Jets"]["discriminator", 0] > bjet_cuts[bcuts[chan]][year], clear=False)
+        # plotter.mask(lambda vg : vg[chan]['pt', 0]> , clear=False)
+        # plotter.mask(lambda vg : vg["Jets"]["discriminator", 0] < 0.005, clear=False)
 
-        # plotter.fill_hists(graphs)
-        # for graph in graphs:
-        #     plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}{fake_name}.png', chan=latex_chan[chan], region='$MR[{}]$')
+
+        plotter.fill_hists(graphs)
+        for graph in graphs:
+            plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}{fake_name}.png', chan=latex_chan[chan], region='$MR[{}]$', **formatter)
 
 
         plotter.fill_hists(fr_graph, chan)
         loosefr = plotter.get_hists('loosefr')
         tightfr = plotter.get_hists('tightfr')
 
-        loosefr['data_ewk'] = loosefr['data'] - loosefr['ewk']
-        tightfr['data_ewk'] = tightfr['data'] - tightfr['ewk']
-
+        loosefr['ewk'] = loosefr['data'] - loosefr['ewk']
+        tightfr['ewk'] = tightfr['data'] - tightfr['ewk']
 
         fake_rates[chan]['qcd'] = Histogram.efficiency(tightfr['qcd'], loosefr['qcd'])
-        fake_rates[chan]['data_ewk'] = Histogram.efficiency(tightfr['data_ewk'], loosefr['data_ewk'])
+        fake_rates[chan]['ewk'] = Histogram.efficiency(tightfr['ewk'], loosefr['ewk'])
+
+        fix_negative(fake_rates[chan]['ewk'], fake_rates[chan]['qcd'])
 
         fr_pt_qcd = Histogram.efficiency(tightfr['qcd'].project(0), loosefr['qcd'].project(0))
-        fr_pt_ewk = Histogram.efficiency(tightfr['data_ewk'].project(0), loosefr['data_ewk'].project(0))
+        fr_pt_ewk = Histogram.efficiency(tightfr['ewk'].project(0), loosefr['ewk'].project(0))
 
         plot_fr_diff(plot_dir/f'fr_{chan}_pt{fake_name}.png', fr_pt_ewk, fr_pt_qcd, f"$p_{{T}}({latex})$", lumi[year])
 
         for key, fr_ in fake_rates[chan].items():
-            plot_project(plot_dir/f'fr_{key}_{chan}_pt{fake_name}.png', tightfr[key], loosefr[key], 0, f"$p_{{T}}({latex})$", lumi[year])
-            plot_project(plot_dir/f'fr_{key}_{chan}_eta{fake_name}.png', tightfr[key], loosefr[key], 1, f"$p_{{T}}({latex})$", lumi[year])
-            fr_plot(plot_dir/f'fr_{key}_{chan}{fake_name}.png', fr_, chan, vmin=0, vmax=0.4)
+            plot_project(plot_dir/f'fr_{key}_{chan}_pt{fake_name}.png', tightfr[key], loosefr[key], 0, f"$p_{{T}}({latex})$", lumi[year], key=='ewk')
+            plot_project(plot_dir/f'fr_{key}_{chan}_eta{fake_name}.png', tightfr[key], loosefr[key], 1, f"$p_{{T}}({latex})$", lumi[year], key=='ewk')
+            fr_plot(plot_dir/f'fr_{key}_{chan}{fake_name}.png', fr_, chan, year, (key=='ewk'), vmin=0, vmax=0.4)
             print(key, "fr", np.array2string(fr_.vals, separator=','))
 
-    # with open(workdir/f"fr_{year}{fake_name}.pickle", "wb") as f:
-    #     pickle.dump(fake_rates, f)
+    with open(workdir/f"fr_{year}_new.pickle", "wb") as f:
+        pickle.dump(fake_rates, f)
 
 
 def closure(workdir, year, input_dir, fake_qcd):
@@ -803,24 +878,26 @@ def closure(workdir, year, input_dir, fake_qcd):
 
     # Load MC scale factors
     fake_rates = dict()
-    with open(workdir/f"fr_{year}{fake_name}.pickle", "rb") as f:
+    # with open(workdir/f"fr_{year}{fake_name}_.pickle", "rb") as f:
+    #     fake_rates = pickle.load(f)
+    with open(workdir/f"fr_{year}_new.pickle", "rb") as f:
         fake_rates = pickle.load(f)
 
-    # TF Setup
-    ntuple_tf = config.get_ntuple('fake_rate', 'closure_tf')
-    groups = ntuple_tf.get_info().setup_groups(['data'])
-    filename = ntuple_tf.get_filename(year=year, workdir=input_dir)
+    # # TF Setup
+    # ntuple_tf = config.get_ntuple('fake_rate', 'closure_tf')
+    # groups = ntuple_tf.get_info().setup_groups(['data']+mc_list)
+    # filename = ntuple_tf.get_filename(year=year, workdir=input_dir)
 
-    plotter_tf = Plotter(filename, groups, ntuple=ntuple_tf, year=year)
-    fake_graphs = pinfo.nonprompt['FakeClosure']
-    # plotter_tf.set_groups(bkg=['data'])
-    for chan in ['Electron']:
-        plotter_tf.mask(lambda vg : vg[f'Fake{chan}'].num() == 1)
+    # plotter_tf = Plotter(filename, groups, ntuple=ntuple_tf, year=year)
+    # fake_graphs = pinfo.nonprompt['FakeClosure']
+    # # plotter_tf.set_groups(bkg=['data'])
+    # for chan in ['Electron']:
+    #     plotter_tf.mask(lambda vg : vg[f'Fake{chan}'].num() == 1)
 
-        plotter_tf.fill_hists(fake_graphs)
-        for graph in fake_graphs:
-            plotter_tf.plot_stack(graph.name, plot_dir/f'{graph.name}_TF_{chan}.png')
-
+    #     plotter_tf.fill_hists(fake_graphs)
+    #     for graph in fake_graphs:
+    #         plotter_tf.plot_stack(graph.name, plot_dir/f'{graph.name}_TF_{chan}.png', **formatter)
+    # exit()
     # # for chan in ["Muon", 'Electron']:
     # #     print(chan)
     # #     plotter_tf.scale(lambda vg : scale_fake(vg, chan, fake_rates[chan]['qcd'].hist), groups='data')
@@ -843,11 +920,12 @@ def closure(workdir, year, input_dir, fake_qcd):
     plotter_tt = Plotter(filename, groups, ntuple=ntuple_tt, year=year)
     plotter_tt.set_groups(bkg=mc_list, data='nonprompt')
 
-    fake_type = 'qcd'
+    fake_type = 'ewk'
     for chan in ['Electron', "Muon"]:
         plotter_tt.mask_part(chan, 'pt',  lambda var : var > 20)
         # plotter_tt.mask_part(f'Fake{chan}', 'ptRatio', lambda var : var > 0.6)
     plotter_tt.cut(lambda vg : vg["AllLepton"].num() == 2)
+    plotter_tt.cut(lambda vg : vg["N_bmedium"] == 2)
 
     for chan in ["Muon", 'Electron']:
         print(chan)
@@ -868,7 +946,7 @@ def closure(workdir, year, input_dir, fake_qcd):
                     mc += sum(df.scale)
         print("mc", mc)
         print("diff:", abs(mc-data)/mc)
-    exit()
+
     for chan in chans:
         print(chan)
         plotter_tt.mask(lambda vg : vg["Muon"].num() == chan.count('M'))
@@ -885,7 +963,7 @@ def closure(workdir, year, input_dir, fake_qcd):
         get_chi2(plotter_tt, 'eta')
         print()
         for graph in graphs:
-            plotter_tt.plot_stack(graph.name, plot_dir/f'{graph.name}_TT_{fake_type}_{chan}{fake_name}.png', chan=latex_chan[chan], region="$TT({})$")
+            plotter_tt.plot_stack(graph.name, plot_dir/f'{graph.name}_TT_{fake_type}_{chan}{fake_name}.png', chan=latex_chan[chan], region="$TT({})$", **formatter)
 
 
 if __name__ == "__main__":

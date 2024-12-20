@@ -25,7 +25,9 @@ def ratio_plot(filename, xlabel, binning, **kwargs):
         fig.tight_layout()
     if hasattr(plot, "workdir"):
         filename = f"{plot.workdir}/{filename}"
-    fig.savefig(filename, bbox_inches="tight")
+    fig.savefig(filename, bbox_inches="tight", dpi=300)
+    # if "extra_format" in kwargs:
+        # fig.savefig(filename.with_suffix(f'.{kwargs["extra_format"]}'), bbox_inches="tight", dpi=300)
     plt.close(fig)
 
 @contextmanager
@@ -41,19 +43,26 @@ def nonratio_plot(filename, xlabel, binning, **kwargs):
         fig.tight_layout()
     if hasattr(plot, "workdir"):
         filename = f"{plot.workdir}/{filename}"
-    fig.savefig(filename, bbox_inches="tight")
+    fig.savefig(filename, bbox_inches="tight", dpi=300)
+    if "extra_format" in kwargs:
+        fig.savefig(filename.with_suffix(f'.{kwargs["extra_format"]}'), bbox_inches="tight", dpi=300)
+
     plt.close(fig)
 
 @contextmanager
-def plot(filename, *args, **kwargs):
-    fig, ax = plt.subplots(*args, **kwargs)
+def plot(filename, subplot_info=None, **kwargs):
+    if subplot_info is None:
+        subplot_info = {}
+    fig, ax = plt.subplots(**subplot_info)
     yield ax
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fig.tight_layout()
     if hasattr(plot, "workdir"):
         filename = f"{plot.workdir}/{filename}"
-    fig.savefig(filename, bbox_inches="tight")
+    fig.savefig(filename, bbox_inches="tight", dpi=300)
+    if "extra_format" in kwargs:
+        fig.savefig(filename.with_suffix(f'.{kwargs["extra_format"]}'), bbox_inches="tight", dpi=300)
     plt.close(fig)
 
 def plot_colorbar(cf, ax, barpercent=5):
@@ -81,7 +90,13 @@ def ticks(pad):
 
 def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bot=0.0, zero_bot=True, normed=False,
               **kwargs):
-    xpad = pad if subpad is None else subpad
+    if subpad is None:
+        xpad = pad
+    else:
+        xpad = subpad
+        subpad.set_ylabel(kwargs.get("subpad_label", "Data/MC"))
+        subpad.set_ylim(top=ratio_top, bottom=ratio_bot)
+
     if xlabel:
         xpad.set_xlabel(xlabel)
     if binning is not None:
@@ -89,6 +104,7 @@ def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bo
     if zero_bot:
         pad.set_ylim(bottom=0.)
 
+    xpad.ticklabel_format(useOffset=False)
     if 'pad_label' in kwargs:
         pad.set_ylabel(kwargs['pad_label'])
     elif normed:
@@ -97,10 +113,6 @@ def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bo
         pad.set_ylabel('Events')
     right_align_label(pad.get_yaxis(), isYaxis=True)
     right_align_label(xpad.get_xaxis())
-
-    if subpad is not None:
-        subpad.set_ylabel(kwargs.get("subpad_label", "Data/MC"))
-        subpad.set_ylim(top=ratio_top, bottom=ratio_bot)
 
 
 def right_align_label(axis, isYaxis=False):
@@ -111,3 +123,12 @@ def right_align_label(axis, isYaxis=False):
         label.set_x(1.0)
     label.set_horizontalalignment('right')
     axis.set_label(label)
+
+def cms_label(ax, lumi=None, year=None, hasData=False):
+    if lumi is None and year is None:
+        hep.cms.label(ax=ax, label="Work in Progress", data=hasData)
+        return
+    if year is not None:
+        from .constants import lumi
+        lumi = lumi[year]
+    hep.cms.label(ax=ax, lumi=lumi, label="Work in Progress", data=hasData)

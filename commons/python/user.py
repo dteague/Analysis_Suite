@@ -11,7 +11,6 @@ hdfs_workspace = hdfs_area / 'workspace'
 
 submit_area = Path(f'/nfs_scratch/{user_name}')
 scratch_area = Path(f'/scratch/{user_name}')
-combine_area = submit_area / "CMSSW_10_2_13/src"
 
 analysis_area = Path(f'{__file__}').resolve().parents[2]
 workspace_area = analysis_area / 'workspace'
@@ -32,22 +31,6 @@ else:
 def setup():
     workspace_area.mkdir(exist_ok=True)
     hdfs_workspace.mkdir(exist_ok=True)
-    if not combine_area.exists():
-        print("To setup combine, please Run the following commands")
-        print(f"""
-            export SCRAM_ARCH=slc7_amd64_gcc700
-            cd {submit_area}
-            cmsrel CMSSW_10_2_13
-            cd CMSSW_10_2_13/src
-            cmsenv
-            git clone https://github.com/cms-analysis/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
-            git clone https://github.com/cms-analysis/CombineHarvester.git CombineHarvester
-            pushd HiggsAnalysis/CombinedLimit
-            git fetch origin
-            git checkout v8.2.0
-            popd
-            scramv1 b clean; scramv1 b # always make a clean build
-        """)
 
 if __name__ == "__main__":
     setup()

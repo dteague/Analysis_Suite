@@ -47,31 +47,33 @@ class Data2D:
         return (grid_x, grid_y, grid_vals)
 
 
-def run_combine(workdir, cardname, year, other, sig='ttt', sig_up=3, sig_down=0, other_up=3, other_down=0, hesse=False, nosyst=False, debug=False, skip=False):
+def run_combine(workdir, card_start, year, other, sig, sig_range=[0,100], other_range=[0,10], hesse=False, nosyst=False, debug=False, skip=False):
     corr_command = '--robustHesse 1' if hesse else "--robustFit 1"
-    # extra_command = "--freezeParameters allConstrainedNuisances"
     corr_filename = "robustHesse" if hesse else "multidimfit"
     out_corr, out_plot = "corr", "plot"
 
-    if nosyst:
-        out_corr += "_nosyst"
-        out_plot += "_nosyst"
+    cardname = f"{card_start}_{year}_card"
 
     if not skip:
+        sig_map = ""
+        if isinstance(sig, list):
+            for s in sig:
+                sig_map += f'--PO "map=.*/{s}:r_sig[1,0,200]" '
+        else:
+            sig_map = f'--PO "map=.*/{sig}:r_sig[1,0,200]" '
+
         runCombine.work_dir = workdir
-        runCombine(f'combine -M Significance {cardname}.txt --toysFrequentist')
+        # runCombine(f'combine -M Significance {cardname}.txt --toysFrequentist -t -1 --expectSignal=1')
         runCombine(f'text2workspace.py {cardname}.txt -m 125 -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel \
-                     --PO "map=.*/{sig}:r_sig[1,0,200]" --PO "map=.*/{other}:r_other[1,0,200]" -o {cardname}.root', output=debug)
+                     {sig_map} --PO "map=.*/{other}:r_other[1,0,200]" -o {cardname}.root', output=debug)
         runCombine(f'combine -M MultiDimFit {cardname}.root -m 125 -n .scan2d.{out_plot}.{year}  --points 800 --algo grid \
-                     --cminDefaultMinimizerStrategy 0 -t -1 -P r_sig -P r_other --setParameterRanges r_sig={sig_down},{sig_up}:r_other={other_down},{other_up} \
+                     --cminDefaultMinimizerStrategy 0 -t -1 -P r_sig -P r_other --setParameterRanges r_sig={",".join(map(str, sig_range))}:r_other={",".join(map(str, other_range))} \
                      --expectSignal=1', output=debug)
         runCombine(f'combine -M MultiDimFit {cardname}.root -m 125 -n .scan2d.{out_corr}.{year} --expectSignal=1 \
-                     --cminDefaultMinimizerStrategy 0 -P r_sig -P r_other --setParameterRanges r_sig={sig_down},{sig_up}:r_other={other_down},{other_up}\
+                     --cminDefaultMinimizerStrategy 0 -P r_sig -P r_other --setParameterRanges r_sig={",".join(map(str, sig_range))}:r_other={",".join(map(str, other_range))}\
                      -t -1 {corr_command} --saveFitResult\
                      --stepSize=0.01 --setRobustFitTolerance=1000 --setCrossingTolerance=0.001 ', output=debug)
-        #### single
-        # runCombine(f'text2workspace.py {cardname}_single.txt -m 125 -o {cardname}_single.root', output=debug)
-        # runCombine(f'combine -M Significance {cardname}_single.root -t -1 --expectSignal 1 --toysFrequentist ', output=debug)
+
     return workdir/f'higgsCombine.scan2d.{out_plot}.{year}.MultiDimFit.mH125.root', workdir/f'{corr_filename}.scan2d.{out_corr}.{year}.root'
 
 # Make plot with Root
@@ -84,7 +86,6 @@ def make_2d_plot(outfile, data, xaxis_name="", yaxis_name=""):
     for i in range(len(grid_vals)):
         # Factor of 2 comes from 2*NLL
         h2D.Fill( grid_x[i], grid_y[i], 2*grid_vals[i] )
-        # h2D.Fill( grid_x[i], grid_y[i], grid_vals[i] )
 
     # Set up canvas
     canv = ROOT.TCanvas("canv","canv",600,600)
@@ -178,47 +179,41 @@ def make_2d_plot(outfile, data, xaxis_name="", yaxis_name=""):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="main", description="")
-    # parser.add_argument("-d", "--workdir", required=True, type=lambda x : user.workspace_area/x/"combine",
-    #                     help="Working Directory")
-    parser.add_argument('-t', '--extra_text')
+    parser.add_argument("-d", "--workdir", required=True,
+                        help="Working Directory")
+    parser.add_argument('-t', '--extra_text', default='')
     parser.add_argument("-y", "--years", required=True,
                         type=lambda x : [i.strip() for i in x.split(',')], help="Year to use")
-    parser.add_argument('-o', '--other', default='4top')
-    parser.add_argument('-s', '--signal', default='ttt')
+    parser.add_argument('-o', '--other', default='TTTT')
+    parser.add_argument('-s', '--signal', default='TTTJ,TTTW')
     parser.add_argument('-ns', '--no_syst', action="store_true")
+    parser.add_argument('-c', '--card', default='final')
     parser.add_argument("--skip", action="store_true")
     parser.add_argument("--debug", action='store_true')
     args = parser.parse_args()
 
-    extra = args.other if args.extra_text is None else args.extra_text
-    if args.signal == 'TTTJ':
-        sig_up = 200
-    elif args.signal == 'TTTW':
-        sig_up = 100
-    other_up = 10
-    other_down = 0
-    sig_down = 0
-    syst_name = "_nosyst" if args.no_syst else ""
+    if (user.workspace_area/args.workdir).exists():
+        workdir = user.workspace_area/args.workdir/'combine'/args.extra_text
+    else:
+        workdir = user.analysis_area/args.workdir
+        if not workdir.exists():
+            print(f"Directory {workdir} does not exist")
+            exit()
 
-    # workdir = args.workdir/extra
-    # workdir = user.analysis_area/f'corr_test/final_Dec_{args.extra_text}/combine'
-    workdir = user.analysis_area/f'corr_test/no4topCR'
+    sig_name = args.signal
+    sig_range = [0, 100]
+    other_range = [0, 10]
+    if args.signal == 'TTTJ':
+        sig_range[1] = 200
+    elif args.signal == 'TTTW':
+        sig_range[1] = 100
+    elif ',' in args.signal:
+        args.signal = args.signal.split(',')
+        sig_range[1] = 50
+        sig_name = 'TTT'
 
     for year in args.years:
-        cardname = f'final_{year}{syst_name}_card'
-        # cardname = f'signal_{year}_Dilepton_card'
-        data_file, corr_file = run_combine(workdir, cardname, year, args.other, sig=args.signal, sig_up=sig_up, other_down=other_down, sig_down=sig_down,
-                                           other_up=other_up, debug=args.debug, hesse=False, nosyst=args.no_syst, skip=args.skip)
-        data = Data2D(data_file, corr_file, y_range=[sig_down, sig_up], x_range=[other_down, other_up])
-        make_2d_plot(workdir/f"correlation_{args.signal}{syst_name}_{year}.png", data, xaxis_name=f"r_{args.other}", yaxis_name=f'r_{args.signal}')
-
-
-def run_single(workdir, cardname, year, signal, other, no_syst=False, sig_up=50, sig_down=0, other_up=3, other_down=0, extra=""):
-    syst_name = "_nosyst" if no_syst else ""
-    debug=False
-    if '.txt' in cardname:
-        cardname = cardname[:cardname.index('.txt')]
-    data_file, corr_file = run_combine(workdir, cardname, year, other, sig=signal, sig_up=sig_up, other_down=other_down, sig_down=sig_down,
-                                       other_up=other_up, hesse=False, nosyst=no_syst, debug=debug)
-    data = Data2D(data_file, corr_file, y_range=[sig_down, sig_up], x_range=[other_down, other_up])
-    make_2d_plot(workdir/f"correlation_{signal}{syst_name}{extra}_{year}.png", data, xaxis_name=f"r_{other}", yaxis_name=f'r_{signal}')
+        data_file, corr_file = run_combine(workdir, args.card, year, args.other, sig=args.signal, sig_range=sig_range, other_range=other_range,
+                                           debug=args.debug, hesse=False, nosyst=args.no_syst, skip=args.skip)
+        data = Data2D(data_file, corr_file, y_range=sig_range, x_range=other_range)
+        make_2d_plot(workdir/f"correlation_{args.card}_{sig_name}_{year}.png", data, xaxis_name=f"r_{args.other}", yaxis_name=f'r_{sig_name}')

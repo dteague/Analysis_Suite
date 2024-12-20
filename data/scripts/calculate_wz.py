@@ -4,13 +4,15 @@ import numpy as np
 import boost_histogram.axis as axis
 import pickle
 import itertools
+import warnings
+warnings.simplefilter("ignore", UserWarning)
 
 import analysis_suite.commons.user as user
 from analysis_suite.plotting.plotter import GraphInfo
 from analysis_suite.plotting.plotter import Plotter
 from analysis_suite.commons.histogram import Histogram
 import analysis_suite.commons.configs as config
-from analysis_suite.commons.plot_utils import hep, plot, plot_colorbar
+from analysis_suite.commons.plot_utils import cms_label, plot, plot_colorbar
 from analysis_suite.commons.constants import lumi
 
 def scale_wz(vg, fakerate):
@@ -25,22 +27,14 @@ def measurement(workdir, year, input_dir):
     njet_bins = axis.Regular(5, 1, 6)
     graphs = [
         GraphInfo('njets', '$N_{j}$', axis.Regular(7, 0, 7), lambda vg: (vg['Jets'].num(), vg.scale)),
-        GraphInfo('njets', '$N_{j}$', njet_bins, lambda vg: (vg['Jets'].num(), vg.scale)),
-        GraphInfo('nbjets', '$N_{b}$', axis.Regular(5, 0, 5), lambda vg: (vg['NBjets_medium'], vg.scale)),
-        GraphInfo('nbjets_noscale', '$N_{b}$', axis.Regular(5, 0, 5), lambda vg: (vg['NBjets_medium'], vg.scale/vg["NBjets_wgt_medium"])),
-        GraphInfo('ntightbjets', '$N_{b}$', axis.Regular(5, 0, 5), lambda vg: (vg['NBjets_tight'], vg.scale*vg["NBjets_wgt_tight"]/vg["NBjets_wgt_medium"])),
-        GraphInfo('nloosebjets', '$N_{b}$', axis.Regular(5, 0, 5), lambda vg: (vg['NBjets_loose'], vg.scale*vg["NBjets_wgt_loose"]/vg["NBjets_wgt_medium"])),
+        GraphInfo('njets', '$N_{j}$', njet_bins, lambda vg:  (vg['Jets'].num(), vg.scale)),
+        GraphInfo('nbjets', '$N_{b}$', axis.Regular(5, 0, 5), lambda vg: vg.get_hist('NBjets_medium')),
         GraphInfo('zmass', '$M_{Z}$', axis.Regular(15, 75, 105), lambda vg: vg.get_hist("Zmass")),
         GraphInfo('met', '$p_{T}^{miss}$ (GeV)', axis.Regular(20, 0, 300), lambda vg: vg.get_hist("Met")),
         GraphInfo('l1Pt', '$p_{T}(l_{1})$ (GeV)', axis.Regular(20, 0, 500), lambda vg: vg['TightLepton'].get_hist('pt', 0)),
         GraphInfo('l2Pt', '$p_{T}(l_{2})$ (GeV)', axis.Regular(20, 0, 300), lambda vg: vg['TightLepton'].get_hist('pt', 0)),
         GraphInfo('l3Pt', '$p_{T}(l_{3})$ (GeV)', axis.Regular(20, 0, 200), lambda vg: vg['TightLepton'].get_hist('pt', 0)),
         GraphInfo('nmu', '$N_{\mu}$', axis.Regular(4, 0, 4), lambda vg: (vg["TightMuon"].num(), vg.scale)),
-
-        GraphInfo('hlt_dilep', '$HLT_{2\ell}$', axis.Regular(2, 0, 2), lambda vg: (vg["HLT_dilepton"], vg.scale)),
-        GraphInfo('hlt_trilep', '$HLT_{3\ell}$', axis.Regular(2, 0, 2), lambda vg: (vg["HLT_trilepton"], vg.scale)),
-        GraphInfo('hlt_dilep_ht', '$HLT_{2\ell+HT}$', axis.Regular(2, 0, 2), lambda vg: (vg["HLT_dilepton_HT"], vg.scale)),
-
     ]
 
     ntuple = config.get_ntuple('WZ')
@@ -49,71 +43,6 @@ def measurement(workdir, year, input_dir):
     filename = ntuple.get_filename(year=year, workdir=input_dir)
     plotter = Plotter(filename, ginfo.setup_groups(), ntuple=ntuple, year=year)
     plotter.set_groups(bkg=mc)
-
-    def trig_test(name, isMC=True):
-        trig_by_mu = np.zeros((6, 4))
-        for member, dfs in plotter.dfs.items():
-            if (member == 'data') is isMC:
-                continue
-            for tree, df in dfs.items():
-                scale = df.scale
-                trig_info = df[name]
-                n_trig = len(trig_info[0])
-                for mu in range(4):
-                    trig_mask = np.zeros(len(scale), dtype=bool)
-                    for trig in range(n_trig):
-                        trig_mask = np.any((trig_mask, trig_info[:,trig]), axis=0)
-                        trig_by_mu[trig, mu] += np.sum(scale[(df["TightMuon"].num() == mu)*(trig_info[:,trig])])
-                    trig_by_mu[n_trig, mu] += np.sum(scale[(df["TightMuon"].num() == mu)*(trig_mask)])
-            # print(member)
-            # print(trig_by_mu)
-        print(trig_by_mu)
-
-    def trig_pass(name, mapping, isMC=True):
-        trig_by_mu = np.zeros((4, 2))
-        for member, dfs in plotter.dfs.items():
-            if (member == 'data') is isMC:
-                continue
-            for tree, df in dfs.items():
-                scale = df.scale
-                trig_info = df[name]
-                n_trig = len(trig_info[0])
-                for mu, trigs in mapping.items():
-                    mu_mask = df["TightMuon"].num() == mu
-                    trig_mask = np.zeros(len(scale), dtype=bool)
-                    for trig in trigs:
-                        trig_mask = np.any((trig_mask, trig_info[:,trig]), axis=0)
-                    trig_by_mu[mu, 0] += np.sum(scale[mu_mask])
-                    trig_by_mu[mu, 1] += np.sum(scale[mu_mask*trig_mask])
-            # print(member)
-            # print(trig_by_mu)
-        print(trig_by_mu)
-
-
-    dilept_map = {0: [0], 1: [0, 1, 2], 2: [1, 2, 3], 3: [3] }
-    dilept_ht_map = {0: [0], 1: [0, 1], 2: [1, 2], 3: [2] }
-    trilepton_map = {0: [0], 1: [1], 2: [2], 3: [3] }
-
-    # trig_test('hlt_ind_dilepton')
-    # trig_test('hlt_ind_dilepton', isMC=False)
-    # print()
-    # trig_test('hlt_ind_dilepton_HT')
-    # trig_test('hlt_ind_dilepton_HT', isMC=False)
-    # print()
-    # trig_test('hlt_ind_trilepton')
-    # trig_test('hlt_ind_trilepton', isMC=False)
-    # print()
-    # print("-"*40)
-    # trig_pass('hlt_ind_dilepton', dilept_map)
-    # trig_pass('hlt_ind_dilepton', dilept_map, isMC=False)
-    # print()
-    # trig_pass('hlt_ind_dilepton_HT', dilept_ht_map)
-    # trig_pass('hlt_ind_dilepton_HT', dilept_ht_map, isMC=False)
-    # print()
-    # trig_pass('hlt_ind_trilepton', trilepton_map)
-    # trig_pass('hlt_ind_trilepton', trilepton_map, isMC=False)
-    # print()
-    # exit()
 
     plotter.fill_hists(graphs)
     for graph in graphs:
@@ -157,7 +86,7 @@ def measurement(workdir, year, input_dir):
             ax.annotate(f'${sc:0.3f}\pm{np.sqrt(scale_err[i]):0.3f}$', (i+1, sc),
                         xytext=(i+1.1, sc*1.1), fontsize=15)
         ax.set_xlabel(r'$N_{j}$')
-        hep.cms.label(ax=ax, lumi=lumi[year])
+        cms_label(ax, year=year, hasData=True)
 
     # Dump MC scale factors
     scale_file = workdir/f"wz_scale_factor.pickle"
@@ -189,8 +118,6 @@ def ttz_test(workdir, year, input_dir):
         # GraphInfo('njets', '$N_{j}$', njet_bins, lambda vg: (vg['Jets'].num(), vg.scale)),
         GraphInfo('nbjets', '$N_{b}$', axis.Regular(5, 0, 5), lambda vg: (vg['NBjets_medium'], vg.scale)),
         GraphInfo('ht', '$H_{T}$', axis.Regular(20, 250, 1250), lambda vg: (vg['HT'], vg.scale)),
-        GraphInfo('ntightbjets', '$N_{b}$', axis.Regular(5, 0, 5), lambda vg: (vg['NBjets_tight'], vg.scale*vg["NBjets_wgt_tight"]/vg["NBjets_wgt_medium"])),
-        GraphInfo('nloosebjets', '$N_{b}$', axis.Regular(5, 0, 5), lambda vg: (vg['NBjets_loose'], vg.scale*vg["NBjets_wgt_loose"]/vg["NBjets_wgt_medium"])),
         GraphInfo('zmass', '$M_{Z}$', axis.Regular(15, 75, 105), lambda vg: vg.get_hist("Zmass")),
         GraphInfo('met', '$p_{T}^{miss}$ (GeV)', axis.Regular(20, 0, 300), lambda vg: vg.get_hist("Met")),
         GraphInfo('l1Pt', '$p_{T}(l_{1})$ (GeV)', axis.Regular(20, 0, 500), lambda vg: vg['TightLepton'].get_hist('pt', 0)),
@@ -231,8 +158,10 @@ if __name__ == "__main__":
                         help="Regions to run through (sideband, measurement, closure, dy)")
     args = parser.parse_args()
 
+    workdir = args.workdir/'WZ_CR'
+
     for year in args.years:
         if 'measurement' in args.run:
-            measurement(args.workdir, year, args.input_dir)
+            measurement(workdir, year, args.input_dir)
         if 'ttz' in args.run:
-            ttz_test(args.workdir, year, args.input_dir)
+            ttz_test(workdir, year, args.input_dir)

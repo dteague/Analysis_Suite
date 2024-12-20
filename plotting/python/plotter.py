@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import awkward as ak
 from typing import ClassVar
 from sklearn.metrics import roc_curve
-from scipy.stats import kurtosis
 from copy import copy
 from prettytable import PrettyTable
 from pathlib import Path
@@ -16,7 +15,7 @@ from analysis_suite.commons.histogram import Histogram
 from analysis_suite.commons.constants import lumi
 import analysis_suite.commons.configs as config
 from analysis_suite.commons.info import fileInfo
-from analysis_suite.commons.plot_utils import plot, nonratio_plot, ratio_plot, hep
+from analysis_suite.commons.plot_utils import plot, nonratio_plot, ratio_plot, cms_label
 
 from .utils import likelihood_sig, get_syst_index
 from .stack import Stack
@@ -113,7 +112,6 @@ class Plotter:
                         vg = NtupleGetter(root_file, tree, member, xsec, systName=systName)
                         if not vg:
                             continue
-
                         ntuple.setup_branches(vg)
                         ntuple.apply_part_cut(vg)
                         ntuple.apply_cut(vg)
@@ -183,19 +181,21 @@ class Plotter:
             vg.cut(mask)
 
 
-    def getters(self, groups=None, keys=False):
+    def getters(self, groups=None, members=None, keys=False):
         if isinstance(groups, str):
             groups = [groups]
-        members = list(self.dfs.keys())
+        if isinstance(members, str):
+            members = [members]
 
-        for key in members:
-            vg = self.dfs[key]
+        for mem, vg in self.dfs.items():
+            if members is not None and mem not in members:
+                continue
             for subkey, subvg in vg.items():
-                group = self.group_by_mem[key][subkey]
+                group = self.group_by_mem[mem][subkey]
                 if groups is not None and group not in groups:
                     continue
                 if keys:
-                    yield subvg, key, group
+                    yield subvg, mem, group
                 else:
                     yield subvg
 
@@ -208,9 +208,12 @@ class Plotter:
         for vg in self.getters():
             vg[part].clear_mask()
 
-    def scale(self, scaler, groups=None):
+    def scale(self, scaler, groups=None, inputs=None):
         for vg in self.getters(groups):
-            scaler(vg)
+            if inputs is not None:
+                scaler(vg, *inputs)
+            else:
+                scaler(vg)
 
     def scale_hists(self, groups, scale, scale_df=False):
         if isinstance(groups, str):
@@ -346,16 +349,19 @@ class Plotter:
                 pad, subpad = ax, None
 
             #upper pad
-            if self.scale_signal:
+            if isinstance(self.scale_signal, float):
+                signal.scale(self.scale_signal, changeName=True, forPlot=True)
+            elif self.scale_signal and signal:
                 # sig_scale = 250
                 rounder = 50
-                sig_scale = np.max(stack.vals)/np.max(signal.vals)
+                # sig_scale = np.max(stack.vals)/np.max(signal.vals)
+                sig_scale = stack.integral()/signal.integral()
                 sig_scale = int(sig_scale//rounder*rounder)
                 # sig_scale = 750
                 signal.scale(sig_scale, changeName=True, forPlot=True)
 
             stack.plot_stack(pad)
-            signal.plot_points(pad)
+            signal.plot_hist(pad)
             data.plot_points(pad)
             error.plot_band(pad)
 
@@ -368,7 +374,7 @@ class Plotter:
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                hep.cms.label(ax=pad, lumi=self.lumi, data=data)
+                cms_label(pad, lumi=self.lumi, hasData=data)
 
 
     def get_sum(self, groups, graph, details=None):
@@ -397,7 +403,6 @@ class Plotter:
                 "group" : group,
                 "mean": np.mean(vals),
                 "std":  np.std(vals),
-                "kurtosis": kurtosis(vals),
                 'nRaw': len(vals),
                 'nEvents': np.sum(weight)
             })

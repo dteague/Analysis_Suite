@@ -20,9 +20,11 @@ from sklearn.model_selection import train_test_split
 
 from analysis_suite.plotting.utils import likelihood_sig
 from analysis_suite.commons.constants import lumi
-from analysis_suite.commons.plot_utils import plot, hep, plot_colorbar
+from analysis_suite.commons.plot_utils import plot, plot_colorbar, cms_label
 
 pd.options.mode.chained_assignment = None
+
+formatter = {'extra_format': 'pdf',}
 
 def generic_plot_setup(ax, year, bins=None):
     if bins is None:
@@ -32,7 +34,7 @@ def generic_plot_setup(ax, year, bins=None):
     ax.set_xlabel("$disc_{BDT}$")
     ax.set_ylabel("A.U.")
     ax.legend()
-    hep.cms.label(ax=ax, lumi=lumi[year], label="Preliminary")
+    cms_label(ax, year=year)
 
 def setup_pandas(all_vars):
     df_set = pd.DataFrame(columns = all_vars)
@@ -64,7 +66,7 @@ class MLHolder:
     def __init__(self, use_vars, groupDict, region="signal", systName="Nominal", **kwargs):
         """Constructor method
         """
-        self.classID_by_className = {"Signal": 1, "Background": 0, "NotTrained": 0, "OnlyTrain": 0, "4top": 2}
+        self.classID_by_className = {"Signal": 1, "Background": 0, "NotTrained": 0, "OnlyTrain": 0}
         self.group_dict = groupDict
         samples = list()
         for val_list in self.group_dict.values():
@@ -72,7 +74,6 @@ class MLHolder:
         self.sample_map = {val: i for i, val in enumerate(sorted(samples))}
         self.systName = systName
         self.region = region
-
         nonTrain_vars = ["scale_factor"]
         derived_vars = ["classID", "sampleName", "train_weight", "split_weight"]
         self.use_vars = use_vars
@@ -103,7 +104,7 @@ class MLHolder:
         self.outdir = None
 
         self.group_names = {
-            'ttt': ['tttw', 'tttj'],
+            'ttt': ['tttw_nlo', 'tttj_nlo', 'tttw_m', 'tttw_p', 'tttj_m', 'tttj_p'],
             'ttX': ['ttz', 'ttw', 'tth', 'ttz_m1-10'],
             'dd': ['nonprompt', 'charge_flip']+list(self.group_dict["OnlyTrain"]),
             'tttt': ['tttt']
@@ -125,7 +126,7 @@ class MLHolder:
         is_SR_nominal = self.region == "signal" and self.systName == "Nominal"
         return enough_events and trainable_class and is_SR_nominal
 
-    def read_in_file(self, directory, year="2018", typ='test', mask=None):
+    def read_in_file(self, directory, year="2018", typ='test'):
         test_set= setup_pandas(self.all_vars)
         test_weights = dict()
 
@@ -136,6 +137,8 @@ class MLHolder:
         self.test_sets[year] = test_set
         self.test_weights[year] = test_weights
 
+
+    def read_in_train_files(self, directory):
         # Try to get train sets
         infile = directory/'train_files'/f'train_{self.systName}_{self.region}.root'
         if infile.exists():
@@ -156,7 +159,6 @@ class MLHolder:
                 sample_wgt = f[sample]["scale_factor"].array()
                 if len(sample_wgt) < self.min_train_events/self.split_ratio:
                     continue
-                # print(sample, np.sum(sample_wgt), len(sample_wgt))
                 total_wgt += np.sum(sample_wgt)
         return total_wgt
 
@@ -210,21 +212,18 @@ class MLHolder:
         self.setup_weights(infile)
         for className, df, sample, weights in self.read_in_dataframe(infile):
             test, train, validation = self.setup_split(df, className, sample, split)
-            # print(sample, len(df), len(test), len(train), len(validation))
+            # print(sample, np.sum(df.scale_factor), np.sum(test.scale_factor), np.sum(train.scale_factor), np.sum(validation.scale_factor))
+            # print("    ", len(df), len(test), len(train), len(validation))
             if not test.empty:
                 self.test_weights[year][sample] = pd.DataFrame()
-                # self.test_weights[year][sample] = weights.loc[test.index]*len(df)/len(test)
                 for key, col in weights.items():
                     if key == 'index':
                         continue
                     self.test_weights[year][sample].insert(
                         0, key, col.loc[test.index]*np.sum(col)/np.sum(col[test.index]))
-                # self.test_weights[year][sample] = weights
                 self.test_sets[year] = pd.concat([test, self.test_sets[year]], ignore_index=True)
-                # print(sample, np.sum(test.scale_factor), np.sum(test.split_weight))
             if not train.empty:
                 self.train_set = pd.concat([train, self.train_set], ignore_index=True)
-                # print(sample, "train", np.sum(train.scale_factor), np.sum(train.split_weight))
             if not validation.empty:
                 self.validation_set = pd.concat([validation, self.validation_set], ignore_index=True)
 
@@ -241,7 +240,7 @@ class MLHolder:
         exp_train_evt = total_scale/self.train_total[className]*self.total_train
         split_ratio = self.split_ratio
 
-        if sample == "tttj" or sample == "tttw":
+        if "tttj" in sample or "tttw" in sample:
             exp_train_evt = split_ratio*len(df)
 
         # Only train, i.e. use all the events possible
@@ -269,13 +268,6 @@ class MLHolder:
         if self.validation_ratio > 0. and len(train)*self.validation_ratio > 1:
             train, validation = self.split(train, self.validation_ratio, total_scale)
 
-        # print(sample,  np.sum(df.scale_factor), np.sum(test.scale_factor), np.sum(train.scale_factor), np.sum(validation.scale_factor))
-        # if len(train) > 0 and len(test) > 0:
-        #     print("NJets", np.average(df.NJets, weights=df.scale_factor), np.average(test.NJets, weights=test.scale_factor), np.average(train.NJets, weights=train.scale_factor))
-        #     print("NlooseBJets", np.average(df.NlooseBJets, weights=df.scale_factor), np.average(test.NlooseBJets, weights=test.scale_factor), np.average(train.NlooseBJets, weights=train.scale_factor))
-        #     print("HT", np.average(df.HT, weights=df.scale_factor), np.average(test.HT, weights=test.scale_factor), np.average(train.HT, weights=train.scale_factor))
-        #     print("j1Pt", np.average(df.j1Pt, weights=df.scale_factor), np.average(test.j1Pt, weights=test.scale_factor), np.average(train.j1Pt, weights=train.scale_factor))
-        # print()
         return test, train, validation
 
 
@@ -291,9 +283,8 @@ class MLHolder:
 
     def apply_model(self, year, skip_train=False):
         def get_pred(use_set, directory):
-            unique_labels = np.unique(use_set.classID.astype(int))
             pred = self.predict(use_set, directory)
-            return {grp: pred.T[i] for grp, i in self.classID_by_className.items() if i in unique_labels}
+            return {grp: pred.T[i] for grp, i in self.classID_by_className.items()}
         self.pred_test[year] = get_pred(self.test_sets[year], self.outdir)
         if not skip_train:
             self.pred_train = get_pred(self.train_set, self.outdir)
@@ -342,7 +333,7 @@ class MLHolder:
         stddev = np.sqrt(np.diag(cov))
         corr = cov/(stddev[:, None]*stddev[None, :])
 
-        with plot(self.outdir/filename) as ax:
+        with plot(self.outdir/filename, **formatter) as ax:
             nVars = corr.shape[0]
             x = np.linspace(0, nVars, nVars+1)
             xx = np.tile(x, (nVars+1, 1))
@@ -418,7 +409,7 @@ class MLHolder:
         tp_dd, fp_dd, auc_dd = get_roc(pred_test, test, is_sig_test, 'dd')
         tp_other, fp_other, auc_other = get_roc(pred_test, test, is_sig_test, 'other')
 
-        with plot(self.outdir/f"roc_{year}.png") as ax:
+        with plot(self.outdir/f"roc_{year}.png", **formatter) as ax:
             ax.plot(fp_test, tp_test, linewidth=3, label=f"Test set: AUC={auc_test:0.3f}")
             ax.plot(fp_train, tp_train, linewidth=3, label=f"Train set: AUC={auc_train:0.3f}")
             ax.plot([0, 1], [0, 1], linestyle='dashed')
@@ -427,10 +418,10 @@ class MLHolder:
             ax.set_ylim(0., 1.)
             ax.set_xlabel("False Positive Rate")
             ax.set_ylabel("True Positive Rate")
-            hep.cms.label(ax=ax, lumi=lumi[year], label="Preliminary")
+            cms_label(ax, year=year)
             print(auc_train, auc_test)
 
-        with plot(self.outdir/f"roc_sep_{year}.png") as ax:
+        with plot(self.outdir/f"roc_sep_{year}.png", **formatter) as ax:
             ax.plot(fp_test, tp_test, linewidth=3, label=f"Total set: AUC={auc_test:0.3f}")
             ax.plot([0, 1], [0, 1], linestyle='dashed', color='k')
 
@@ -447,7 +438,7 @@ class MLHolder:
             ax.set_ylim(0., 1.)
             ax.set_xlabel("False Positive Rate")
             ax.set_ylabel("True Positive Rate")
-            hep.cms.label(ax=ax, lumi=lumi[year], label="Preliminary")
+            cms_label(ax, year)
 
     def get_fom(self, year, signal='Signal'):
         test = self.test_sets[year]
@@ -470,9 +461,19 @@ class MLHolder:
         return fom
 
 
-    def plot_overtrain(self, year, signal='Signal'):
-        test = self.test_sets[year]
-        pred_test = self.pred_test[year][signal]
+    def plot_overtrain(self, year='all', signal='Signal'):
+        if year == "all":
+            test = pd.DataFrame()
+            for df in self.test_sets.values():
+                test = pd.concat([test, df])
+            pred_test = np.array([])
+            for arr in self.pred_test.values():
+                pred_test = np.concatenate([pred_test, arr[signal]])
+            lumi_rescale = 1
+        else:
+            test = self.test_sets[year]
+            pred_test = self.pred_test[year][signal]
+            lumi_rescale = np.sqrt(lumi[year]/lumi['all'])
         pred_train = self.pred_train[signal]
         train = self.train_set
         classID = self.classID_by_className[signal]
@@ -494,12 +495,12 @@ class MLHolder:
                 fom_val = np.sqrt(2*np.sum((s+b)*np.log(np.where(b > 1e-5, 1+s/b, 1))-s))
             return fom_val
 
-        print(f"Train FOM: {fom(train_s, train_b)}")
+        print(f"Train FOM: {lumi_rescale*fom(train_s, train_b)}")
         print(f"Test FOM: {fom(test_s, test_b)}")
 
         kw_hist = {"alpha": 0.3, "hatch": '///', "histtype": "stepfilled"}
         kw_err = {"markersize": 4, "fmt": "o"}
-        with plot(self.outdir/f"overtrain_{year}.png") as ax:
+        with plot(self.outdir/f"overtrain_{year}.png", **formatter) as ax:
             ax.hist(x=bins[:-1], bins=bins, weights=test_s/np.sum(test_s), color='r', label="Signal (test)", **kw_hist)
             ax.hist(x=bins[:-1], bins=bins, weights=test_b/np.sum(test_b), color='b', label="Background (test)", **kw_hist)
             ax.errorbar(x=bins[:-1]+1/(2*nbins), xerr=1/(2*nbins), y=train_s/np.sum(train_s), color='r', label="Signal (train)", **kw_err)
@@ -528,7 +529,7 @@ class MLHolder:
             mask = self.get_mask(df, self.group_names[group])
             return np.histogram(pred[mask], bins, weights=df.scale_factor[mask])[0]
 
-        with plot(self.outdir/plotname) as ax:
+        with plot(self.outdir/plotname, **formatter) as ax:
             ttt_hist = get_hist(pred, df, 'ttt')
             tttt_hist = get_hist(pred, df, 'tttt')
             ttX_hist = get_hist(pred, df, 'ttX')

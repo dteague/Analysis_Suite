@@ -38,7 +38,7 @@ class FlatGetter(BaseGetter):
 
     def set_syst(self, syst):
         if syst in self.syst_weights.fields:
-            self._scale = self.syst_weights[syst]
+            self._scale = ak.to_numpy(self.syst_weights[syst])
 
     @BaseGetter.mask.setter
     def mask(self, mask):

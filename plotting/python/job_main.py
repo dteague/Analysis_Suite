@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import datetime
-import subprocess
 import logging
 
 import analysis_suite.commons.configs as config
@@ -21,63 +20,73 @@ def setup(cli_args):
     basePath = get_plot_area(cli_args.region, cli_args.name, cli_args.workdir)
     make_plot_paths(basePath)
 
-    ginfo = config.get_ntuple_info(cli_args.region)
-    plots = getattr(plots_module, cli_args.plots)
-    if cli_args.hists != ['all']:
-        plots = [graph for graph in plots if graph.name in cli_args.hists]
+    ntuple = config.get_ntuple(cli_args.region, obj=cli_args.region_type)
 
     argList = list()
     allSysts = ["Nominal"]
     for year in cli_args.years:
         for syst in allSysts:
             if cli_args.type == 'ntuple':
-                filename = ntuple.get_filename(year=year, workdir=input_dir)
-                filename = user.hdfs_area / f'workspace/{cli_args.region}/{year}'
+                filename = ntuple.get_filename(year=year)
             else:
                 filename = cli_args.workdir / year / f'{cli_args.type}_{syst}_{cli_args.region}.root'
             outpath = basePath / year
             if syst != "Nominal":
                 outpath = outpath / syst
             make_plot_paths(outpath)
-            for plot in plots:
-                argList.append((filename, outpath, plot, cli_args.signal, ginfo, year, syst, cli_args))
+            if cli_args.type == 'ntuple':
+                argList.append((filename, outpath, None, cli_args.signal, year, syst, cli_args))
+            else:
+                plots = getattr(plots_module, cli_args.plots)
+                if cli_args.hists != ['all']:
+                    plots = [graph for graph in plots if graph.name in cli_args.hists]
+                for plot in plots:
+                    argList.append((filename, outpath, [plot], cli_args.signal, year, syst, cli_args))
     return argList
 
 
 
-def run(infile, outpath, graph, signalName, ginfo, year, syst, args):
-    logging.info(f'Processing {graph.name} for year {year} and systematic {syst}')
-    kwargs = {'ratio_bot': args.ratio_range[0], 'ratio_top': args.ratio_range[1]}
+def run(infile, outpath, graphs, signalName, year, syst, args):
+    # logging.info(f'Processing {graphs.name} for year {year} and systematic {syst}')
+    kwargs = {
+        'ratio_bot': args.ratio_range[0],
+        'ratio_top': args.ratio_range[1],
+        'extra_format': 'pdf',
+    }
 
-    inputs = config.get_inputs(args.workdir)
+    scales = config.get_inputs(args.workdir, "scales")
+
+    if args.type == "ntuple":
+        ntuple = config.get_ntuple(args.region, obj=args.region_type)
+        ginfo = ntuple.get_info(keep_dd_data=True, remove=['nonprompt_mc'])
+        graphs = getattr(plots_module, args.plots)
+        if args.hists != ['all']:
+            graphs = [graph for graph in graphss if graph.name in args.hists]
+    else:
+        ginfo = config.get_ntuple_info(args.region, remove=['nonprompt_mc'])
+        ntuple = None
 
     groups = ginfo.setup_groups()
     bkg = list(filter(lambda x: x not in [signalName, 'data'] ,groups.keys()))
 
-    blind = args.region == "Signal" and not args.unblind
-    plotter = Plotter(infile, groups, year=year, ginfo=ginfo, scale=True)
-
+    plotter = Plotter(infile, groups, ntuple=ntuple, year=year, ginfo=ginfo, scale=True)
     plotter.set_groups(sig=signalName, bkg=bkg, data='data')
-    for run_group, scale_func in inputs.scale.items():
-        if run_group in groups:
-            plotter.scale(lambda vg: scale_func(vg, year), groups=run_group)
-    plotter.fill_hists(graph)
+    for scaler in scales.scale_list:
+        scaler(plotter, year, syst)
 
-    graph_name = f'{graph.name}'
-    plotter.plot_from_graph(graph, outpath/'plots'/f'{graph.name}.png', **kwargs)
-    # graph_name = f'{graph.name}_shape'
-    # plotter.plot_shape(graph.name, outpath/'plots'/f'{graph_name}.png', **kwargs)
+    plotter.fill_hists(graphs)
 
-    subprocess.call('convert {0}.png {0}.pdf'.format(outpath/'plots'/graph_name), shell=True)
+    for graph in graphs:
+        plotter.plot_from_graph(graph, outpath/'plots'/f'{graph.name}.png', **kwargs)
 
-    # setup log file
-    logger = LogFile(graph_name, constants.lumi[year], graph)
-    for group, hist in plotter.get_hists(graph.name).items():
-        logger.add_breakdown(group, hist.breakdown)
-    logger.add_mc(plotter.make_stack(graph.name))
-    if signalName:
-        logger.add_signal(plotter.get_hists(graph.name, signalName))
-    logger.write_out(outpath/'logs')
+        # setup log file
+        logger = LogFile(graph.name, constants.lumi[year], graph)
+        for group, hist in plotter.get_hists(graph.name).items():
+            logger.add_breakdown(group, hist.breakdown)
+        logger.add_mc(plotter.make_stack(graph.name))
+        if signalName:
+            logger.add_signal(plotter.get_hists(graph.name, signalName))
+        logger.write_out(outpath/'logs')
 
 
 def cleanup(cli_args):

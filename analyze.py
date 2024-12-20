@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import argparse
+from pathlib import Path
 from contextlib import contextmanager
 import yaml
 
@@ -10,6 +11,7 @@ import analysis_suite.commons.user as user
 
 import ROOT
 ROOT.gROOT.SetBatch(True)
+ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.ProcessLine( "gErrorIgnoreLevel = 1001;")
 
 @contextmanager
@@ -18,10 +20,12 @@ def rOpen(filename, option=""):
     yield rootfile
     rootfile.Close()
 
+
 def get_shape_systs():
     from analysis_suite.data.systs import systematics
     systs = [syst.name for syst in systematics if syst.syst_type == "shape"]
     return list(dict.fromkeys(systs))
+
 
 def setInputs(inputs):
     root_inputs = ROOT.TList()
@@ -68,80 +72,52 @@ def getSumW(infiles):
                 output.Fill(ALPHAZ+1, sumW)
     return output
 
-def get_info_local(filename):
-    year="2016"
-    return {"year": year, "sampleName": "data", "selection": "test", "dataset": "DoubleMuon",
-            "run": ""}
-
-def get_info_general(filename):
-    sampleName = filename.split('/')
-
-    yearDict = {"UL16NanoAODAPVv": "2016preVFP",
-                "UL16NanoAODv": "2016postVFP",
-                "UL17": "2017",
-                "UL18": "2018",
-                "Run2016" : "2016postVFP",
-                "Run2017" : "2017",
-                "Run2018" : "2018",
-                }
-    data_regions = {
-        "DoubleMuon" : "DoubleMuon",
-        "SingleMuon" : "SingleMuon",
-
-        "MuonEG" : "MuonEG",
-
-        "DoubleEG": "DoubleEG",
-        "EGamma": "DoubleEG",
-        "SingleElectron": "SingleElectron",
+def run_jetmet(infiles, inputs):
+    meta = inputs['MetaData']
+    keep_drop_file = f"kd_{'data' if meta['isData'] else 'mc'}.txt"
+    year_dict = {
+        '2016preVFP':  'UL2016_preVFP',
+        '2016postVFP': 'UL2016',
+        '2017':        'UL2017',
+        '2018':        'UL2018',
     }
+    jmeCorrections = createJMECorrector(
+        (not meta['isData']), year_dict[meta['Year']], meta['DataRun'],
+        "Merged", "AK4PFchs", noGroom=False
+    )
+    nentries = inputs['NEvents'] if inputs['NEvents'] > 0 else None
+    p = PostProcessor(".", infiles, modules=[jmeCorrections()], provenance=True, maxEntries=nentries,
+                      # cut="nMuon+nElectron>=2&&Sum$(Jet_pt)>200",
+                      branchsel=user.analysis_area/'data'/keep_drop_file)
+    p.run()
 
-    year = None
-    for yearName, yearkey in yearDict.items():
-        if yearName in filename:
-            if yearkey == "2016postVFP" and "HIPM" in filename:
-                year = "2016preVFP"
-            else:
-                year = yearkey
-            break
+def run_ntuple(analysis, infiles, outfile, inputs):
+    rInputs = setInputs(inputs)
+    if int(args.verbose) > 0:
+        print(yaml.dump(inputs, indent=4, default_flow_style=False))
 
-    dataset = "None"
-    for dset, name in data_regions.items():
-        if dset in sampleName:
-            dataset = name
-            break
-    run = ""
-    if "Run201" in filename:
-        i = filename.index("Run201")+7
-        run = filename[i:i+1]
-    isUL = "UL"  in filename
-    return {"year": year, "selection": "From_DAS", 'run': run,
-            "sampleName": sampleName, "dataset": dataset}
-
-def run_multi(start, evts, files, inputs, selector):
+    # Run Selection
     fChain = ROOT.TChain()
-    for fname in files:
+    for fname in infiles:
         fChain.Add(f"{fname}/Events")
 
-    selector = getattr(ROOT, inputs["MetaData"]["Analysis"])()
-    rInputs = setInputs(inputs)
-
-    with rOpen(f"tmp_{start}.root", "RECREATE") as rOutput:
+    selector = getattr(ROOT, analysis)()
+    with rOpen(outfile, "RECREATE") as rOutput:
         selector.SetInputList(rInputs)
         selector.setOutputFile(rOutput)
-        fChain.Process(selector, "", evts, start)
-
+        fChain.Process(selector, "")
+        ## Output
         anaFolder = selector.getOutdir()
+        anaFolder.WriteObject(getSumW(files), 'sumweight')
         for tree in [tree.tree for tree in selector.getTrees()]:
             anaFolder.WriteObject(tree, tree.GetTitle())
         for i in selector.GetOutputList():
             anaFolder.WriteObject(i, i.GetName())
-    return
+
 
 if __name__ == "__main__":
-    analysis_dict = {}
     if (analysis_choices := setup.get_analyses()) is not None:
         analysis_choices.remove("BaseSelector")
-        analysis_dict['choices'] = analysis_choices
 
     parser = argparse.ArgumentParser(prog="main")
     parser.add_argument("-i", "--infile", default ="No Input File")
@@ -152,12 +128,12 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", default=-1,
                         help="Current levels are 1 for progress bar, 4 for shortened run (10 000 events)"
                         "and 9 for max output (only on 3 events)")
-    parser.add_argument("-a", "--analysis", **analysis_dict)
+    parser.add_argument("-a", "--analysis", default=None, choices=analysis_choices)
     parser.add_argument("-j", "--cores", default = 1, type=int,
                         help="Number of cores to run over")
     parser.add_argument('-ns', '--no_syst', action='store_true',
                         help="Run with no systematics")
-    parser.add_argument("-n", "--number_events", default=-1)
+    parser.add_argument("-n", "--number_events", type=int, default=-1)
     args = parser.parse_args()
 
     inputfile = args.infile if (env := os.getenv("INPUT")) is None else env
@@ -169,61 +145,22 @@ if __name__ == "__main__":
         with open(inputfile) as f:
             files = [line.strip() for line in f]
 
-    testfile = files[0]
-    if "root://" in testfile and "user" not in testfile:
-        details = get_info_general(testfile)
-    else:
-        details = get_info_local(testfile)
-
-    groupName = fileInfo.get_group(details["sampleName"])
-    if args.analysis:
-        analysis = args.analysis
-    else:
-        with open(user.analysis_area/"data/.analyze_info") as f:
-            analysis = f.readline().strip()
-    get_shapes = analysis == "ThreeTop" and not args.no_syst
+    details = setup.get_details(files[0], outputfile, args.analysis)
+    analysis = details['Analysis']
+    get_shapes = (analysis in ["ThreeTop", 'BScale']) and not args.no_syst
 
     # Setup inputs
     inputs = dict()
-    inputs["MetaData"] = {
-        "DAS_Name": '/'.join(details["sampleName"]),
-        "Group": groupName,
-        'Analysis': analysis,
-        'Dataset': details['dataset'],
-        'Selection': details["selection"],
-        'Year': details["year"],
-        'Xsec': 1,
-        'isData': True,
-        'DataRun': details['run']
-    }
-    if not args.local:
-        inputs['MetaData'].update({'Xsec': fileInfo.get_xsec(groupName), 'isData': fileInfo.is_data(groupName)})
+    inputs["MetaData"] = details
     inputs["Verbosity"] = args.verbose
     inputs["NEvents"] = args.number_events
     inputs["Systematics"] = get_shape_systs() if get_shapes else []
 
-    # Possibly need to fix for fakefactor stuff
-    rInputs = setInputs(inputs)
-    if int(args.verbose) > 0:
-        print(yaml.dump(inputs, indent=4, default_flow_style=False))
-
-    # Run Selection
-    fChain = ROOT.TChain()
-    for fname in files:
-        fChain.Add(f"{fname}/Events")
-
-    import time
-    now = time.time()
-    if args.cores == 1:
-        selector = getattr(ROOT, analysis)()
-        with rOpen(outputfile, "RECREATE") as rOutput:
-            selector.SetInputList(rInputs)
-            selector.setOutputFile(rOutput)
-            fChain.Process(selector, "")
-            ## Output
-            anaFolder = selector.getOutdir()
-            anaFolder.WriteObject(getSumW(files), 'sumweight')
-            for tree in [tree.tree for tree in selector.getTrees()]:
-                anaFolder.WriteObject(tree, tree.GetTitle())
-            for i in selector.GetOutputList():
-                anaFolder.WriteObject(i, i.GetName())
+    # if analysis == "ThreeTop":
+    #     run_jetmet(files, inputs)
+        # files = [Path(f.replace(".root", "_Skim.root")).name for f in files]
+    run_ntuple(analysis, files, outputfile, inputs)
+    # # Remove skimmed file if done
+    # if analysis == "ThreeTop":
+    #     for f in files:
+    #         Path(f).unlink()

@@ -9,11 +9,12 @@ ratio = {
     "2018": round(lumi['2018']/lumi['all'], 3),
 }
 
-mc_samples = ['ttt', 'xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top', 'tttj', 'tttw']
-mc_samples_norp = ['ttt', 'xg', 'ttw', 'tth', 'ttXY', 'rare', '4top', 'tttj', 'tttw']
+signal = ['tttj_lo', 'tttw_lo', 'tttj_nlo', 'tttw_nlo']
+mc_samples = ['ttt', 'xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top']+signal
+mc_samples_norp = ['ttt', 'xg', 'ttw', 'tth', 'ttXY', 'rare', '4top']+signal
 mc_samples_nosig = ['xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top']
-qcd = ['ttw', 'tth', 'ttz', '4top', 'ttXY', 'xg']
-ewk = ['tttj', 'tttw', 'rare']
+qcd = ['ttw', 'tth', 'ttz', '4top', 'ttXY', 'xg', 'tttw_lo', 'tttw_nlo']
+ewk = ['rare', 'tttj_lo', 'tttj_nlo']
 Systematic.default_groups = mc_samples
 
 
@@ -95,11 +96,6 @@ systematics = [
     Systematic("XSEC_XG", "lnN", corr=True).add(1.5, groups="xg"),
     Systematic("XSEC_RARE", "lnN", corr=True).add(1.5, groups="rare"),
 
-    ##### Not used any more
-    # # Systematic("Top_SF", "shape").add(1),
-    # # Systematic("Jet_JES", "shape").add(1, groups=mc_samples),
-    # # Systematic("BJet_BTagging", "shape").add(1, groups=mc_samples)
-    # # Systematic("BJet_Eff", "shape").add(1, groups=mc_samples),
 ]
 
 dummy = [Systematic("dummy", "lnN").add(1.0001, groups="rare"),]
@@ -109,3 +105,6 @@ def get_shape_systs(year):
     systs = np.vstack((np.char.add(systs, "_up"), np.char.add(systs, "_down")))
     return np.concatenate((systs, [["Nominal", "Nominal"]]))
 
+def get_change_systs():
+    base_syst = [syst.name for syst in systematics if "Jet_JE" in syst.name]
+    return np.vstack((np.char.add(base_syst, "_up"), np.char.add(base_syst, "_down"))).T.flatten()

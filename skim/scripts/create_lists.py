@@ -164,7 +164,9 @@ dataset_dict = {
         'other' : [
             'GluGluHToZZTo4L_M125_TuneCP5_13TeV_powheg2_JHUGenV7011_pythia8',
             'ST_tW_Dilept_5f_DR_TuneCP5*',
-            'tZq_ll_4f_ckm_NLO_TuneCP5*',
+            'tZq_ll_4f_ckm_NLO_TuneCP5_13Tev*',
+            'TWZToLL_*DR_TuneCP5*',
+            'THQ_ctcvcp_4f_Hincl_TuneCP5*'
         ],
         'vv' : [
             'WZTo3LNu_Tune*',

@@ -10,7 +10,7 @@ from matplotlib import colors
 
 import analysis_suite.commons.configs as config
 from analysis_suite.commons.histogram import Histogram
-from analysis_suite.commons.plot_utils import hep, plot, plot_colorbar
+from analysis_suite.commons.plot_utils import cms_label, plot, plot_colorbar
 from analysis_suite.commons.constants import lumi
 from analysis_suite.commons.info import GroupInfo
 import analysis_suite.data.plotInfo.misId_fakerate as pinfo
@@ -21,18 +21,21 @@ from datetime import datetime
 latex_chan = {"Electron": "e", "Muon": "\mu",
               "EE": 'ee', "EM": 'e\mu', 'MM': '\mu\mu'}
 
+formatter = {'extra_format': 'pdf',}
+
 def plot_project(filename, tight, loose, axis_label, lumi, axis=None):
-    with plot(filename) as ax:
+    with plot(filename, **formatter) as ax:
         if axis is None:
             eff_hist = Histogram.efficiency(tight, loose)
         else:
             eff_hist = Histogram.efficiency(tight.project(axis), loose.project(axis))
         eff_hist.plot_points(ax)
         ax.set_xlabel(axis_label)
-        hep.cms.label(ax=ax, lumi=lumi)
+        cms_label(ax, lumi=lumi)
+
 
 def fr_plot(name, hist, year, **kwargs):
-    with plot(name, figsize=(18, 10)) as ax:
+    with plot(name, subplot_info={'figsize': (18, 10)}, **formatter) as ax:
         xx = np.tile(hist.axes[0].edges, (len(hist.axes[1])+1, 1))
         yy = np.tile(hist.axes[1].edges, (len(hist.axes[0])+1, 1)).T
         mesh = ax.pcolormesh(xx, yy, hist.vals.T, norm=colors.LogNorm(vmin=1e-5, vmax=1e-2),
@@ -45,7 +48,7 @@ def fr_plot(name, hist, year, **kwargs):
         ax.set_title("Electron Charge MisId Rate")
         ax.set_xlabel("$p_{T}(e)$ [GeV]")
         ax.set_ylabel("$|\eta(e)|$")
-        hep.cms.label(ax=ax, year=year)
+        cms_label(ax, year=year)
         plot_colorbar(mesh, ax, barpercent=2)
 
 def get_fake_rate(part, fake_rate, idx):
@@ -79,7 +82,7 @@ def measurement(workdir, year, input_dir):
     plot_dir = workdir / f'MR_{year}'
     plot_dir.mkdir(exist_ok=True)
 
-    bkg = ["DY_ht", "ttbar_lep", 'VV']
+    bkg = ["DY_ht", "ttbar_lep", 'vv_inc']
     chans = ['MM', 'EE', 'EM']
 
     ntuple = config.get_ntuple('charge_misId', 'measurement')
@@ -97,12 +100,12 @@ def measurement(workdir, year, input_dir):
         plotter.mask(lambda vg : vg["TightElectron"].num() == chan.count('E'))
         plotter.fill_hists(graphs)
         for graph in graphs_1d:
-            plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}.png', chan=latex, region=f"$MR({latex})$")
+            plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_{chan}.png', chan=latex, region=f"$MR({latex})$", **formatter)
 
     plotter.mask(lambda vg : vg["TightElectron"].num() > 0)
     plotter.fill_hists(graphs)
     for graph in graphs_1d:
-        plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_e.png', chan="e\ell", region="$MR(e\ell)$")
+        plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_e.png', chan="e\ell", region="$MR(e\ell)$", **formatter)
 
     all_fr = plotter.get_sum(bkg, 'all_fr')
     flip_fr = plotter.get_sum(bkg, 'flip_fr')
@@ -122,7 +125,7 @@ def closure(workdir, year, input_dir):
     plot_dir = workdir / f'CR_{year}'
     plot_dir.mkdir(exist_ok=True)
 
-    mc_bkg = ["ttbar_lep", 'VV', 'DY']
+    mc_bkg = ["ttbar_lep", 'vv_inc', 'DY']
     graphs = pinfo.charge_misId['Closure']
 
     # # Opposite sign region
@@ -141,7 +144,7 @@ def closure(workdir, year, input_dir):
 
 
     ntuple_ss = config.get_ntuple('charge_misId', 'closure_ss')
-    groups = ntuple_ss.get_info().setup_groups(["charge_flip", 'data'] + mc_bkg)
+    groups = ntuple_ss.get_info(keep_dd_data=True).setup_groups(["charge_flip", 'data'] + mc_bkg)
     filename = ntuple_ss.get_filename(year=year, workdir=input_dir)
 
     plotter_ss = Plotter(filename, groups, ntuple=ntuple_ss, year=year)
@@ -170,16 +173,16 @@ def closure(workdir, year, input_dir):
     print("template_fit", fit_scale)
 
     for graph in graphs:
-        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_mc.png', chan='ee', region="$SS({})$")
+        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_mc.png', chan='ee', region="$SS({})$", **formatter)
 
     plotter_ss.set_groups(bkg=mc_bkg, sig='charge_flip')
     plotter_ss.scale_hists('charge_flip', fit_scale)
     for graph in graphs:
-        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_all.png', chan='ee', region="$SS({})$")
+        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_all.png', chan='ee', region="$SS({})$", **formatter)
     # Plot with just Data-Driven Background
     plotter_ss.set_groups(bkg=['charge_flip'])
     for graph in graphs:
-        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_data.png', chan='ee', region="$SS({})$")
+        plotter_ss.plot_stack(graph.name, plot_dir/f'{graph.name}_SS_data.png', chan='ee', region="$SS({})$", **formatter)
 
     fake_rates *= fit_scale
     with open(workdir/f"fr_{year}.pickle", "wb") as f:

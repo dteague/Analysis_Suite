@@ -45,7 +45,7 @@ def get_cli():
         parser.add_argument('-t', '--train', action="store_true")
         parser.add_argument('-m', '--model', required=True, choices=['DNN', 'TMVA', 'XGBoost', "CutBased"],
                             help="Run the training")
-        parser.add_argument("--save", action='store_true', help="Save training set")
+        parser.add_argument("--setup_files", action='store_true', help="Save training set")
         parser.add_argument("--plot", action='store_true')
         parser.add_argument('-r', '--region', default="signal",)
     elif sys.argv[1] == "plot":

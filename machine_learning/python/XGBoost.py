@@ -51,7 +51,7 @@ class Params:
     # max_delta_step: int = 0
     objective: str = 'binary:logistic'
     eval_metric: str = "logloss"
-    use_label_encoder: bool = False
+    # use_label_encoder: bool = False
     # num_class: int = 2
 
     params: InitVar = None
@@ -72,11 +72,21 @@ class XGBoostMaker(MLHolder):
         """Constructor method
         """
         super().__init__(*args, **kwargs)
-
         self.param = Params(params=kwargs.get("params"))
 
     def update_params(self, params):
         self.param = Params(params=params)
+
+    def csv(self):
+        train_matrix = xgb.DMatrix(data=x_train,label=y_train, weight=w_train)
+        params = asdict(self.param)
+        n_rounds = params["n_estimators"]
+        del params["n_estimators"]
+        cv_train = xgb.cv(dtrain=train_matrix, params=params, nfold=5,
+                          num_boost_round=n_rounds, early_stopping_rounds=20, stratified=True,
+                          as_pandas=True, seed=123, verbose_eval=25,
+                          feval=fom_metric)
+        print(cv_train.to_string())
 
     def train(self, verbose=20):
         """**Train for multiclass BDT**
@@ -90,43 +100,16 @@ class XGBoostMaker(MLHolder):
 
         """
         x_train = self.train_set[self.use_vars]
-        # w_train = self.train_set.train_weight.copy()
         w_train = self.train_set.split_weight.copy()
         w_train2 = abs(self.train_set.scale_factor.to_numpy())
         y_train = self.train_set.classID
 
-        # train_matrix = xgb.DMatrix(data=x_train,label=y_train, weight=w_train)
-        # params = asdict(self.param)
-        # n_rounds = params["n_estimators"]
-        # del params["n_estimators"]
-        # cv_train = xgb.cv(dtrain=train_matrix, params=params, nfold=5,
-        #                   num_boost_round=n_rounds, early_stopping_rounds=20, stratified=True,
-        #                   as_pandas=True, seed=123, verbose_eval=25,
-        #                   feval=fom_metric)
-        # print(cv_train.to_string())
-        # exit()
-
         x_test = self.validation_set[self.use_vars]
         y_test = self.validation_set.classID
         w_test = abs(self.validation_set.scale_factor.to_numpy())
-        # w_test = self.validation_set.scale_factor
-        print(len(x_train), len(x_test))
-        for year, setter in self.test_sets.items():
-            print(year, len(setter))
-        exit()
+
         _, group_tot = np.unique(y_train, return_counts=True)
-        # print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
-        # print(group_tot)
         w_train[y_train==1] *= np.sum(w_train[y_train!=1])/np.sum(w_train[y_train==1])
-        # print(np.sum(w_train[y_train==1]), np.sum(w_train[y_train!=1]))
-        # w_train[y_train == 0] /= np.sum(w_train[y_train == 0])
-        # w_test = self.validation_set.scale_factor.copy()
-        # w_train[y_train == 1] /= np.sum(w_train[y_train == 1])
-
-        # w_test[y_test == 0] /= np.sum(w_test[y_test == 0])
-        # w_test[y_test == 1] /= np.sum(w_test[y_test == 1])
-
-        # w_train[self.train_set["classID"] == 0] *= max(group_tot)/group_tot[0]
 
         if len(np.unique(y_test)) > 2:
             self.param.objective = 'multi:softprob'

@@ -14,42 +14,57 @@ def setup(cli_args):
     inputs = get_inputs(cli_args.workdir)
     os.environ["NUMEXPR_MAX_THREADS"] = "8"
 
+    if cli_args.train and cli_args.region != "signal":
+        print("Training not allowed for non signal region")
+        exit()
+
+    # Setup splitting (if needed)
+    if cli_args.setup_files and cli_args.train:
+        print("Reproducing training files split")
+        setup_split_files(cli_args.workdir, cli_args.model, cli_args.years,
+                          inputs.usevars)
+
     argList = list()
     if cli_args.train:
         allSysts = ["Nominal"]
     else:
         allSysts = get_list_systs(cli_args.workdir, cli_args.tool, cli_args.systs)
     for syst in allSysts:
-        argList.append((inputs.groups, inputs.usevars, cli_args.workdir, cli_args.model, cli_args.train,
-                        cli_args.years, cli_args.region, syst, cli_args.save))
+        argList.append((inputs.usevars, cli_args.workdir, cli_args.model, cli_args.train,
+                        cli_args.years, cli_args.region, syst))
     return argList
 
 
-def get_groups(groups, ginfo, additions):
-    groupDict = dict()
-    for cls, samples in groups.items():
-        groupDict[cls] = ginfo.setup_members(filter(lambda s: s in ginfo.group2color, samples))
-        if cls in additions:
-            print(ginfo.group2color)
-            print(cls, additions[cls])
-            add_groups = ginfo.setup_members(filter(lambda s: s in ginfo.group2color, additions[cls]))
-            groupDict[cls] = np.concatenate((add_groups, groupDict[cls]))
-    return groupDict
+def setup_split_files(workdir, model, years, variables):
+    module = import_module(f'.{model}', "analysis_suite.machine_learning")
+    maker = getattr(module, next(filter(lambda x : "Maker" in x, dir(module))))
+    params = get_inputs(workdir, 'params')
+
+    ginfo = get_ntuple_info('signal')
+    samples = ginfo.setup_members()
+
+    model = maker(variables, list(), samples)
+    model.set_outdir(workdir/'split_files')
+    for year in years:
+        model.setup_year(workdir, year)
+    model.output_files()
 
 
 def training(model, years):
     model.train()
-    model.plot_training_progress()
+    # model.plot_training_progress()
     for year in years:
         model.apply_model(year)
-        model.roc_curve(year)
-        model.plot_overtrain(year=year)
-        model.plot_train_breakdown(year)
-        model.plot_train_breakdown(year, bins=np.linspace(0.8, 1, 41))
-        model.plot_train_breakdown(year, use_test=False)
-    model.plot_overtrain()
+    print('auc', model.get_auc())
+    print('fom', model.get_fom())
+    #     model.roc_curve(year)
+    #     model.plot_overtrain(year=year)
+    #     model.plot_train_breakdown(year)
+    #     model.plot_train_breakdown(year, bins=np.linspace(0.8, 1, 41))
+    #     model.plot_train_breakdown(year, use_test=False)
+    # model.plot_overtrain()
 
-def run(groups, usevars, workdir, model_type, train, years, region, systName, save_train):
+def run(usevars, workdir, model_type, train, years, region, systName):
     isNom = systName == "Nominal"
     isSignal = region == "signal"
     if not train and isNom and isSignal:
@@ -61,34 +76,32 @@ def run(groups, usevars, workdir, model_type, train, years, region, systName, sa
     elif not isNom and not isSignal:
         print("Can only apply model Nominal for non-signal region")
         return
-    # isNom = False
+
+    input_files = workdir/'split_files'
 
     module = import_module(f'.{model_type}', "analysis_suite.machine_learning")
     maker = getattr(module, next(filter(lambda x : "Maker" in x, dir(module))))
     params = get_inputs(workdir, 'params')
-
-    remove_group = ['nonprompt_mc'] if not isSignal else []
-    ginfo = get_ntuple_info(region, remove=remove_group)
+    ginfo = get_ntuple_info(region)
+    samples = ginfo.setup_members()
 
     # First Training
-    groupDict = get_groups(groups, ginfo, params.groups_first)
     output_first = workdir/'first_train'
-    print(groupDict)
-    model = maker(usevars, groupDict, region=region, systName=systName)
+    model = maker(usevars, ginfo.get_members('ttt_nlo'), samples, region=region,
+                  systName=systName)
     model.update_params(params.params_first)
     model.set_outdir(output_first)
     for year in years:
-        (output_first/year).mkdir(exist_ok=True, parents=True)
-        model.setup_year(workdir, year, isNom and isSignal)
+        model.read_in_files(input_files, year)
 
     if train:
+        model.read_in_train_files(input_files)
         training(model, years)
-        model.output_train(params.signal_first)
-    exit()
     for year in years:
         if not train:
             model.apply_model(year, skip_train=True)
-        model.output(year, params.signal_first)
+    model.output_bdt(input_files/f'bdt_{params.signal_first}.root', params.signal_first)
+    exit()
 
     print(f"Training for syst {systName}")
     if params.cut > 1:

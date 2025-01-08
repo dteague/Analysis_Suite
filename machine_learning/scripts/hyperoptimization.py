@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import warnings
+warnings.filterwarnings('ignore')
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -23,6 +25,7 @@ space = {
     'min_child_weight' : hp.quniform('min_child_weight', 0, 10, 1),
     "subsample": hp.uniform("subsample", 0.50, 1.0),
     'n_estimators': hp.quniform('n_estimators', 100, 1000, 50),
+    # 'n_estimators': hp.quniform('n_estimators', 1, 5, 1),
     'seed': 0,
 }
 
@@ -34,30 +37,17 @@ def objective(space):
     model.update_params(space)
     model.train(None)
 
-    total_fom = 0
-    min_auc = 1.
     for year in all_eras:
         model.apply_model(year)
-        total_fom += model.get_fom(year)**2
-        min_auc = min(min_auc, model.get_auc(year))
-    total_fom = np.sqrt(total_fom)
-    space['fom'] = total_fom
-    space['auc'] = min_auc
-    return {
-        'loss': -total_fom,
-        'status': STATUS_OK,
-        'auc': min_auc,
-        "fom": total_fom,
-    }
 
-def get_groups(groups, ginfo, additions):
-    groupDict = dict()
-    for cls, samples in groups.items():
-        groupDict[cls] = ginfo.setup_members(filter(lambda s: s in ginfo.group2color, samples))
-        if cls in additions:
-            add_groups = ginfo.setup_members(filter(lambda s: s in ginfo.group2color, additions[cls]))
-            groupDict[cls] = np.concatenate((add_groups, groupDict[cls]))
-    return groupDict
+    space['fom'] = model.get_fom()
+    space['auc'] = model.get_auc()
+    return {
+        'loss': -space['fom'],
+        'status': STATUS_OK,
+        'auc': space['auc'],
+        "fom": space['fom'],
+    }
 
 
 if __name__ == "__main__":
@@ -70,27 +60,26 @@ if __name__ == "__main__":
     # user parameters
 
     # Derived Variables
+    inputs = get_inputs(args.workdir)
+    input_files = args.workdir/'split_files'
+
+    ginfo = get_ntuple_info('signal')
+    samples = ginfo.setup_members()
     if args.signal == 'ttt':
-        group_add = {"Signal": ['ttt'], 'NotTrained': ['4top']}
+        signal = ginfo.get_members('ttt_nlo')
         outdir = args.workdir / 'hyperopt_ttt'
     else:
-        group_add = {"Signal": ['4top'], 'Background': ['ttt']}
         outdir = args.workdir / 'hyperopt_4top'
     outdir.mkdir(exist_ok=True, parents=True)
-
     logfile = outdir/"trials.pkl"
     hyper_file = outdir/"hyperParams.py"
 
-    ginfo = get_ntuple_info('signal')
-    inputs = get_inputs(args.workdir)
-    groupDict = get_groups(inputs.groups, ginfo, group_add)
-    model = XGBoostMaker(inputs.usevars, groupDict, region='signal')
+    model = XGBoostMaker(inputs.usevars, ginfo.get_members('ttt_nlo'),
+                         samples)
     model.set_outdir(outdir)
-    if args.signal == 'ttt':
-        model.add_cut(f'4top_sig<0.925')
-        for year in all_eras:
-            # model.setup_year(args.workdir, year)
-            model.read_in_file(args.workdir/'first_train', year)
+    for year in all_eras:
+        model.read_in_files(input_files, year)
+    model.read_in_train_files(input_files)
 
     trials = pickle.load(open(logfile, "rb")) if logfile.exists() else Trials()
 
@@ -110,4 +99,3 @@ if __name__ == "__main__":
         f.write(pprint.pformat(best_hyperparams, indent=len(varName)))
         f.write("\n")
         print( "[OK ] Parameters saved to dataset folder." )
-

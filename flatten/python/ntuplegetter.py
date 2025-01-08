@@ -3,74 +3,50 @@ import awkward as ak
 import uproot as uproot
 import numpy as np
 from copy import copy
+import multiprocessing as mp
 
 from .basegetter import BaseGetter
-
 
 class NtupleGetter(BaseGetter):
     """ """
 
     single_branch = ["run", "event", "luminosityBlock", "bjet_scale"]
 
-    def __init__(self, filename, treename, group, xsec, systName=""):
+    def __init__(self, root_file, treename, group, xsec, systName="", **kwargs):
         super().__init__()
-        self.systName = systName
         self.part_name = []
         self.arr = dict()
         self.parts = dict()
         self.branches = []
         self.xsec = xsec
+        self.isData = (group == "data")
 
-        f = uproot.open(filename)
-        if group not in f or treename not in f[group]:
+        if group not in root_file or treename not in root_file[group]:
             return
-        systNames = []
-        for name in f[group]["Systematics"]:
+        self.all_systs = []
+        for name in root_file[group]["Systematics"]:
             mem = name.member("fName")
-            if mem in systNames:
+            if mem in self.all_systs:
                 break
             else:
-                systNames.append(mem)
-        if self.systName not in systNames:
-            return
+                self.all_systs.append(mem)
 
-        self.syst_unique = systNames.index(systName)
-        if "Syst_Index" in f[group]:
-            indices = {}
-            for name in f[group]["Syst_Index"]:
+        self.syst_indices = {}
+        if "Syst_Index" in root_file[group]:
+            for name in root_file[group]["Syst_Index"]:
                 i, j = int(name.member("fName")), int(name.member("fTitle"))
-                if i in indices:
+                if i in self.syst_indices:
                     break
                 else:
-                    indices[i] = j
-            self.syst = indices[self.syst_unique]
-            self.systNames = [(s, systNames[s]) for s, n in indices.items() if n == self.syst]
-        else:
-            self.systNames = []
-            self.syst = self.syst_unique
+                    self.syst_indices[i] = j
 
-        self.sumw_hist, _ = f[group]["sumweight"].to_numpy()
-        self.syst_bit = 2**self.syst
-        self.tree = f[group][treename]
+        self.sumw_hist, _ = root_file[group]["sumweight"].to_numpy()
+        self.tree = root_file[group][treename]
         self.branches = [key for key, arr in self.tree.items() if len(arr.keys()) == 0]
         self.part_name = np.unique(
             [br.split("/")[0] for br in self.branches if "/" in br]
         )
-        self._base_mask = ak.to_numpy(self._get_var("PassEvent"))
-        self._mask = copy(self._base_mask)
-        self._scale = ak.to_numpy(self.tree['weight'].array()[:, self.syst_unique])
-        self.is_jec_unc = "JER" in self.systName or "JEC" in self.systName
-
-        # self._scale = ak.to_numpy(self.tree['wgt_nobtag'].array()[:,0])
-
-        if group == "data":
-            pass
-        elif "sumweight" in f[group]:
-            self._scale = self.get_sf(self.systName) * self._scale
-        else:
-            print(f"Problem with group {group}")
-            self._mask = None
-
+        self.set_systematic(systName)
 
     def _get_var(self, name):
         return self.tree[name].array()[:, self.syst]
@@ -105,6 +81,36 @@ class NtupleGetter(BaseGetter):
         sw_idx = sumweight_change.get(systName, 0)
         sumw = self.sumw_hist[sw_idx] if self.sumw_hist[sw_idx]/self.sumw_hist[0] > 0.1 else self.sumw_hist[0]
         return self.xsec/sumw
+
+    def set_systematic(self, systname):
+        if systname not in self.all_systs:
+            print("HERE, setting nominal")
+            systname = "Nominal"
+
+        self.syst_unique = self.all_systs.index(systname)
+        if self.syst_indices:
+            self.syst = self.syst_indices[self.syst_unique]
+            self.systNames = [(s, self.all_systs[s]) for s, n in self.syst_indices.items() if n == self.syst]
+        else:
+            self.systNames = []
+            self.syst = self.syst_unique
+        self.syst_bit = 2**self.syst
+
+        # Redo scales and masks
+        self._base_mask = ak.to_numpy(self._get_var("PassEvent"))
+        self._mask = copy(self._base_mask)
+        self._scale = ak.to_numpy(self.tree['weight'].array()[:, self.syst_unique])
+        self.is_jec_unc = "JER" in systname or "JEC" in systname
+
+        if not self.isData:
+            self._scale = self.get_sf(systname) * self._scale
+
+        for part in self.parts:
+            self[part].reset_mask()
+
+        for key in list(self.arr.keys()):
+            if "/" not in key and 'vector' in self.tree[key].typename:
+                del self.arr[key]
 
     def get_all_weights(self):
         all_weights = {}
@@ -242,6 +248,12 @@ class ParticleBase:
     def __init__(self, vg):
         self.vg = vg
 
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+
     def reset(self):
         pass
 
@@ -267,7 +279,7 @@ class ParticleBase:
             return self.vg.scale[self.num() > idx]
 
 
-    def get_hist(self, var, idx):
+    def get_hist(self, var, idx=-1):
         """Get the values and scales to make a histogram for a given variable
 
         Parameters
@@ -284,6 +296,8 @@ class ParticleBase:
         """
         if self.__len__() == 0:
             return ak.Array([]), ak.Array([])
+        if var == "num":
+            return self.num(), self.vg.scale
         if idx == -1:
             return ak.flatten(self[var, idx]), ak.flatten(self.scale(idx))
         else:
@@ -318,14 +332,16 @@ class Particle(ParticleBase):
     def __init__(self, name, vg):
         super().__init__(vg)
         self.name = name
-        self._base_mask = (
-            np.bitwise_and(vg._get_var_nosyst(f"{self.name}/syst_bitMap"), vg.syst_bit)
-            != 0
-        )
-        self._mask = copy(self._base_mask)
+        self.reset_mask()
 
     def __getattr__(self, var):
         return self.vg[f"{self.name}/{var}"][self.mask]
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__ = d
 
     def __call__(self, *args):
         return self[args]
@@ -359,6 +375,12 @@ class Particle(ParticleBase):
             vals = self.vg[f"{self.name}/{var}"][self.mask][self.num() > idx]
         return ak.to_numpy(vals[:, idx])
 
+    def reset_mask(self):
+        self._base_mask = (
+            np.bitwise_and(self.vg._get_var_nosyst(f"{self.name}/syst_bitMap"), self.vg.syst_bit)
+            != 0
+        )
+        self.clear_mask()
 
     def clear_mask(self):
         self._mask = copy(self._base_mask)
@@ -439,8 +461,17 @@ class MergeParticle(ParticleBase):
         self.parts = parts
         self.reset()
 
+    def reset_mask(self):
+       self.reset()
+
     def reset(self):
         self._idx_sort = ak.argsort(self._get_combined_item("pt"), ascending=False)
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__ = d
 
     def __getattr__(self, var):
         return self._get_combined_item(var)[self._sort]
@@ -463,11 +494,11 @@ class MergeParticle(ParticleBase):
     def _get_combined_item(self, var):
         if callable(getattr(self.parts[0], var)):
             return ak.concatenate(
-                (getattr(part, var)() for part in self.parts), axis=-1
+                [getattr(part, var)() for part in self.parts], axis=-1
             )
         else:
             return ak.concatenate(
-                (part.__getattr__(var) for part in self.parts), axis=-1
+                [part.__getattr__(var) for part in self.parts], axis=-1
             )
 
     def shape(self):

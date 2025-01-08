@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 info ={
     "xg": {
-        "Name": "X+\gamma", 
+        "Name": r"X+\gamma",
         "Members": [
             "ttg_hadronic",
 	        "ttg_singleLept",

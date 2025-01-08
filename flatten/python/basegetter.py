@@ -20,6 +20,12 @@ class BaseGetter:
     def __getattr__(self, key):
         return self.__getitem__(key)
 
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+
     @property
     def scale(self):
         """ """
@@ -94,8 +100,8 @@ class BaseGetter:
         graph : GraphInfo object
             GraphInfo object that graphs the variable information
         """
-        if graph.cuts is not None:
-            self.mask = graph.cuts
+        # if graph.cuts is not None:
+            # self.mask = graph.cuts
         if callable(graph.func):
             return graph.func(self, *args)
         else:

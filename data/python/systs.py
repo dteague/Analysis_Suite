@@ -9,30 +9,30 @@ ratio = {
     "2018": round(lumi['2018']/lumi['all'], 3),
 }
 
-signal = ['tttj_lo', 'tttw_lo', 'tttj_nlo', 'tttw_nlo']
-mc_samples = ['ttt', 'xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top']+signal
-mc_samples_norp = ['ttt', 'xg', 'ttw', 'tth', 'ttXY', 'rare', '4top']+signal
-mc_samples_nosig = ['xg', 'ttw', 'tth', 'ttz', 'ttXY', 'rare', '4top']
+signal = ['tttj_lo', 'tttw_lo', 'tttj_nlo', 'tttw_nlo', 'ttt_nlo', 'ttt_lo']
+# Ignoring ttZ because of rate parameter
+bkg = ['xg', 'ttw', 'tth', 'ttXY', 'rare', '4top', 'rare_nowz', 'wz', 'ttz']
+mc_samples = bkg + signal
 qcd = ['ttw', 'tth', 'ttz', '4top', 'ttXY', 'xg', 'tttw_lo', 'tttw_nlo']
 ewk = ['rare', 'tttj_lo', 'tttj_nlo']
 Systematic.default_groups = mc_samples
 
 
 systematics = [
-    Systematic("LUMI_RUN2", "lnN", True).add(1.006, groups=mc_samples_norp, year="2016pre") \
-                                        .add(1.006, groups=mc_samples_norp, year="2016post") \
-                                        .add(1.009, groups=mc_samples_norp, year="2017")    \
-                                        .add(1.020, groups=mc_samples_norp, year="2018"),
-    Systematic("LUMI_17_18", "lnN", True).add(1.006, groups=mc_samples_norp, year="2017") \
-                                         .add(1.002, groups=mc_samples_norp, year="2018"),
-    Systematic("LUMI_", "lnN").add(1.010, groups=mc_samples_norp, year="2016pre") \
-                              .add(1.010, groups=mc_samples_norp, year="2016post") \
-                              .add(1.020, groups=mc_samples_norp, year="2017")    \
-                              .add(1.015, groups=mc_samples_norp, year="2018"),
+    Systematic("LUMI_RUN2", "lnN", True).add(1.006, groups=mc_samples, year="2016pre") \
+                                        .add(1.006, groups=mc_samples, year="2016post") \
+                                        .add(1.009, groups=mc_samples, year="2017")    \
+                                        .add(1.020, groups=mc_samples, year="2018"),
+    Systematic("LUMI_17_18", "lnN", True).add(1.006, groups=mc_samples, year="2017") \
+                                         .add(1.002, groups=mc_samples, year="2018"),
+    Systematic("LUMI_", "lnN").add(1.010, groups=mc_samples, year="2016pre") \
+                              .add(1.010, groups=mc_samples, year="2016post") \
+                              .add(1.020, groups=mc_samples, year="2017")    \
+                              .add(1.015, groups=mc_samples, year="2018"),
 
     #### Theory systs
-    Systematic("PDF_unc", corr=True).add(groups=mc_samples_nosig).dname("PDF"),
-    Systematic("PDF_alphaZ", corr=True).add(groups=mc_samples_nosig).dname("ALPHAS"),
+    Systematic("PDF_unc", corr=True).add(groups=bkg).dname("PDF"),
+    Systematic("PDF_alphaZ", corr=True).add(groups=bkg).dname("ALPHAS"),
     Systematic("PS_FSR", corr=True).add().dname("FSR"),
 
     Systematic("LHE_muF", corr=True).add(groups=qcd).dname("MUFQCD"),
@@ -79,8 +79,8 @@ systematics = [
     Systematic("Pileup", corr=True).add().dname("PILEUP"),
 
     ## Fake Rate stuff
-    Systematic("ChargeMisId_Stat").add(groups='charge_flip'),
-    Systematic("ChargeMisId_Closure", 'lnN').add(1.2, groups="charge_flip"),
+    Systematic("ChargeMisId_Stat").add(groups='charge_flip', chan="Dilepton"),
+    Systematic("ChargeMisId_Closure", 'lnN').add(1.2, groups="charge_flip", chan="Dilepton"),
 
     Systematic("Nonprompt_Mu_Stat").add(groups='nonprompt'),
     Systematic("Nonprompt_El_Stat").add(groups='nonprompt'),
@@ -91,7 +91,6 @@ systematics = [
     # Systematic("XSEC_TTTW", "lnN", corr=True).add('0.85/1.16', groups="tttw"),
     # Systematic("XSEC_TTTJ", "lnN", corr=True).add('0.9/1.12', groups="tttj"),
     Systematic("XSEC_TTW", "lnN", corr=True).add(1.15, groups="ttw"),
-    # Systematic("CMS_norm_ttz", "lnN").add(1.20, groups="ttz"),
     Systematic("XSEC_TTH", "lnN", corr=True).add(1.20, groups="tth"),
     Systematic("XSEC_XG", "lnN", corr=True).add(1.5, groups="xg"),
     Systematic("XSEC_RARE", "lnN", corr=True).add(1.5, groups="rare"),

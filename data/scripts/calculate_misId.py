@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
-import boost_histogram as bh
 import argparse
+from boost_histogram import axis
 from scipy.optimize import minimize
 import numpy as np
-import awkward as ak;
 import pickle
-from pathlib import Path
-from matplotlib import colors
+# from matplotlib import colors
 
 import analysis_suite.commons.configs as config
 from analysis_suite.commons.histogram import Histogram
-from analysis_suite.commons.plot_utils import cms_label, plot, plot_colorbar
-from analysis_suite.commons.constants import lumi
-from analysis_suite.commons.info import GroupInfo
-import analysis_suite.data.plotInfo.misId_fakerate as pinfo
-from analysis_suite.plotting.plotter import Plotter
+# from analysis_suite.commons.plot_utils import cms_label, plot, plot_colorbar
+# from analysis_suite.commons.constants import lumi
+# import analysis_suite.data.plotInfo.misId_fakerate as pinfo
+from analysis_suite.plotting.plotter2 import Plotter
 from analysis_suite.commons.user import workspace_area
-from datetime import datetime
+
+cm_ptbins = axis.Variable([20, 30, 40, 55, 100, 150])
+cm_etabins = axis.Variable([0.0, 1.1, 1.479, 1.653, 2.5])
 
 latex_chan = {"Electron": "e", "Muon": "\mu",
               "EE": 'ee', "EM": 'e\mu', 'MM': '\mu\mu'}
@@ -79,6 +78,52 @@ def fit_template(data, flip):
 
 
 def measurement(workdir, year, input_dir):
+    ntuple = config.get_ntuple('charge_misId', 'measurement')
+    plotter = Plotter(ntuple, year, bkg = ["DY_ht", "ttbar_lep", 'vv_inc'],
+                      outdir=workdir/f'MR_{year}')
+    hist_factory = HistGetter(ntuple, year=year)
+
+    graphs = {
+        'pt_lead':  GraphInfo('$p_{{T}}({}_{{lead}})$', axis.Regular(20, 0, 200), lambda vg : vg['TightLepton'].get_hist('pt', 0)),
+        'pt_sub':   GraphInfo('$p_{{T}}({}_{{sub}})$', axis.Regular(20, 0, 200), lambda vg : vg['TightLepton'].get_hist('pt', 1)),
+        'pt_all':   GraphInfo('$p_{{T}}(\ell)$', axis.Regular(20, 0, 200), lambda vg : vg['TightLepton'].get_hist('pt', -1)),
+        'eta_lead': GraphInfo('$\eta({}_{{lead}})$', axis.Regular(26, -2.5, 2.5), lambda vg : vg['TightLepton'].get_hist('eta', 0)),
+        'eta_sub':  GraphInfo('$\eta({}_{{sub}})$', axis.Regular(26, -2.5, 2.5), lambda vg : vg['TightLepton'].get_hist('eta', 1)),
+        'eta_all':  GraphInfo('$\eta(\ell)$', axis.Regular(26, -2.5, 2.5), lambda vg : vg['TightLepton'].get_hist('eta', -1)),
+        'mass':     GraphInfo('$M({})$', axis.Regular(30, 0, 400), lambda vg : (vg.dimass("TightLepton", 0, "TightLepton", 1), vg.scale)),
+        'ht':       GraphInfo('HT', axis.Regular(30, 250, 1000), lambda vg : vg.get_hist("HT")),
+        'met':      GraphInfo('MET', axis.Regular(30, 25, 250), lambda vg : vg.get_hist("Met")),
+    }
+    denom_fr = GraphInfo('pteta', (cm_ptbins, cm_etabins), lambda vg : vg['TightElectron'].get_hist2d('pt', 'abseta', -1)),
+    num_fr = GraphInfo('pteta', (cm_ptbins, cm_etabins), lambda vg : fake_chargeMisId(vg)),
+
+    chans = ['MM', 'EE', 'EM']
+    for chan in chans:
+        latex = latex_chan[chan]
+        plotter.mask(lambda vg : vg["TightElectron"].num() == chan.count('E'))
+        for graph in graphs:
+            hists = hist_factory.get_hists(graph)
+            plotter.plot_hists(hists)
+
+    plotter.mask(lambda vg : vg["TightElectron"].num() > 0)
+    plotter.fill_hists(graphs)
+    for graph in graphs_1d:
+        plotter.plot_stack(graph.name, plot_dir/f'{graph.name}_e.png', chan="e\ell", region="$MR(e\ell)$", **formatter)
+
+    denom_hist = hist_factory.get_hist(denom_fr)
+    num_hist = hist_factory.get_hist(num_fr)
+
+    fr = Histogram.efficiency(num_hist, denom_hist)
+    fr_plot(plot_dir/f'fr_{year}', fr, year)
+
+    plot_project(plot_dir/f'fr_pt.png', flip_fr, all_fr, "$p_{{T}}(e)$", lumi[year], axis=0)
+    plot_project(plot_dir/f'fr_eta.png', flip_fr, all_fr, '$\eta(e)$', lumi[year], axis=1)
+
+    # Dump fake rate
+    with open(workdir/f"charge_misid_rate_{year}.pickle", "wb") as f:
+        pickle.dump(fr, f)
+
+    #################################
     plot_dir = workdir / f'MR_{year}'
     plot_dir.mkdir(exist_ok=True)
 

@@ -8,110 +8,77 @@ import warnings
 warnings.simplefilter("ignore", UserWarning)
 from scipy.stats import beta
 
-class Histogram:
+class Histogram(bh.Histogram):
     def __init__(self, *args, **kwargs):
         if len(args) == 0:
             args = (bh.axis.Regular(1, 0, 1),)
-        self.hist = bh.Histogram(*args, storage=bh.storage.Weight())
+        super().__init__(*args, storage=bh.storage.Weight())
+
         self.breakdown = dict()
         self.color = kwargs.get('color', 'k')
         self.name = kwargs.get('name', "")
+        self.axis_name = kwargs.get('axis_name', "")
         self.draw_scale = 1
-
-    def __add__(self, right):
-        return Histogram(*self.meta).set(self.hist + right.hist)
-
-    def __sub__(self, right):
-        return self + (-1)*right
-
-    def __mul__(self, right):
-        return Histogram(*self.meta).set(right*self.hist)
-
-    def __rmul__(self, right):
-        return right*self
-
-    def __imul__(self, right):
-        self.hist *= right
-        return self
-
-    def __iadd__(self, right):
-        if isinstance(right, Histogram):
-            self._set_hist(right.hist)
-            self.breakdown.update({mem: bh_weights()
-                                   for mem in right.breakdown.keys()
-                                   if mem not in self.breakdown})
-            for mem, info in right.breakdown.items():
-                self.breakdown[mem] += info
-        elif isinstance(right, bh.Histogram):
-            self._set_hist(right)
-        return self
-
-    def _set_hist(self, hist):
-        if not self:
-            self.hist = copy(hist)
-        else:
-            self.hist += hist
-
-    def __truediv__(self, denom):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ratio = np.nan_to_num(self.vals/denom.vals)
-            error2 = ratio**2*(self.err_ratio + denom.err_ratio)
-
-        return_obj = Histogram(*self.hist.axes)
-        return_obj.hist.values()[:] = ratio
-        return_obj.hist.variances()[:] = error2
-        return_obj.set_metadata(self)
-        return return_obj
+        self.syst_error = None
 
     def __bool__(self):
-        return not self.hist.empty()
+        return not self.empty()
 
-    def __getstate__(self):
-        return {
-            "hist": self.hist,
-            "color": self.color,
-            "name": self.name,
-            "breakdown": self.breakdown,
-            "draw_sc": self.draw_sc
-        }
+    def __sub__(self, right):
+        return super().__add__(-1*right)
 
-    def __setstate__(self, state):
-        self.hist = state["hist"]
-        self.color = state["color"]
-        self.name = state["name"]
-        self.breakdown = state["breakdown"]
-        self.draw_sc = state["draw_sc"]
+    def __truediv__(self, right):
+        if not isinstance(right, Histogram):
+            return super().__mul__(1/right)
+        # error propagation for independent a, b:
+        # c = a / b: var(c) = (var(a)/a^2 + var(b)/b^2) c^2
+        output = self.copy(deep=False)
+        variance = self.variances(flow=True)/(self.values(flow=True)**2+1e-10)
+        variance += right.variances(flow=True)/(right.values(flow=True)**2+1e-10)
+        output.values(flow=True)[:] /= (right.values(flow=True)+1e-5)
+        output.variances(flow=True)[:] = variance*output.values(flow=True)**2
+        return output
 
     def __getattr__(self, attr):
         if attr == 'axis':
-            return self.hist.axes[0]
-        elif attr == 'axes':
-            return self.hist.axes
+            return self.axes[0]
         elif attr == 'vals':
-            return self.hist.view().value
-        elif attr == 'err':
-            return np.sqrt(self.hist.view().variance)
+            return self.move_overflow(copy(self.values(flow=True)))
         elif attr == 'sumw2':
-            return self.hist.view().variance
-        elif attr == 'err_ratio':
-            return np.nan_to_num(self.sumw2/(self.vals**2+1e-6))
+            return self.move_overflow(copy(self.variances(flow=True)))
+        elif attr == 'err':
+            return np.sqrt(self.move_overflow(copy(self.variances(flow=True))))
+        elif attr == 'syst_err2':
+            return self.move_overflow(copy(self.syst_error))
+        elif attr == 'total_err':
+            stats = self.sumw2
+            syst = self.syst_err2
+            return np.sqrt(stats+syst)
         else:
-            raise Exception(f"{attr} was not found!")
+            raise Exception(f'{attr} was not found')
 
-    def set(self, hist):
-        if isinstance(hist, Histogram):
-            self.hist = hist.hist
-        elif isinstance(hist, bh.Histogram):
-            self.hist = hist
-        else:
-            raise Exception("Problem")
+    def get_self_ratio(self):
+        output = Histogram(self.axis)
+        output.values()[:] = np.where(abs(self.vals) > 1e-5, 1., 0.)
+        output.variances()[:] = self.sumw2/(self.vals**2 + 1e-10)
+        output.syst_error = np.zeros(self.axis.extent)
+        output.syst_error[1:-1] += self.syst_err2/(self.vals**2 + 1e-10)
+        return output
+
+    def add_syst(self, hist):
+        if self.syst_error is None:
+            self.syst_error = np.zeros(self.axis.extent)
+        self.syst_error += hist.values(flow=True)**2
 
     def meta(self):
         return {
             "color": self.color,
             "name": self.name,
         }
+
+    def set_metadata(self, **kwargs):
+        self.color = kwargs.get('color', self.color)
+        self.name = kwargs.get('name', self.name)
 
     @staticmethod
     def efficiency(top, bot, asymm=False):
@@ -133,49 +100,29 @@ class Histogram:
         return_obj.hist.variances()[:] = error2
         return return_obj
 
-    def move_overflow(self):
+    def move_overflow(self, vals):
         if len(self.axes) == 1:
-            self.hist[-1] += self.hist[bh.overflow]
-            self.hist[bh.overflow] = (0, 0)
+            vals[-2] += vals[-1]
+            vals[1] += vals[0]
+            return vals[1:-1]
         else:
-            last_y = -1 if self.axes.size[1] > 1 else 0
-            last_x = -1 if self.axes.size[0] > 1 else 0
-            for i in range(self.axes.size[0]):
-                self.hist[i, last_y] += self.hist[i, bh.overflow]
-                self.hist[i, bh.overflow] = (0, 0)
-            for i  in range(self.axes.size[1]):
-                self.hist[last_x, i] += self.hist[bh.overflow, i]
-                self.hist[bh.overflow, i] = (0, 0)
-            self.hist[last_x, last_y] += self.hist[bh.overflow, bh.overflow]
-            self.hist[bh.overflow, bh.overflow] = (0, 0)
-
-    def project(self, ax):
-        new_hist = Histogram(self.hist.axes[0])
-        new_hist.hist = self.hist.project(ax)
-        new_hist.set_metadata(self)
-        return new_hist
-
-    def fill(self, *vals, weight, flow=True, member=None):
-        self.hist.fill(*vals, weight=weight)
-        if member is not None:
-            self.breakdown[member] = bh_weights().fill(weight)
-        if flow and sum(self.hist.shape) > 1:
-            self.move_overflow()
+            vals[1] += vals[0]
+            vals[-2] += vals[-1]
+            vals[1:-1,1] += vals[1:-1,0]
+            vals[1:-1,-2] += vals[1:-1,-1]
+            return vals[1:-1,1:-1]
 
     def get_name(self):
+        name = f'${self.name}$' if '\\' in self.name else self.name
         if self.draw_scale == 1:
-            return self.name
+            return name
         else:
             str_scale = str(scale) if isinstance(scale, int) else f'{scale:0.2f}'
-            return f"{self.name} x {str_scale}"
+            return f"{name} x {str_scale}"
 
     def set_plot_details(self, name, color):
-        name = f'${name}$' if '\\' in name else name
         self.name = name
         self.color = color
-            # name = group_info.get_legend_name(self.group)
-            # self.name = f'${name}$' if '\\' in name else name
-            # self.color = group_info.get_color(self.group)
 
     def darkenColor(self, color=None):
         if color is None:
@@ -192,43 +139,32 @@ class Histogram:
             self.draw_scale *= scale
         else:
             self.hist *= scale
-            for mem, info in self.breakdown.items():
-                self.breakdown[mem] *= scale
 
     def integral(self, flow=True):
         return self.hist.sum(flow=flow).value
 
-    def plot_points(self, pad, normed=False, **kwargs):
+    def plot_points(self, pad, **kwargs):
         if not self or pad is None:
             return
         mask = self.vals > 0.
-        if normed:
-            vals = self.vals/self.axis.widths
-            err = self.err/self.axis.widths
-        else:
-            vals = self.vals
-            err = self.err
+        vals = self.vals
+        err = self.err
         pad.errorbar(x=self.axis.centers[mask], xerr=self.axis.widths[mask]/2,
-                     y=self.draw_sc*vals[mask], ecolor=self.color,
-                     yerr=self.draw_sc*err[mask], fmt='o',
+                     y=self.draw_scale*vals[mask], ecolor=self.color,
+                     yerr=self.draw_scale*err[mask], fmt='o',
                      color=self.color, barsabove=True, label=self.get_name(),
                      markersize=4, **kwargs)
 
-    def plot_hist(self, pad, normed=False, **kwargs):
+    def plot_hist(self, pad, **kwargs):
         if not self or pad is None:
             return
-        mask = self.vals > 0.
-        if normed:
-            vals = self.vals/self.axis.widths
-            err = self.err/self.axis.widths
-        else:
-            vals = self.vals
-            err = self.err
-        pad.hist(x=self.axis.centers[mask], weights=self.draw_sc*self.vals[mask], bins=self.axis.edges,
+        vals = self.vals
+        mask = vals > 0.
+        err = self.err
+        pad.hist(x=self.axis.centers[mask], weights=self.draw_scale*self.vals[mask], bins=self.axis.edges,
                  label=self.get_name(), histtype="step", linewidth=3, color=self.color, **kwargs)
 
     def plot_2d(self, pad, noText=False, **kwargs):
-        import matplotlib.patheffects as path_effects
         if not self or pad is None:
             return
 
@@ -256,31 +192,29 @@ class Histogram:
                 ytot = y - offset*min_ysize
                 if self.vals[i,j] < 1e-5:
                     continue
-                val_str = f'{self.vals[i,j]:.3f}\n$\pm${self.err[i,j]:.3f}'
+                val_str = fr'{self.vals[i,j]:.3f}\n$\pm${self.err[i,j]:.3f}'
                 text = pad.text(x, ytot, val_str, fontsize='x-small', ha=ha, va='center')
         return color_plot
 
 
-    def plot_band(self, pad, normed=False, asymm=False, **kwargs):
+    def plot_error_band(self, pad, color='plum', hatch='//', systs=False, **kwargs):
         if not self or pad is None:
             return
-        if normed:
-            vals = self.vals/self.axis.widths
-            err = self.err/self.axis.widths
+        if systs:
+            err = self.total_err
+            name = r"$Stats \oplus Systs$"
         else:
-            vals = self.vals
             err = self.err
-        bottom = vals - err
-        pad.hist(weights=2*err, x=self.axis.centers,
-                 bins=self.axis.edges, bottom=bottom,
-                 histtype='stepfilled', color=self.color,
-                 align='mid', stacked=True, hatch='//',
-                 alpha=0.4, label=self.get_name(), **kwargs)
+            name = "Stats"
+        bottom = self.vals - err
+        pad.hist(weights=2*err, x=self.axis.centers, bins=self.axis.edges,
+                 bottom=bottom, histtype='stepfilled', color=color, align='mid',
+                 stacked=True, hatch=hatch, alpha=0.4, label=name, **kwargs)
 
     def plot_shape(self, pad, normed=False, **kwargs):
         if not self or pad is None:
             return
-        pad.hist(x=self.axis.centers, weights=self.draw_sc*self.vals, bins=self.axis.edges,
+        pad.hist(x=self.axis.centers, weights=self.draw_scale*self.vals, bins=self.axis.edges,
                  label=self.get_name(), histtype="stepfilled", linewidth=1.5, density=True, alpha=0.3,
                  hatch="///", color=self.color, edgecolor=self.darkenColor())
 

@@ -21,27 +21,37 @@ class Systematic:
     default_groups: list = None
 
     def __post_init__(self):
-        self.systs = {# year: dict() for year in all_eras
-                      }
+        self.systs = {}
         self.dan_name = self.name
 
-    def output(self, group_list, year, chan='all'):
+    def get_syst(self, year, chan='all'):
         if chan in self.systs[year]:
-             syst = self.systs[year][chan]
+             return self.systs[year][chan]
         elif 'all' in self.systs[year]:
-             syst = self.systs[year]['all']
+             return self.systs[year]['all']
         else:
             return None
+
+    def get_lnN_error(self, year, chan):
+        syst = self.get_syst(year, chan)
+        if isinstance(syst, str):
+            down, up = syst.split("/")
+            return (float(up)-float(down))/2
+        else:
+            return (syst-1./syst)/2
+
+    def output(self, group_list, year, chan):
+        syst_val = self.get_syst(year, chan)
 
         line = [self.get_name(year), self.syst_type]
         for group in group_list:
             if any([g in self.systs[year]['groups'] for g in [group, 'all']]):
-                line.append(syst)
+                line.append(syst_val)
             else:
                 line.append('-')
         return line
 
-    def good_syst(self, group_list, year):
+    def good_syst(self, group_list, year, chan):
         if isinstance(group_list, str):
             group_list = [group_list]
         if year not in self.systs:

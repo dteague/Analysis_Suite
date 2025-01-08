@@ -3,14 +3,14 @@ from analysis_suite.commons.histogram import Histogram
 import numpy as np
 
 class Stack(Histogram):
-    def __init__(self, bin_info, stack_by_int=False):
-        super().__init__("", bin_info)
+    def __init__(self, *bins, stack_by_sum=False):
+        super().__init__(*bins)
         self.stack = list()
         self.options = {"stacked": True, "histtype": "stepfilled"}
-        self.stack_by_int = stack_by_int
+        self.stack_by_sum = stack_by_sum
 
     def __iadd__(self, right):
-        if self.stack_by_int:
+        if self.stack_by_sum:
             idx = self._get_index(right.integral())
             self.stack.insert(idx, right)
         else:
@@ -23,10 +23,11 @@ class Stack(Histogram):
         else:
             return np.argmax(np.array([s.integral() for s in self.stack]) < integral)
 
-    def __getitem__(self, item):
+    def __getitem__(self, group):
         for hist in self.stack:
-            if hist.group == item:
+            if hist.group == group:
                 return hist
+        return super().__getitem__(group)
 
     def recalculate_stack(self):
         vals = np.zeros(len(self.axis))
@@ -38,18 +39,15 @@ class Stack(Histogram):
         self.hist.view().variance = sumw2
 
 
-    def plot_stack(self, pad, normed=False, **kwargs):
+    def plot_stack(self, pad, **kwargs):
         if not self.stack:
             return
-        if normed:
-            norms = self.axis.widths
-        else:
-            norms = np.ones(len(self.axis.centers))
+        norms = np.ones(len(self.axis.centers))
         n, bins, patches = pad.hist(
             weights=np.array([h.vals/norms for h in self.stack]).T, bins=self.axis.edges,
             x=np.tile(self.axis.centers, (len(self.stack), 1)).T,
             color=[h.color for h in self.stack],
-            label=[h.name for h in self.stack],
+            label=[h.get_name() for h in self.stack],
             **self.options, **kwargs
         )
 

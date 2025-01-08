@@ -15,11 +15,10 @@ def ratio_plot(filename, xlabel, binning, **kwargs):
     plot_inputs = {"nrows": 2, "ncols": 1, "sharex": True, 'figsize': (11,11),
                    "gridspec_kw": {"hspace": 0.1, "height_ratios": [3,1]}}
     fig, ax = plt.subplots(**plot_inputs)
-
     yield ax
     setup_ticks(*ax)
     axisSetup(ax[0], ax[1], xlabel=xlabel, binning=binning, **kwargs)
-    ax[0].legend()
+    ax[0].legend(ncols=2, fontsize='x-small')
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fig.tight_layout()
@@ -98,7 +97,7 @@ def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bo
         subpad.set_ylim(top=ratio_top, bottom=ratio_bot)
 
     if xlabel:
-        xpad.set_xlabel(xlabel)
+        xpad.set_xlabel(xlabel, loc="right")
     if binning is not None:
         xpad.set_xlim(binning[0], binning[-1])
     if zero_bot:
@@ -106,23 +105,12 @@ def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bo
 
     xpad.ticklabel_format(useOffset=False)
     if 'pad_label' in kwargs:
-        pad.set_ylabel(kwargs['pad_label'])
+        pad.set_ylabel(kwargs['pad_label'], loc='top')
     elif normed:
-        pad.set_ylabel('Events/bins')
+        pad.set_ylabel('Events/bins', loc='top')
     else:
-        pad.set_ylabel('Events')
-    right_align_label(pad.get_yaxis(), isYaxis=True)
-    right_align_label(xpad.get_xaxis())
+        pad.set_ylabel('Events', loc='top')
 
-
-def right_align_label(axis, isYaxis=False):
-    label = axis.get_label()
-    if isYaxis:
-        label.set_y(1.0)
-    else:
-        label.set_x(1.0)
-    label.set_horizontalalignment('right')
-    axis.set_label(label)
 
 def cms_label(ax, lumi=None, year=None, hasData=False):
     if lumi is None and year is None:

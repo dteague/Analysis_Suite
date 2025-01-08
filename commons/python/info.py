@@ -122,6 +122,7 @@ class NtupleInfo:
     filename: str
     trees: list
     color_by_group: dict
+    chan: str
     cut : Callable[[object], bool] = None
     branches: list = None
     changes: dict = field(default_factory=dict)
@@ -146,7 +147,7 @@ class NtupleInfo:
     def get_filename(self, year, workdir=None):
         if workdir is None:
             path = Path(str(self.filename).format(year=year, workdir=""))
-            workdir = max([int(d.name) for d in path.glob("*") if d.name.isnumeric()])
+            workdir = max([int(d.name) for d in path.glob("*") if d.name.isnumeric()], default="")
             logging.info(f"Getting from workdir {workdir}")
         return Path(str(self.filename).format(year=year, workdir=workdir))
 
@@ -166,7 +167,7 @@ class NtupleInfo:
         elif group in self.group_trees:
             return tree in self.group_trees[group]
         else:
-            return True
+            return group is not None
 
     def apply_part_cut(self, vg):
         if self.part_cut is None:

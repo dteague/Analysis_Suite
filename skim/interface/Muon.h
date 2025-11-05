@@ -21,6 +21,7 @@ public:
     TRArray<Bool_t> isPFcand;
     TRArray<Int_t> tightCharge;
     TRArray<Bool_t> mediumId;
+    TRArray<Bool_t> looseId;
     TRArray<Int_t> nTrackerLayers;
 
     RoccoR roc_corr;

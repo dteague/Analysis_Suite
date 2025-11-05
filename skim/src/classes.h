@@ -2,14 +2,10 @@
 #include "analysis_suite/skim/interface/ThreeTop.h"
 #include "analysis_suite/skim/interface/FakeRate.h"
 #include "analysis_suite/skim/interface/Nonprompt_Closure.h"
-#include "analysis_suite/skim/interface/Lepton_MisId_Closure.h"
-#include "analysis_suite/skim/interface/BEfficiency.h"
-#include "analysis_suite/skim/interface/DY_test.h"
-#include "analysis_suite/skim/interface/SingleLep_Trigger.h"
-#include "analysis_suite/skim/interface/TwoLepton.h"
+#include "analysis_suite/skim/interface/Charge_MisId.h"
+#include "analysis_suite/skim/interface/Trigger_Eff.h"
+#include "analysis_suite/skim/interface/SingleLep.h"
 #include "analysis_suite/skim/interface/TagProbe.h"
-#include "analysis_suite/skim/interface/trigger_eff.h"
-#include "analysis_suite/skim/interface/BScale.h"
 
 namespace {
 namespace {
@@ -17,13 +13,9 @@ namespace {
     ThreeTop pThreeTop;
     FakeRate pFakeRate;
     Nonprompt_Closure pNonprompt_Closure;
-    Closure_MisId pClosure_MisId;
-    BEfficiency pBEfficiency;
-    DY_test pDY_test;
-    SingleLep_Trigger pSingleLep_Trigger;
-    TwoLepton pTwoLepton;
-    TagProbe pTagProbe;
+    Charge_MisId pCharge_MisId;
+    SingleLep pSingleLep;
     Trigger_Eff pTrigger_Eff;
-    BScale pBScale;
+    TagProbe pTagProbe;
 } // namespace
 } // namespace

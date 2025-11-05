@@ -1,4 +1,4 @@
-#include "analysis_suite/skim/interface/trigger_eff.h"
+#include "analysis_suite/skim/interface/Trigger_Eff.h"
 
 #include"analysis_suite/skim/interface/logging.h"
 #include"analysis_suite/skim/interface/CommonFuncs.h"
@@ -10,17 +10,6 @@ namespace Channel {
     };
 }
 
-enum class Subchannel {
-    MM,
-    EM,
-    EE,
-    Single_E,
-    Single_M,
-    MET,
-    MHT,
-    None,
-};
-
 void Trigger_Eff::Init(TTree* tree)
 {
     LOG_FUNC << "Start of Init";
@@ -31,8 +20,6 @@ void Trigger_Eff::Init(TTree* tree)
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
     }
-
-#include "analysis_suite/skim/interface/trigger_template.h"
 
     if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
         trig_cuts.setup_channel(Subchannel::MET, Dataset::MET, fReader,
@@ -148,19 +135,6 @@ bool Trigger_Eff::passDileptonTrigger()
     }
 }
 
-bool Trigger_Eff::isSameSign(Level level)
-{
-    int q_total = 0;
-    for (size_t idx : muon.list(level)) {
-        q_total += muon.charge(idx);
-    }
-    for (size_t idx : elec.list(level)) {
-        q_total += elec.charge(idx);
-    }
-    return abs(q_total) == 1 || abs(q_total) == 2;
-}
-
-
 
 bool Trigger_Eff::getCutFlow()
 {
@@ -226,15 +200,3 @@ void Trigger_Eff::FillValues(const Bitmap& event_bitmap)
     }
     LOG_FUNC << "End of FillValues";
 }
-
-float Trigger_Eff::getLeadPt(size_t idx)
-{
-    if (idx == 0) {
-        return std::max(muPt(0), elPt(0));
-    } else {
-        return 0;
-    }
-
-    return 0;
-}
-

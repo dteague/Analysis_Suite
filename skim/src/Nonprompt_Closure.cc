@@ -19,7 +19,6 @@ void Nonprompt_Closure::Init(TTree* tree)
     met_type = MET_Type::PF;
     DileptonBase::Init(tree);
 
-
     if (groupName_.find("ttbar") != std::string::npos ||
         groupName_.find("wjets") != std::string::npos ||
         !isMC_) {
@@ -77,13 +76,6 @@ void Nonprompt_Closure::SetupOutTreeBranches(TTree* tree)
     tree->Branch("N_bmedium", &o_nb_medium);
     tree->Branch("N_btight", &o_nb_tight);
     LOG_FUNC << "End of SetupOutTreeBranches";
-}
-
-void Nonprompt_Closure::clearParticles()
-{
-    LOG_FUNC << "Start of clearParticles";
-    BaseSelector::clearParticles();
-    LOG_FUNC << "End of clearParticles";
 }
 
 void Nonprompt_Closure::clearOutputs()

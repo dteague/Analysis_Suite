@@ -10,12 +10,6 @@ namespace Channel {
     };
 }
 
-enum class Subchannel {
-    Single_M,
-    Single_E,
-    None,
-};
-
 void FakeRate::Init(TTree* tree)
 {
     met_type = MET_Type::PF;
@@ -43,16 +37,6 @@ void FakeRate::Init(TTree* tree)
     std::vector<std::string> el_list = {"HLT_Ele12_CaloIdL_TrackIdL_IsoVL_PFJet30",
                                         "HLT_Ele23_CaloIdL_TrackIdL_IsoVL_PFJet30",};
 
-    // if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
-    //     mu_list.push_back("HLT_IsoMu24");
-    //     el_list.push_back("HLT_Ele27_WPTight_Gsf");
-    // } else if (year_ == Year::yr2017) {
-    //     mu_list.push_back("HLT_IsoMu27");
-    //     el_list.push_back("HLT_Ele35_WPTight_Gsf");
-    // } else {
-    //     mu_list.push_back("HLT_IsoMu24");
-    //     el_list.push_back("HLT_Ele32_WPTight_Gsf");
-    // }
     setupTrigger(Subchannel::Single_M, Dataset::DoubleMuon, mu_list);
     setupTrigger(Subchannel::Single_E, egamma_dataset, el_list);
 
@@ -85,12 +69,6 @@ void FakeRate::SetupOutTreeBranches(TTree* tree)
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
 
-void FakeRate::clearParticles()
-{
-    LOG_FUNC << "Start of clearParticles";
-    BaseSelector::clearParticles();
-    LOG_FUNC << "End of clearParticles";
-}
 
 void FakeRate::clearOutputs()
 {

@@ -52,7 +52,7 @@ def setup_split_files(workdir, model, years, variables):
 
 def training(model, years):
     model.train()
-    # model.plot_training_progress()
+    model.plot_training_progress()
     for year in years:
         model.apply_model(year)
     print('auc', model.get_auc())
@@ -87,7 +87,13 @@ def run(usevars, workdir, model_type, train, years, region, systName):
 
     # First Training
     output_first = workdir/'first_train'
-    model = maker(usevars, ginfo.get_members('ttt_nlo'), samples, region=region,
+    bdt_var = params.signal_first
+    bdt_file = input_files/f'bdt_{bdt_var}.root'
+
+    signal = ginfo.get_members('4top')
+    background = ginfo.get_members('ttt_nlo')
+    nontrain = [s for s in samples if s not in signal+background]
+    model = maker(usevars, signal, samples, region=region, nonTrained=nontrain,
                   systName=systName)
     model.update_params(params.params_first)
     model.set_outdir(output_first)
@@ -100,33 +106,34 @@ def run(usevars, workdir, model_type, train, years, region, systName):
     for year in years:
         if not train:
             model.apply_model(year, skip_train=True)
-    model.output_bdt(input_files/f'bdt_{params.signal_first}.root', params.signal_first)
-    exit()
+    model.output_bdt(bdt_file, bdt_var)
 
     print(f"Training for syst {systName}")
     if params.cut > 1:
         return
-    # Second Training
-    groupDict = get_groups(groups, ginfo, params.groups_second)
-    output_second = workdir/'second_train'
 
-    model2 = maker(usevars, groupDict, region=region, systName=systName)
-    model2.update_params(params.params_second)
-    model2.set_outdir(output_second)
-    if isSignal:
-        model2.add_cut(f'{params.signal_first}<{params.cut}')
+    # Second Training
+    output_second= workdir/'second_train'
+    bdt_var2 = params.signal_second
+    nontrained = ['nonprompt', 'charge_flip', 'data', '4top']
+    model = maker(usevars, ginfo.get_members('ttt_nlo'), samples, region=region,
+                  systName=systName, nonTrained=nontrained)
+    model.update_params(params.params_second)
+    model.set_outdir(output_second)
+
     for year in years:
-        (output_second/year).mkdir(exist_ok=True, parents=True)
-        model2.read_in_file(output_first, year)
+        model.read_in_files(input_files, year)
+    if train:
+        model.read_in_train_files(input_files)
+    model.read_in_bdt(bdt_file, bdt_var, onlyTest=not train)
+    model.mask(lambda df: df[bdt_var] < params.cut)
 
     if train:
-        model2.read_in_train_files(output_first)
-        training(model2, years)
-
+        training(model, years)
     for year in years:
         if not train:
-            model2.apply_model(year, skip_train=True)
-        model2.output(year, params.signal_second)
+            model.apply_model(year, skip_train=True)
+    model.output_bdt(input_files/f'bdt_{bdt_var2}.root', bdt_var2)
 
 
 def cleanup(cli_args):

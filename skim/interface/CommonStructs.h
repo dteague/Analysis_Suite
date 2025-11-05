@@ -58,6 +58,9 @@ struct TriggerInfo {
     }
 
     bool pass_any_trig() {
+        if (trigs.size() == 0) {
+            return true;
+        }
         for(auto& [chan, chan_trig]: trigs) {
             if (!pass_dataset(chan)) { // Dataset correct for the channel
                 continue;
@@ -119,33 +122,13 @@ struct CutInfo {
 
 };
 
-
-
 struct TreeInfo {
     TTree* tree;
-    TH1F *cutflow, *cutflow_ind;
     bool initialize_axis = false;
 
     TreeInfo(std::string name,  TDirectory* outdir, TSelectorList* fOutput);
 
     void fillCutFlow(CutInfo& cuts, float weight);
-};
-
-struct TrigEff {
-    TH2F* passEvents;
-    TH2F* allEvents;
-
-    void setup(TSelectorList* fOutput, std::string name, int nChans, int bins, float low, float high) {
-        passEvents = new TH2F((name+"_pass").c_str(), (name+"_pass").c_str(), nChans, 0, nChans, bins, low, high);
-        fOutput->Add(passEvents);
-        allEvents = new TH2F((name+"_all").c_str(), (name+"_all").c_str(), nChans, 0, nChans, bins, low, high);
-        fOutput->Add(allEvents);
-    }
-
-    void fill(float val, bool passTrig, Subchannel chan, float weight) {
-        allEvents->Fill(static_cast<int>(chan), val, weight);
-        if (passTrig) passEvents->Fill(static_cast<int>(chan), val, weight);
-    }
 };
 
 template <typename T>

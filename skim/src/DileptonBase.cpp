@@ -9,6 +9,11 @@ void DileptonBase::Init(TTree* tree)
     // golden_json_file >> dilep_trigs;
     setup_trigger();
 
+    trigger_channels = {
+        {Subchannel::EE, {Subchannel::EE, Subchannel::Single_E}},
+        {Subchannel::MM, {Subchannel::MM, Subchannel::Single_M}},
+        {Subchannel::EM, {Subchannel::EM, Subchannel::Single_M, Subchannel::Single_E}},
+    };
 }
 
 void DileptonBase::setup_trigger()
@@ -67,7 +72,6 @@ void DileptonBase::setup_trigger()
                 "HLT_IsoMu24"});
         setupTrigger(Subchannel::Single_E, Dataset::DoubleEG, {
                 "HLT_Ele32_WPTight_Gsf",});
-
         setupTrigger(Subchannel::MM, Dataset::DoubleMuon, {
                 "HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",});
         setupTrigger(Subchannel::EM, Dataset::MuonEG, {
@@ -81,45 +85,7 @@ void DileptonBase::setup_trigger()
     }
     setupTrigger(Subchannel::None, Dataset::None, {});
 }
-bool DileptonBase::getTriggerValue()
-{
-    if (subChannel_ == Subchannel::EE) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::EE)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (year_ == Year::yr2018) { // 2018 uses just EGamma not double vs single EG datasets
-            return (trig_cuts.pass_cut(Subchannel::EE)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::EE)) {
-            return trig_cuts.pass_cut(Subchannel::EE);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_E);
-        }
-    } else if (subChannel_ == Subchannel::MM) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::MM)
-                    || trig_cuts.pass_cut(Subchannel::Single_M));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::MM)) {
-            return trig_cuts.pass_cut(Subchannel::MM);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_M);
-        }
-    } else if (subChannel_ == Subchannel::EM) {
-        if (isMC_) {
-            return (trig_cuts.pass_cut(Subchannel::EM)
-                    || trig_cuts.pass_cut(Subchannel::Single_M)
-                    || trig_cuts.pass_cut(Subchannel::Single_E));
-        } else if (trig_cuts.dataset_or_trig(Subchannel::EM)) {
-            return trig_cuts.pass_cut(Subchannel::EM);
-        } else if (trig_cuts.dataset_or_trig(Subchannel::Single_M)) {
-            return trig_cuts.pass_cut(Subchannel::Single_M);
-        } else {
-            return trig_cuts.pass_cut(Subchannel::Single_E);
-        }
-    } else {
-        return false;
-    }
-}
+
 float DileptonBase::getLeadPt()
 {
     if (subChannel_ == Subchannel::MM) {
@@ -135,17 +101,19 @@ float DileptonBase::getLeadPt()
 
 void DileptonBase::setSubChannel()
 {
+    LOG_FUNC << "Start of setSubChannel";
     subChannel_ = Subchannel::None;
 
     if(nLeps(Level::Fake) >= 2) {
-        if (muon.size(Level::Fake) * elec.size(Level::Fake) > 0) {
-            subChannel_ = Subchannel::EM;
-        } else if (muon.size(Level::Fake) == 0) {
-            subChannel_ = Subchannel::EE;
-        }  else {
+        if (elec.size(Level::Fake) == 0) {
             subChannel_ = Subchannel::MM;
+        } else if (muon.size(Level::Fake) == 0){
+            subChannel_ = Subchannel::EE;
+        } else {
+            subChannel_ = Subchannel::EM;
         }
     }
+    LOG_FUNC << "End of setSubChannel";
 }
 
 bool DileptonBase::isSameSign(Level level)
@@ -157,5 +125,13 @@ bool DileptonBase::isSameSign(Level level)
     for (size_t idx : elec.list(level)) {
         q_total += elec.charge(idx);
     }
-    return abs(q_total) == 1 || abs(q_total) == 2;
+    size_t nl = nLeps(level);
+    if (nl == 2) {
+        return abs(q_total) == 2;
+    } else if (nl == 3) {
+        return abs(q_total) == 1;
+    } else if (nl == 4) {
+        return abs(q_total) == 0;
+    }
+    return false;
 }

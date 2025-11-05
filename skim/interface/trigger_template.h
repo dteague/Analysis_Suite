@@ -25,7 +25,7 @@ if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
     }
 
     setupTrigger(Subchannel::EE, Dataset::DoubleEG, {
-            "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+            "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
             "HLT_DoubleEle33_CaloIdL_GsfTrkIdVL_MW",
         });
  } else if (year_ == Year::yr2017) {
@@ -59,9 +59,11 @@ if (year_ == Year::yr2016pre || year_ == Year::yr2016post) {
     setupTrigger(Subchannel::EM, Dataset::MuonEG, {
             "HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
             "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",});
+    // single electron trigger included since part of same dataset (EGamma)
     setupTrigger(Subchannel::EE, Dataset::DoubleEG, {
-            "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-            "HLT_DoubleEle25_CaloIdL_MW",});
+            "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+            "HLT_DoubleEle25_CaloIdL_MW",
+            "HLT_Ele32_WPTight_Gsf",});
 
  }
 setupTrigger(Subchannel::None, Dataset::None, {});

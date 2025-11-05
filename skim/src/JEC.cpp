@@ -30,8 +30,8 @@ void JEC::init(TTreeReader& fReader, std::vector<Systematic> used_jec_systs_)
         }
 
     }
-
 }
+
 
 void JEC::setupJEC(Jet& jet, GenericParticle& genJet)
 {
@@ -73,7 +73,7 @@ void JEC::setupJEC(Jet& jet, GenericParticle& genJet)
                 m_jet_scales[syst][eVar::Down][i] = jer.at(2);
                 m_met_change[syst][eVar::Down] += std::polar((jer.at(2)-1)*pt, phi);
             } else {
-                float jec_unc = jec_unc_vec[syst]->evaluate({pt, eta});
+                float jec_unc = jec_unc_vec[syst]->evaluate({eta, pt});
                 m_jet_scales[syst][eVar::Down][i] = central*(1-jec_unc);
                 m_met_change[syst][eVar::Down] += std::polar((central*(1-jec_unc)-1)*pt, phi);
 

@@ -10,12 +10,6 @@ namespace Channel {
     };
 }
 
-enum class Subchannel {
-    MM,
-    EE,
-    None,
-};
-
 void TagProbe::Init(TTree* tree)
 {
     LOG_FUNC << "Start of Init";

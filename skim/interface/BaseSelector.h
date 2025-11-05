@@ -21,7 +21,16 @@
 #include "analysis_suite/skim/interface/Bar.h"
 
 typedef unsigned int Chan;
-enum class Subchannel;
+enum class Subchannel {
+    MM,
+    EM,
+    EE,
+    Single_E,
+    Single_M,
+    MET,
+    MHT,
+    None,
+};
 
 class BaseSelector : public TSelector {
 public:
@@ -55,6 +64,7 @@ public:
     ClassDef(BaseSelector, 0);
 
 protected:
+    bool getTriggerValue();
     size_t numSystematics() { return systematics_.size()*2 - 1; }
     virtual void clearParticles();
     virtual void clearOutputs(){};
@@ -110,6 +120,7 @@ protected:
     // Current channel and all channels
     Chan* currentChannel_;
     std::vector<Chan> o_channels;
+    std::map<Subchannel, std::vector<Subchannel>> trigger_channels;
 
     // Systs that change stuff
     std::vector<size_t> syst_to_index = { 0 };

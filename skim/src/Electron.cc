@@ -4,7 +4,6 @@
 void Electron::setup(TTreeReader& fReader)
 {
     Lepton::setup("Electron", fReader);
-    eCorr.setup(fReader, "Electron_eCorr");
     lostHits.setup(fReader, "Electron_lostHits");
     convVeto.setup(fReader, "Electron_convVeto");
     sieie.setup(fReader, "Electron_sieie");
@@ -31,7 +30,7 @@ void Electron::setup(TTreeReader& fReader)
         auto corr_set = getScaleFile("EGM", "electron");
         electron_scale = WeightHolder(corr_set->at("UL-Electron-ID-SF"), Systematic::Electron_Scale,
                                       {"sf", "sfup", "sfdown"});
-        genPartFlav.setup(fReader, "Electron_genPartFlav");
+        // genPartFlav.setup(fReader, "Electron_genPartFlav");
         auto tth_set = getScaleFile("USER", "tthMVA_scales");
         electron_tthMVA = WeightHolder(tth_set->at("NUM_mvaTTH_DEN_isElectron"), Systematic::Electron_tthMVA,
                                        {"value", "systup", "systdown"});
@@ -95,7 +94,7 @@ void Electron::createLooseList()
     tth_mva_vec.clear();
     tth_mva_vec.resize(size());
     for (size_t i = 0; i < size(); i++) {
-        if (pt(i) > 7
+        if (pt(i) > 10
             && fabs(eta(i)) < 2.5
             && convVeto.at(i)
             && !inCrack(i)
@@ -123,7 +122,7 @@ void Electron::createFakeList(Particle& jets)
             && tightCharge.at(i) == 2
             && passTriggerRequirements(i) // Nonmva
             && m_pt.at(i)*getFakePtFactor(i) > 20
-            // && (ptRatio(i) > ptRatioCut || passJetIsolation(i)) // MVA
+            && (ptRatio(i) > ptRatioCut || passJetIsolation(i)) // MVA
             )
             {
                 m_partList[Level::Fake]->push_back(i);
@@ -153,7 +152,7 @@ float Electron::getScaleFactor()
     std::string syst_mva = systName(electron_tthMVA);
     for (auto eidx : list(Level::Fake)) {
         float pt = (m_pt.at(eidx) >= 20) ? m_pt.at(eidx) : 20.;
-        weight *= electron_scale.evaluate({yearMap.at(year_), syst, "wp90noiso", fabs(eta(eidx)), pt});
+        weight *= electron_scale.evaluate({yearMap.at(year_), syst, "wp90noiso", eta(eidx), m_pt.at(eidx)});
         weight *= electron_tthMVA.evaluate({fabs(eta(eidx)), pt, syst_mva});
     }
     return weight;

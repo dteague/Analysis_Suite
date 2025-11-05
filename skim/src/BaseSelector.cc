@@ -281,6 +281,23 @@ void BaseSelector::clearParticles()
     LOG_FUNC << "End of clearParticles";
 }
 
+bool BaseSelector::getTriggerValue()
+{
+    auto sub_trig = trigger_channels.find(subChannel_);
+    if (trigger_channels.find(subChannel_) != trigger_channels.end()) {
+        if (isMC_){
+            return trig_cuts.pass_any_mc(sub_trig->second);
+        } else {
+            for (auto subchan: sub_trig->second) {
+                if (trig_cuts.dataset_or_trig(subchan)) {
+                    return trig_cuts.pass_cut(subchan);
+                }
+            }
+        }
+    }
+    return false;
+}
+
 void BaseSelector::setupSystematicInfo()
 {
     LOG_FUNC << "Start of setupSystematicInfo";

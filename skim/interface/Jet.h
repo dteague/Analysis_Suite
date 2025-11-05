@@ -28,6 +28,7 @@ public:
     float mass_shift(size_t idx, Systematic syst, eVar var) { return jec.get_shift(idx, syst, var)*m_mass.at(idx); }
     float nomPt(size_t idx) const { return m_pt.at(idx); }
     float jec_shift(size_t i) { return jec.get_shift(i, Systematic::Nominal, eVar::Nominal); }
+    void setup_shift_output(TTree* tree);
 
     float getHT(Level level, size_t syst) { return getHT(list(level, syst)); };
     float getHT(Level level) { return getHT(list(level)); };
@@ -62,6 +63,7 @@ public:
     }
 
     std::unordered_map<size_t, size_t> closeJetDr_by_index;
+    std::vector<float> closeLep_dr;
 
     std::vector<Int_t> n_loose_bjet, n_medium_bjet, n_tight_bjet;
 
@@ -96,6 +98,8 @@ private:
     int tightId = 0b10;
 
     JEC jec;
+    std::vector<JECShiftOut*> o_jet_shifts;
+    std::vector<JECShiftOut*> o_bjet_shifts;
 
     void createLooseList();
     void createBJetList();

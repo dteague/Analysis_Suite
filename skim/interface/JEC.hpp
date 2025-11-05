@@ -17,7 +17,7 @@ public:
     float get_shift(size_t i, Systematic syst, eVar var) { return m_jet_scales[syst][var].at(i); }
     void setupJEC(Jet& jet, GenericParticle& genJet);
     void set_syst(bool isJECSyst);
-        std::complex<float> get_met_change() { return *m_met_diff; }
+    std::complex<float> get_met_change() { return *m_met_diff; }
 
 private:
     std::vector<float> get_jer(float pt, float eta, float phi, int gIdx, GenericParticle& genJets);

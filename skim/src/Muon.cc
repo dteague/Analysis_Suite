@@ -17,6 +17,7 @@ void Muon::setup(TTreeReader& fReader)
     isTracker.setup(fReader, "Muon_isTracker");
     isPFcand.setup(fReader, "Muon_isPFcand");
     tightCharge.setup(fReader, "Muon_tightCharge");
+    looseId.setup(fReader, "Muon_looseId");
     mediumId.setup(fReader, "Muon_mediumId");
     nTrackerLayers.setup(fReader, "Muon_nTrackerLayers");
     tid.setup(fReader, "Muon_tightId");
@@ -64,10 +65,9 @@ void Muon::fillMuon_small(LeptonOut_small& output, Level level, const Bitmap& ev
 void Muon::createLooseList()
 {
     for (size_t i = 0; i < size(); i++) {
-        if (pt(i) > 5
+        if (pt(i) > 10
             && fabs(eta(i)) < 2.4
-            && (isGlobal.at(i) || isTracker.at(i))
-            && isPFcand.at(i)
+            && looseId.at(i)
             && iso.at(i) < 0.4
             && fabs(dz.at(i)) < 0.1
             && fabs(dxy.at(i)) < 0.05)
@@ -82,7 +82,7 @@ void Muon::createFakeList(Particle& jets)
             && tightCharge.at(i) == 2
             && mediumId.at(i)
             && sip3d.at(i) < 4
-            // && (ptRatio(i) > ptRatioCut || passJetIsolation(i))
+            && (ptRatio(i) > ptRatioCut || passJetIsolation(i))
             && m_pt.at(i)*getFakePtFactor(i) > 20 // Total pt threshold
             )
             {

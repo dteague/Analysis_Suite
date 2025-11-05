@@ -6,12 +6,14 @@
 
 void Met::setup(TTreeReader& fReader, MET_Type type)
 {
-    name = met_name[type];
+    // name = met_name[type];
+    name = "PuppiMET";
+
     ispuppi = (type == MET_Type::PUPPI);
     m_pt.setup(fReader, (name+"_pt").c_str());
     m_phi.setup(fReader, (name+"_phi").c_str());
-    m_raw_pt.setup(fReader, "RawMET_pt");
-    m_raw_phi.setup(fReader, "RawMET_phi");
+    // m_raw_pt.setup(fReader, "RawMET_pt");
+    // m_raw_phi.setup(fReader, "RawMET_phi");
 
     if (ispuppi && isMC) {
         m_jer_pt_up.setup(fReader, "PuppiMET_ptJERUp");

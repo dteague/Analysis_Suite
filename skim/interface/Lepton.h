@@ -17,7 +17,7 @@ public:
     float massInRange(Level level, float low=ZMASS-ZWINDOW, float high=ZMASS+ZWINDOW);
     bool isInMassRange(Level level, float low=ZMASS-ZWINDOW, float high=ZMASS+ZWINDOW);
     void setup(std::string name, TTreeReader& fReader);
-    std::pair<size_t, float> getCloseJet(size_t lidx, const Particle& jet);
+    std::pair<size_t, float> getCloseJet(size_t lidx, Particle& jet);
     virtual bool passJetIsolation(size_t idx) const;
     void fillFlippedCharge(GenParticle& gen);
     float getFakePtFactor(size_t idx) const;

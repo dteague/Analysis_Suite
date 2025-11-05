@@ -1,7 +1,9 @@
 #include "analysis_suite/skim/interface/Jet.h"
+#include "analysis_suite/skim/interface/CommonFuncs.h"
 
 void Jet::setup(TTreeReader& fReader, std::string data_run, std::vector<Systematic> used_jec_systs_)
 {
+    closeLep_dr.resize(50);
     GenericParticle::setup("Jet", fReader);
     jetId.setup(fReader, "Jet_jetId");
     btag.setup(fReader, "Jet_btagDeepFlavB");
@@ -18,6 +20,7 @@ void Jet::setup(TTreeReader& fReader, std::string data_run, std::vector<Systemat
     nConstituents.setup(fReader, "Jet_nConstituents");
 
     setup_map(Level::Loose_inHEM);
+    setup_map(Level::Loose_PU);
     setup_map(Level::Loose);
     setup_map(Level::Bottom);
     setup_map(Level::Tight);
@@ -93,13 +96,32 @@ void Jet::setup_jets(GenericParticle& genJet, size_t run)
         applyHEMVeto= run >= 319077;
     }
     jec.setupJEC(*this, genJet);
+    // closeLep_dr.resize(size());
+    std::fill(closeLep_dr.begin(), closeLep_dr.end(), -1);
 
 }
 
+void Jet::setup_shift_output(TTree* tree) {
+    if (o_jet_shifts.size() == 0 && used_jec_systs.size() != 0) {
+        for (auto syst: used_jec_systs) {
+            o_jet_shifts.push_back(new JECShiftOut());
+            o_bjet_shifts.push_back(new JECShiftOut());
+        }
+    }
+    for (size_t i = 0; i < used_jec_systs.size(); ++i) {
+        std::string syst_name = get_by_val(syst_by_name, used_jec_systs.at(i));
+        tree->Branch(("Jets_"+syst_name).c_str(), "JECShiftOut", &o_jet_shifts[i]);
+        tree->Branch(("BJets_"+syst_name).c_str(), "JECShiftOut", &o_bjet_shifts[i]);
+    }
+}
 
 void Jet::fillJet(JetOut& output, Level level, const Bitmap& event_bitmap)
 {
     output.clear();
+    std::vector<JECShiftOut*>& shifts = (level == Level::Bottom) ? o_bjet_shifts : o_jet_shifts;
+    for (size_t n_syst=0; n_syst < used_jec_systs.size(); ++n_syst) {
+        shifts[n_syst]->clear();
+    }
     for (size_t idx = 0; idx < size(); ++idx) {
         bool pass = fillParticle(output, level, idx, event_bitmap);
         if (pass) {
@@ -108,19 +130,19 @@ void Jet::fillJet(JetOut& output, Level level, const Bitmap& event_bitmap)
             else if (btag.at(idx) > loose_bjet_cut) output.pass_btag.push_back(1);
             else output.pass_btag.push_back(0);
             output.discriminator.push_back(btag.at(idx));
+            // output.veto.push_back(passVeto(eta(idx), phi(idx)));
             if(isMC) {
                 output.flavor.push_back(hadronFlavour.at(idx));
             }
-            output.pt_shift.push_back(std::vector<Float_t>());
-            output.mass_shift.push_back(std::vector<Float_t>());
             for (size_t n_syst=0; n_syst < used_jec_systs.size(); ++n_syst) {
                 auto syst = used_jec_systs.at(n_syst);
-                output.pt_shift.back().push_back(pt_shift(idx, syst, eVar::Up));
-                output.pt_shift.back().push_back(pt_shift(idx, syst, eVar::Down));
-                output.mass_shift.back().push_back(mass_shift(idx, syst, eVar::Up));
-                output.mass_shift.back().push_back(mass_shift(idx, syst, eVar::Down));
+                shifts[n_syst]->pt_up.push_back(pt_shift(idx, syst, eVar::Up));
+                shifts[n_syst]->pt_down.push_back(pt_shift(idx, syst, eVar::Down));
+                shifts[n_syst]->mass_up.push_back(mass_shift(idx, syst, eVar::Up));
+                shifts[n_syst]->mass_down.push_back(mass_shift(idx, syst, eVar::Down));
             }
         }
+
     }
 }
 
@@ -146,14 +168,15 @@ void Jet::createLooseList()
         if (pt(i) > 25
             && fabs(eta(i)) < 2.4
             && (jetId.at(i) & tightId) != 0
-            && (neHEF.at(i) < 0.9 && neEmEF.at(i) < 0.9 && muEF.at(i) < 0.8 && chEmEF.at(i) < 0.8 && chHEF.at(i) > 0. && nConstituents.at(i) > 1)
-            && (closeJetDr_by_index.find(i) == closeJetDr_by_index.end())
-            && (pt(i) > 50 || (puId.at(i) & PU_Tight) == PU_Tight) // Issue with puid for 2016, need 111 for id now
+            && closeLep_dr.at(i) < 0
+            // && passVeto(eta(i), phi(i))
             ) {
-            if (passVeto(eta(i), phi(i))) {
-                m_partList[Level::Loose]->push_back(i);
-            } else if (applyHEMVeto && inHEM) {
+            if (pt(i) < 50 && (puId.at(i) & PU_Tight) != PU_Tight) { // Issue with puid for 2016, need 111 for id now
+                m_partList[Level::Loose_PU]->push_back(i);
+            } else if(!passVeto(eta(i), phi(i))) {
                 m_partList[Level::Loose_inHEM]->push_back(i);
+            } else {
+                m_partList[Level::Loose]->push_back(i);
             }
         }
     }
@@ -219,6 +242,13 @@ float Jet::getScaleFactor()
         if (pt(idx) < 50 && genJetIdx.at(idx) != -1)
             weight *= puid_scale.evaluate({eta(idx), pt(idx), syst, "T"});
     }
+    for (auto idx : list(Level::Loose_PU)) {
+        if (pt(idx) < 50 && genJetIdx.at(idx) != -1) {
+            float eff = puid_scale.evaluate({eta(idx), pt(idx), "MCEff", "T"});
+            float sf = puid_scale.evaluate({eta(idx), pt(idx), syst, "T"});
+            weight *= (1-sf*eff)/(1-eff);
+        }
+    }
     return weight;
 }
 
@@ -240,11 +270,12 @@ float Jet::getTotalBTagWeight(std::string btag_wp)
         syst = ((currentVar == eVar::Up) ? "up_" : "down_") + bjet_jec_syst.at(currentSyst);
     }
     for (auto i : list(Level::Loose)) {
+        float pt_ = m_pt.at(i);
         bool isCharm = hadronFlavour.at(i) == static_cast<Int_t>(PID::Charm);
         if (isCharm == charmSyst) {
-            weight *= btag_shape_scale.evaluate({syst, hadronFlavour.at(i), fabs(eta(i)), pt(i), btag.at(i)});
+            weight *= btag_shape_scale.evaluate({syst, hadronFlavour.at(i), fabs(eta(i)), pt_, btag.at(i)});
         } else {
-            weight *= btag_shape_scale.evaluate({"central", hadronFlavour.at(i), fabs(eta(i)), pt(i), btag.at(i)});
+            weight *= btag_shape_scale.evaluate({"central", hadronFlavour.at(i), fabs(eta(i)), pt_, btag.at(i)});
         }
     }
     return weight;
@@ -280,15 +311,15 @@ bool Jet::passVeto(float eta, float phi)
 {
     if(phi > pi) phi = pi;
     else if (phi < -pi) phi = -pi;
+    inHEM = false;
+    bool pass = (veto_map.evaluate({"jetvetomap", eta, phi}) < 1e-5);
 
-    if (veto_map.evaluate({"jetvetomap", eta, phi}) < 1e-5) {
+    if (pass) {
         return true;
-    }  else if (!applyHEMVeto && year_ == Year::yr2018) {
-        return veto_map.evaluate({"jetvetomap_hem1516", eta, phi}) > 1e-5;
-    } else if (applyHEMVeto){
+    }  else if (year_ == Year::yr2018) {
         inHEM = (veto_map.evaluate({"jetvetomap_hem1516", eta, phi}) > 1e-5);
+        return inHEM && !applyHEMVeto;
+    } else {
+        return false;
     }
-    return false;
 }
-
-

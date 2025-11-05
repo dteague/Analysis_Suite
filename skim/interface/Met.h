@@ -24,9 +24,9 @@ public:
 
     float mt(float pt, float phi);
     float pt_unfix, phi_unfix;
-private:
     TRVariable<float> m_pt;
     TRVariable<float> m_phi;
+private:
     TRVariable<float> m_raw_pt, m_raw_phi;
     std::unordered_map<MET_Type, std::string> met_name = {
         {MET_Type::PUPPI, "PuppiMET"},

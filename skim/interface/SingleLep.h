@@ -6,7 +6,7 @@
 
 #include <set>
 
-class SingleLep_Trigger : public BaseSelector {
+class SingleLep : public BaseSelector {
 public:
     virtual void Init(TTree* tree) override;
     virtual bool getCutFlow() override;
@@ -16,7 +16,7 @@ public:
     virtual void clearParticles() override;
     virtual void clearOutputs() override;
     virtual void setOtherGoodParticles(size_t syst) override;
-    ClassDefOverride(SingleLep_Trigger, 0);
+    ClassDefOverride(SingleLep, 0);
 
  private:
     void setSubChannel();

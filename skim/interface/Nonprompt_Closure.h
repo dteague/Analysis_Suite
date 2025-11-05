@@ -14,7 +14,6 @@ public:
     virtual void SetupOutTreeBranches(TTree* tree) override;
     virtual void ApplyScaleFactors() override;
     void ApplyDataSpecifics();
-    virtual void clearParticles() override;
     virtual void clearOutputs() override;
     virtual void setOtherGoodParticles(size_t syst) override;
     ClassDefOverride(Nonprompt_Closure, 0);

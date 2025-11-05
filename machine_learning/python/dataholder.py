@@ -74,11 +74,10 @@ class MLHolder:
         self.sample_map = {val: i for i, val in enumerate(self.samples)}
 
         self.outfile_info = f'{systName}_{region}'
-        nonTrain_vars = ["scale_factor", "split_weight"]
-        derived_vars = ["classID", "sampleName", "train_weight"]
+        nonTrain_vars = ["scale_factor"]
+        derived_vars = ["classID", "sampleName", "train_weight", "split_weight"]
         self.use_vars = use_vars
         self._file_vars = use_vars + nonTrain_vars
-        self._drop_vars = nonTrain_vars + derived_vars
         self.all_vars = self._file_vars + derived_vars
 
         self.split_ratio = 0.3
@@ -98,7 +97,6 @@ class MLHolder:
         self.pred_test = dict()
         self.pred_train = dict()
         self.pred_validation = dict()
-        self.cuts = list()
         self.best_iter = 0
         self.minmax = [1, 0]
         self.outdir = None
@@ -148,6 +146,39 @@ class MLHolder:
             for df, sample, _ in self.read_in_dataframe(f):
                 self.validation_set = pd.concat([df, self.validation_set], ignore_index=True)
 
+    def read_in_bdt(self, infile, variable, usevar=False, onlyTest=False):
+        if usevar:
+            self.usevars.append(variable)
+
+        with uproot.open(infile) as f:
+            for year, test in self.test_sets.items():
+                test_bdt = np.array([])
+                sample_id = np.array([])
+                for sample in self.samples:
+                    if sample in f[year]:
+                        test_bdt = np.concatenate([f[f'{year}/{sample}']['BDT'].array(), test_bdt])
+                        sample_id = np.concatenate([np.full(len(f[f'{year}/{sample}']['BDT'].array()), self.sample_map[sample]), sample_id])
+                test.insert(0, variable, test_bdt)
+
+            if onlyTest:
+                return
+            train_bdt = np.array([])
+            validation_bdt = np.array([])
+            for sample in self.samples:
+                if sample in f['train']:
+                    train_bdt = np.concatenate([f[f'train/{sample}']['BDT'].array(), train_bdt])
+                if sample in f['validation']:
+                    validation_bdt = np.concatenate([f[f'validation/{sample}']['BDT'].array(), validation_bdt])
+            self.train_set.insert(0, variable, train_bdt)
+            self.validation_set.insert(0, variable, validation_bdt)
+
+
+    def mask(self, func):
+        for year, test in self.test_sets.items():
+            self.test_sets[year] = test[func(test)]
+        self.train_set = self.train_set[func(self.train_set)]
+        self.validation_set = self.validation_set[func(self.validation_set)]
+
 
     def read_in_dataframe(self, root_file, create=False):
         for sample in self.samples:
@@ -157,13 +188,10 @@ class MLHolder:
                 continue
             # print(sample, "loaded")
             df = root_file[sample].arrays(library="pd")
-            mask = self._cut_mask(df)
-            if np.count_nonzero(mask) == 0:
-                continue
             if create:
-                df = df[self._file_vars][mask]
+                df = df[self._file_vars]
             else:
-                df = df[self.all_vars][mask]
+                df = df[self.all_vars]
             logging.debug(f'{sample}, {len(df)}, {sum(df.scale_factor)}, {sum(df.scale_factor)/len(df)}')
             df.loc[:, "classID"] = classID
             df.loc[:, "sampleName"] = self.sample_map[sample]
@@ -172,7 +200,7 @@ class MLHolder:
             if "weights" not in root_file:
                 all_weights = None
             else:
-                all_weights = root_file[f'weights/{sample}'].arrays(library='pd')[mask]
+                all_weights = root_file[f'weights/{sample}'].arrays(library='pd')
             yield df, sample, all_weights
 
     def setup_weights(self, filename):
@@ -207,7 +235,7 @@ class MLHolder:
         infile = directory / year / f'processed_{self.outfile_info}.root'
         self.setup_weights(infile)
         with uproot.open(infile) as f:
-            for df, sample, weights in self.read_in_dataframe(f):
+            for df, sample, weights in self.read_in_dataframe(f, create=True):
                 test, train, validation = self.setup_split(df, sample, split)
                 total_scale = np.sum(df.scale_factor)
                 exp_train_evt = self.total_trained_evt*(total_scale/self.total_yield)
@@ -327,30 +355,6 @@ class MLHolder:
         with np.errstate(invalid='ignore'):
             fom = np.sqrt(2*np.sum((s + b)*np.log(1 + s/(b+1e-5)) - s))
         return fom
-
-    # Private Functions
-    def _cut_mask(self, frame):
-        """**Reduce frame using root style cut string**
-
-        Args:
-          frame(pandas.DataFrame): DataFrame to cut on
-
-        """
-        mask = np.ones(len(frame), dtype=bool)
-        for cut in self.cuts:
-            if cut.find("<") != -1:
-                cutter= (operator.lt, *cut.split("<"))
-            elif cut.find(">") != -1:
-                cutter= (operator.gt, *cut.split(">"))
-            elif cut.find("==") != -1:
-                cutter= (operator.eq, *cut.split("=="))
-            else:
-                raise Exception(f'{cut} is not formatted correctly')
-            mask *= cutter[0](frame[cutter[1]], float(cutter[2]))
-        return mask
-
-    def add_cut(self, cut_string):
-        self.cuts.append(cut_string)
 
 
     def output_files(self):

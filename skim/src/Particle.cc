@@ -15,6 +15,7 @@ void GenericParticle::clear() {
 }
 
 void GenericParticle::setup_map(Level level) {
+    std::cout << "here" << std::endl;
     m_partList[level] = new std::vector<size_t>(); // maybe try for virtual soon?
 }
 

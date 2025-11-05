@@ -40,6 +40,7 @@ enum class PID {
 
 enum class Level {
     Loose_inHEM,
+    Loose_PU,
     Loose,
     Fake,
     Tight,

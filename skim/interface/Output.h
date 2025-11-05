@@ -38,18 +38,33 @@ struct ParticleOut {
 
 struct JetOut {
     PARTICLE_VARS;
-    std::vector<std::vector<Float_t>> pt_shift;
-    std::vector<std::vector<Float_t>> mass_shift;
+    // std::vector<std::vector<Float_t>> pt_shift;
+    // std::vector<std::vector<Float_t>> mass_shift;
     std::vector<Float_t> discriminator;
+    std::vector<Bool_t> veto;
     std::vector<Int_t> pass_btag;
     std::vector<Int_t> flavor;
     void clear() {
         generic_clear(this);
-        pt_shift.clear();
-        mass_shift.clear();
+        // pt_shift.clear();
+        // mass_shift.clear();
         discriminator.clear();
         pass_btag.clear();
         flavor.clear();
+        veto.clear();
+    }
+};
+
+struct JECShiftOut {
+    std::vector<Float_t> pt_up;
+    std::vector<Float_t> pt_down;
+    std::vector<Float_t> mass_up;
+    std::vector<Float_t> mass_down;
+    void clear() {
+        pt_up.clear();
+        pt_down.clear();
+        mass_up.clear();
+        mass_down.clear();
     }
 };
 
@@ -65,10 +80,14 @@ struct TopOut {
 
 struct LeptonOut {
     PARTICLE_VARS;
-    std::vector<Bool_t> flip;
+    // std::vector<Bool_t> flip;
+    std::vector<Int_t> charge;
+    std::vector<Int_t> origin;
     void clear() {
         generic_clear(this);
-        flip.clear();
+        // flip.clear();
+        origin.clear();
+        charge.clear();
     }
 };
 

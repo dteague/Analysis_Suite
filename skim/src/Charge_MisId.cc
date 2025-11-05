@@ -1,88 +1,63 @@
-#include "analysis_suite/skim/interface/DY_test.h"
+#include "analysis_suite/skim/interface/Charge_MisId.h"
 
 #include"analysis_suite/skim/interface/logging.h"
 #include"analysis_suite/skim/interface/CommonFuncs.h"
 
 namespace Channel {
     enum {
-        OS_FF,
-        OS_TF,
-        OS_TT,
+        OS_MR,
+        OS_CR,
+        SS_CR,
         None,
     };
 }
 
-void DY_test::Init(TTree* tree)
+void Charge_MisId::Init(TTree* tree)
 {
     LOG_FUNC << "Start of Init";
     met_type = MET_Type::PUPPI;
     DileptonBase::Init(tree);
 
     // Charge Mis-id Fake Rate
-    createTree("OS_FF", Channel::OS_FF);
-    createTree("OS_TF", Channel::OS_TF);
-    createTree("OS_TT", Channel::OS_TT);
+    createTree("SS", Channel::SS_CR);
+    createTree("OS_CR", Channel::OS_CR);
+    createTree("OS_MR", Channel::OS_MR);
     if (isMC_) {
         Pileup_nTrueInt.setup(fReader, "Pileup_nTrueInt");
     }
 
-    if (year_ == Year::yr2016pre) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
-    } else if (year_ == Year::yr2016post) {
-        setupTrigger(Subchannel::MM,  Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",});
-    } else if(year_ == Year::yr2017) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"});
-    } else if (year_ == Year::yr2018) {
-        setupTrigger(Subchannel::MM, Dataset::DoubleMuon,
-                     {"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",});
-    }
-
-    muon.setup_map(Level::FakeNotTight);
-    elec.setup_map(Level::FakeNotTight);
-
     LOG_FUNC << "End of Init";
 }
 
-void DY_test::SetupOutTreeBranches(TTree* tree)
+void Charge_MisId::SetupOutTreeBranches(TTree* tree)
 {
     LOG_FUNC << "Start of SetupOutTreeBranches";
     BaseSelector::SetupOutTreeBranches(tree);
-    tree->Branch("TightMuon", "LeptonOut_Fake", &o_tightMuons);
-    tree->Branch("FakeMuon", "LeptonOut_Fake", &o_fakeMuons);
+    tree->Branch("TightMuon", "LeptonOut", &o_tightMuons);
+    tree->Branch("TightElectron", "LeptonOut", &o_tightElectrons);
     tree->Branch("Jets", "JetOut", &o_jets);
-    tree->Branch("Nloose_Muon", &o_nlooseMu);
-    tree->Branch("Nloose_Electron", &o_nlooseEl);
 
     tree->Branch("HT", &o_ht);
+    tree->Branch("HT_b", &o_htb);
     tree->Branch("Met", &o_met);
     tree->Branch("Met_phi", &o_metphi);
     tree->Branch("Centrality", &o_centrality);
     LOG_FUNC << "End of SetupOutTreeBranches";
 }
 
-void DY_test::clearParticles()
-{
-    LOG_FUNC << "Start of clearParticles";
-    BaseSelector::clearParticles();
-    LOG_FUNC << "End of clearParticles";
-}
 
-void DY_test::clearOutputs()
+void Charge_MisId::clearOutputs()
 {
     LOG_FUNC << "Start of clearOutputs";
     o_ht.clear();
-    o_nlooseEl.clear();
-    o_nlooseMu.clear();
+    o_htb.clear();
     o_met.clear();
     o_metphi.clear();
     o_centrality.clear();
     LOG_FUNC << "End of clearOutputs";
 }
 
-void DY_test::ApplyScaleFactors()
+void Charge_MisId::ApplyScaleFactors()
 {
     LOG_FUNC << "Start of ApplyScaleFactors";
     LOG_EVENT << "weight: " << (*weight);
@@ -91,35 +66,24 @@ void DY_test::ApplyScaleFactors()
     (*weight) *= sfMaker.getLHEPdf();
     (*weight) *= sfMaker.getPrefire();
     (*weight) *= sfMaker.getPartonShower();
+    (*weight) *= sfMaker.getTriggerSF(elec, muon);
     (*weight) *= jet.getScaleFactor();
+    (*weight) *= jet.getTotalBTagWeight("M");
     (*weight) *= elec.getScaleFactor();
     (*weight) *= muon.getScaleFactor();
     LOG_FUNC << "End of ApplyScaleFactors";
 }
 
-void DY_test::setOtherGoodParticles(size_t syst)
-{
-    LOG_FUNC << "Start of setOtherGoodParticles";
-    muon.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
-    elec.xorLevel(Level::Fake, Level::Tight, Level::FakeNotTight);
-    LOG_FUNC << "End of setOtherGoodParticles";
-}
-
-
-bool DY_test::getCutFlow()
+bool Charge_MisId::getCutFlow()
 {
     (*currentChannel_) = Channel::None;
     setSubChannel();
 
     if (closure_cuts()) {
-        if (muon.size(Level::Tight) == 0) {
-            (*currentChannel_) = Channel::OS_FF;
-        } else if (muon.size(Level::Tight) == 1) {
-            (*currentChannel_) = Channel::OS_TF;
-        } else {
-            (*currentChannel_) = Channel::OS_TT;
-        }
-
+        (*currentChannel_) = (isSameSign(Level::Tight)) ? Channel::SS_CR : Channel::OS_CR;
+    }
+    if(measurement_cuts()) {
+        (*currentChannel_) = Channel::OS_MR;
     }
 
     if (*currentChannel_ == Channel::None) {
@@ -129,17 +93,18 @@ bool DY_test::getCutFlow()
     return true;
 }
 
-bool DY_test::closure_cuts() {
+bool Charge_MisId::closure_cuts() {
     bool passCuts = true;
     CutInfo cuts;
 
     passCuts &= cuts.setCut("passPreselection", true);
     passCuts &= cuts.setCut("passMETFilter", metfilters.pass());
-    passCuts &= cuts.setCut("pass2Muon", muon.size(Level::Fake) == 2);
+    passCuts &= cuts.setCut("pass2Electrons", elec.size(Level::Tight) == 2);
+    passCuts &= cuts.setCut("pass2LooseLep", nLeps(Level::Loose) == 2);
 
     // Trigger Cuts
     passCuts &= cuts.setCut("passLeadPtCut", getLeadPt() > 25);
-    passCuts &= cuts.setCut("passTrigger", trig_cuts.pass_cut(subChannel_));
+    passCuts &= cuts.setCut("passTrigger", getTriggerValue());
 
     float mass = get_mass();
     passCuts &= cuts.setCut("passZCut", mass > 70. && mass < 115);
@@ -147,46 +112,75 @@ bool DY_test::closure_cuts() {
     passCuts &= cuts.setCut("passHTCut", jet.getHT(Level::Tight) < 250);
 
     int charge = 0;
-    if (muon.size(Level::Fake) == 2) {
-        charge = muon.charge(Level::Fake, 0) * muon.charge(Level::Fake, 1);
+    if (elec.size(Level::Tight) == 2) {
+        charge = elec.charge(Level::Tight, 0) * elec.charge(Level::Tight, 1);
     }
 
-    cuts.setCut("passOS", charge < 0);
-    fillCutFlow(Channel::OS_TT, cuts);
+    cuts.setCut("passSSElectrons", charge > 0);
+    fillCutFlow(Channel::SS_CR, cuts);
+    cuts.cuts.pop_back();
+    cuts.setCut("passOSElectrons", charge < 0);
+    fillCutFlow(Channel::OS_CR, cuts);
 
     return passCuts;
 }
 
-float DY_test::get_mass() {
-    if (subChannel_ == Subchannel::MM) {
-        return (muon.p4(Level::Fake, 0) + muon.p4(Level::Fake, 1)).M();
-    } else {
-        return -1;
-    }
+bool Charge_MisId::measurement_cuts() {
+    bool passCuts = true;
+    CutInfo cuts;
 
+    passCuts &= cuts.setCut("passPreselection", true);
+    passCuts &= cuts.setCut("passMETFilter", metfilters.pass());
+    passCuts &= cuts.setCut("pass2Leptons;", nLeps(Level::Tight) == 2);
+    passCuts &= cuts.setCut("pass2LooseLep", nLeps(Level::Loose) == 2);
+
+    // Trigger Cuts
+    passCuts &= cuts.setCut("passLeadPtCut", getLeadPt() > 25);
+    passCuts &= cuts.setCut("passTrigger", getTriggerValue());
+
+    passCuts &= cuts.setCut("passZCut", get_mass() > 50);
+    // passCuts &= cuts.setCut("passOppositeSign", !isSameSign());
+    // passCuts &= cuts.setCut("passHasElectron", elec.size(Level::Tight) > 0);
+    passCuts &= cuts.setCut("passJetNumber", jet.size(Level::Tight) >= 2);
+    // passCuts &= cuts.setCut("passMetCut", met.pt() > 25);
+    passCuts &= cuts.setCut("passHTCut", jet.getHT(Level::Tight) > 100);
+
+    fillCutFlow(Channel::OS_MR, cuts);
+
+    return passCuts;
 }
 
-void DY_test::FillValues(const Bitmap& event_bitmap)
+float Charge_MisId::get_mass() {
+    if (subChannel_ == Subchannel::None) {
+        return -1;
+    } else if (subChannel_ == Subchannel::MM) {
+        return (muon.p4(Level::Tight, 0) + muon.p4(Level::Tight, 1)).M();
+    } else if (subChannel_ == Subchannel::EE) {
+        return (elec.p4(Level::Tight, 0) + elec.p4(Level::Tight, 1)).M();
+    } else {
+        return (muon.p4(Level::Tight, 0) + elec.p4(Level::Tight, 0)).M();
+    }
+}
+
+void Charge_MisId::FillValues(const Bitmap& event_bitmap)
 {
     LOG_FUNC << "Start of FillValues";
-    muon.fillLepton_Iso(*o_tightMuons, jet, Level::Tight, event_bitmap);
-    muon.fillLepton_Iso(*o_fakeMuons, jet, Level::FakeNotTight, event_bitmap);
+    muon.fillLepton(*o_tightMuons, Level::Tight, event_bitmap);
+    elec.fillLepton(*o_tightElectrons, Level::Tight, event_bitmap);
     jet.fillJet(*o_jets, Level::Tight, event_bitmap);
 
     for (size_t syst = 0; syst < numSystematics(); ++syst) {
         setupSyst(syst);
         o_ht.push_back(jet.getHT(Level::Tight, syst));
+        o_htb.push_back(jet.getHT(Level::Bottom, syst));
         o_met.push_back(met.pt());
         o_metphi.push_back(met.phi());
         o_centrality.push_back(jet.getCentrality(Level::Tight, syst));
-        o_nlooseMu.push_back(muon.size(Level::Loose));
-        o_nlooseEl.push_back(elec.size(Level::Loose));
-
     }
     LOG_FUNC << "End of FillValues";
 }
 
-void DY_test::printStuff()
+void Charge_MisId::printStuff()
 {
     LOG_FUNC << "Start of printStuff";
     std::cout << "Event: " << *event << std::endl;

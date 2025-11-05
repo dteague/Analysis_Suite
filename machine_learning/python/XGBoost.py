@@ -7,6 +7,7 @@ import numpy as np
 import xgboost as xgb
 import warnings
 from dataclasses import dataclass, InitVar, asdict
+from analysis_suite.commons.plot_utils import plot, cms_label
 
 from .dataholder import MLHolder
 
@@ -140,7 +141,6 @@ class XGBoostMaker(MLHolder):
         impor = fit_model.get_booster().get_score(importance_type=typ)
         sorted_import = {x_train.columns[int(k[1:])]: v for k, v in sorted(impor.items(), key=lambda item: item[1]) }
 
-        from analysis_suite.commons.plot_utils import plot, color_options
         with plot(f"{self.outdir}/importance_{typ}.png") as ax:
             ax.barh(range(len(sorted_import)), list(sorted_import.values()),
                     align='center',
@@ -153,7 +153,6 @@ class XGBoostMaker(MLHolder):
 
     def plot_training_progress(self):
         for typ in self.results['validation_0'].keys():
-            from analysis_suite.commons.plot_utils import plot, color_options, cms_label
             with plot(self.outdir/f"{typ}_training.png", **formatter) as ax:
                 ax.plot(self.results['validation_0'][typ], label='Training Set')
                 ax.plot(self.results['validation_1'][typ], label='Validation Set')
@@ -161,25 +160,3 @@ class XGBoostMaker(MLHolder):
                 ax.set_ylabel(typ)
                 ax.legend()
                 cms_label(ax)
-
-    def approx_likelihood(self, var, bins, year, comb_bkg=True):
-        use_set = self.test_sets[year]
-
-        sig_mask = use_set.classID.astype(int) == 1
-        sig_wgt = use_set.scale_factor[sig_mask]
-        sig_var = use_set[var][sig_mask]
-        sig_pred = self.pred_test[year]["Signal"][sig_mask]
-
-        bkg_mask = use_set.classID.astype(int) != 1
-        bkg_wgt = use_set.scale_factor[bkg_mask]
-        bkg_var = use_set[var][bkg_mask]
-        bkg_pred = self.pred_test[year]["Signal"][bkg_mask]
-
-        max_fom = [0, -1]
-        for i in np.linspace(0, 1, 21):
-            sig = np.histogram(sig_var[sig_pred > i], bins=bins, weights=sig_wgt[sig_pred > i])[0]
-            bkg = np.histogram(bkg_var[bkg_pred > i], bins=bins, weights=bkg_wgt[bkg_pred > i])[0]
-            value = np.sqrt(np.sum(2*np.nan_to_num((sig+bkg)*np.log(1+sig/bkg) - sig)))
-            if max_fom[0] < value:
-                max_fom = [value, i]
-        return max_fom

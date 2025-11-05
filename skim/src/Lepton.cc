@@ -48,7 +48,11 @@ void Lepton::fillLepton(LeptonOut& output, Level level, const Bitmap& event_bitm
     for (size_t idx = 0; idx < size(); ++idx) {
         bool pass = fillParticle(output, level, idx, event_bitmap);
         if (pass) {
-            output.flip.push_back(flips.at(idx));
+            // output.flip.push_back(flips.at(idx));
+            output.charge.push_back(charge(idx));
+            if (isMC) {
+                output.origin.push_back(static_cast<Int_t>(genPartFlav.at(idx)));
+            }
         }
     }
 }
@@ -77,7 +81,7 @@ void Lepton::fillLepton_Iso(LeptonOut_Fake& output, Jet& jet, Level level, const
     }
 }
 
-std::pair<size_t, float> Lepton::getCloseJet(size_t lidx, const Particle& jet)
+std::pair<size_t, float> Lepton::getCloseJet(size_t lidx, Particle& jet)
 {
     size_t minIdx = SIZE_MAX;
     float minDr = 0.16; // 0.4^2
@@ -94,6 +98,7 @@ std::pair<size_t, float> Lepton::getCloseJet(size_t lidx, const Particle& jet)
     if (minIdx != SIZE_MAX) {
         closeJet_by_lepton[lidx] = minIdx;
     }
+    dynamic_cast<Jet&>(jet).closeLep_dr[minIdx] = std::sqrt(minDr);
     return std::make_pair(minIdx, minDr);
 }
 

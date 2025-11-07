@@ -14,11 +14,14 @@ def get_analyses():
 
 def get_info_local(filename):
     return {
-        "Year": '2016',
+        "Year": '2018',
         "DAS_Name": "data",
         "Selection": "test",
         "Dataset": "DoubleMuon",
-        "DataRun": "",
+        "DataRun": "A",
+        "isData": True,
+        "Xsec": 1.0,
+        "Group": 'data',
     }
 
 def get_info_general(filename):

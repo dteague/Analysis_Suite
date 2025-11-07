@@ -8,25 +8,28 @@ from contextlib import contextmanager
 import warnings
 import mplhep as hep
 
-plt.style.use([hep.style.CMS, hep.style.firamath])
+# plt.style.use([hep.style.CMS, hep.style.firamath])
+plt.style.use([hep.style.CMS])
 
 @contextmanager
 def ratio_plot(filename, xlabel, binning, **kwargs):
     plot_inputs = {"nrows": 2, "ncols": 1, "sharex": True, 'figsize': (11,11),
-                   "gridspec_kw": {"hspace": 0.1, "height_ratios": [3,1]}}
+                   "gridspec_kw": {'hspace': 0.0, "height_ratios": [3,1]}}
     fig, ax = plt.subplots(**plot_inputs)
     yield ax
     setup_ticks(*ax)
     axisSetup(ax[0], ax[1], xlabel=xlabel, binning=binning, **kwargs)
+    ax[1].plot([binning[0], binning[-1]], [1, 1], color='k')
     ax[0].legend(ncols=2, fontsize='x-small')
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fig.tight_layout()
     if hasattr(plot, "workdir"):
         filename = f"{plot.workdir}/{filename}"
-    fig.savefig(filename, bbox_inches="tight", dpi=300)
-    # if "extra_format" in kwargs:
-        # fig.savefig(filename.with_suffix(f'.{kwargs["extra_format"]}'), bbox_inches="tight", dpi=300)
+    # cms_label(ax[0], lumi=kwargs.get('lumi', 100), hasData=kwargs.get('data', False), label="")
+    # fig.savefig(filename, bbox_inches="tight", dpi=300)
+    cms_label(ax[0], lumi=kwargs.get('lumi', 100), hasData=kwargs.get('data', False))
+    fig.savefig(filename.with_stem(filename.stem+"_prelim"), bbox_inches="tight", dpi=300)
     plt.close(fig)
 
 @contextmanager
@@ -35,8 +38,7 @@ def nonratio_plot(filename, xlabel, binning, **kwargs):
     yield ax
     setup_ticks(ax)
     axisSetup(ax, xlabel=xlabel, binning=binning, **kwargs)
-    if kwargs.get('legend', True):
-        ax.legend()
+    ax.legend(ncols=2, fontsize='x-small')
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fig.tight_layout()
@@ -95,13 +97,26 @@ def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bo
         xpad = subpad
         subpad.set_ylabel(kwargs.get("subpad_label", "Data/MC"))
         subpad.set_ylim(top=ratio_top, bottom=ratio_bot)
+        # subpad.yaxis.set_major_locator(mpl.ticker.MaxNLocator(prune='both', nbins=4))
+        # subpad.yaxis.set_major_locator(mpl.ticker.MaxNLocator(prune='both', nbins=4))
+        if pad.get_yscale() != 'log':
+            pad.yaxis.set_major_locator(mpl.ticker.MaxNLocator(prune='lower', nbins='auto'))
 
     if xlabel:
         xpad.set_xlabel(xlabel, loc="right")
     if binning is not None:
         xpad.set_xlim(binning[0], binning[-1])
     if zero_bot:
-        pad.set_ylim(bottom=0.)
+        # pad.set_ylim(bottom=0., top=pad.get_ylim()[1]*1.4)
+        lim = pad.get_ylim()
+        # scale = 1.00
+        scale = 1.3
+        if pad.get_yscale() == 'log':
+            high = (lim[1]/lim[0])**scale * lim[0]
+            pad.set_ylim(top=high)
+        else:
+            pad.set_ylim(bottom=0., top=pad.get_ylim()[1]*scale)
+        # pad.set_ylim(bottom=0, top=34)
 
     xpad.ticklabel_format(useOffset=False)
     if 'pad_label' in kwargs:
@@ -112,11 +127,14 @@ def axisSetup(pad, subpad=None, xlabel="", binning=None, ratio_top=2.0, ratio_bo
         pad.set_ylabel('Events', loc='top')
 
 
-def cms_label(ax, lumi=None, year=None, hasData=False):
+def cms_label(ax, lumi=None, year=None, hasData=False, label='Preliminary'):
+    # label = "Work in Progress" if hasData else "WIP"
+    # label = "Preliminary"
     if lumi is None and year is None:
-        hep.cms.label(ax=ax, label="Work in Progress", data=hasData)
+        hep.cms.label(ax=ax, label=label, data=hasData)
         return
     if year is not None:
         from .constants import lumi
         lumi = lumi[year]
-    hep.cms.label(ax=ax, lumi=lumi, label="Work in Progress", data=hasData)
+    lumi = round(lumi, 1)
+    hep.cms.label(ax=ax, lumi=lumi, label=label, data=hasData)

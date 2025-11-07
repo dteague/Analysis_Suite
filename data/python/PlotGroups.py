@@ -7,7 +7,7 @@ info ={
 	        "ttg_singleLept",
 	        "ttg_dilep",
 	        "zg",
-            "wg",
+            # "wg",
             "tg"
         ],
     },
@@ -26,6 +26,16 @@ info ={
         "Members": ['tttj_m', 'tttj_p'],
         "Combine": 'TTTJ',
     },
+    "tttj_p": {
+        "Name": r"t\bar{t}tj^{+}",
+        "Members": ['tttj_p'],
+        "Combine": 'TTTJp',
+    },
+    "tttj_m": {
+        "Name": r"t\bar{t}tj^{-}",
+        "Members": ['tttj_m'],
+        "Combine": 'TTTJm',
+    },
     "tttj_lo": {
         "Name": r"t\bar{t}tj",
         "Members": ['tttj'],
@@ -35,6 +45,16 @@ info ={
         "Name": r"t\bar{t}tW",
         "Members": ['tttw_m', 'tttw_p'],
         "Combine": 'TTTW',
+    },
+    "tttw_p": {
+        "Name": r"t\bar{t}tW^{+}",
+        "Members": ['tttw_p'],
+        "Combine": 'TTTWp',
+    },
+    "tttw_m": {
+        "Name": r"t\bar{t}tW^{-}",
+        "Members": ['tttw_m'],
+        "Combine": 'TTTWm',
     },
     "tttw_lo": {
         "Name": r"t\bar{t}tW",
@@ -51,12 +71,12 @@ info ={
         "Composite": True,
         "Name": "ttt",
         "Members": ["tttj_nlo", "tttw_nlo"],
-        "Combine": 'TTT',
+        "Combine": 'SIG',
     },
 
     "ttw": {
         "Name": r"t\bar{t}W", 
-        "Members": ["ttw"]
+        "Members": ["ttw", 'ttw_ewk']
     },
     "ttz": {
         "Name": r"t\bar{t}Z/\gamma*", 
@@ -128,12 +148,17 @@ info ={
     },
     "ttX": {
         "Composite": True,
-        "Name": r"t\bar{t}H",
+        "Name": r"t\bar{t}X",
         "Members": [
             "ttw",
             "ttz",
             "tth"
         ]
+    },
+    'other': {
+        "Composite": True,
+        "Name": r'Other',
+        "Members": ['xg', 'ttXY', 'rare'],
     },
     'twz': {
         "Members": [
@@ -146,13 +171,8 @@ info ={
         "Composite": True,
         "Name": r"Rare",
         "Members": [
-            "vvv",
-            "vv",
-            "st_twll",
-	        "ggh2zz",
-            'tzq',
-            'twz',
-            'thq',
+            'wz',
+            'rare_nowz'
         ]
     },
     "rare_nowz": {
@@ -166,6 +186,7 @@ info ={
             'tzq',
             'twz',
             'thq',
+            'ttXY',
         ]
     },
     "misc": {
@@ -195,6 +216,7 @@ info ={
     "qcd_mu" : {
         "Name": r"QCD",
         "Members": [
+            'qcd_mu15_pt20-Inf',
             "qcd_mu_pt15-20",
             "qcd_mu_pt20-30",
             "qcd_mu_pt30-50",
@@ -342,14 +364,38 @@ info ={
     },
     'nonprompt_mc': {
         "Composite": True,
-        "Name": r'Nonprompt',
-        "Members": ['ttbar_lep', "wjet_ht", 'DY', 'DY_J'],
+        "Name": r'Nonprompt MC',
+        "Members": ['ttbar_lep', "wjet_ht", 'DY', 'DY_J', 'DY_ht'],
     },
+    'nonprompt_nofr': {
+        "Composite": True,
+        "Name": r'Nonprompt MC raw',
+        "Members": ['ttbar_lep', "wjet_ht", 'DY', 'DY_J', 'DY_ht'],
+    },
+    'data_driven': {
+        "Composite": True,
+        "Name": r'Data-Driven',
+        "Members": ['nonprompt', "charge_flip",
+                    'ttbar_lep', "wjet_ht", 'DY', 'DY_J', "DY_ht"], # mc nonprompt
+    },
+
     'large_Xsec': {
         "Composite": True,
         "Name": r'Nonprompt',
         "Members": ['ttbar_lep', "wjet_ht", 'DY_ht', 'DY', 'DY_J'],
     },
+###### Daniel stuff
+    'abcdnn': {
+         "Name": r'ABCDNN',
+         'Combine': "ABCDNN",
+         'Members': ['ABCDNN'],
+    },
+    'top': {
+         "Name": r'TOP',
+         'Combine': "TOP",
+         'Members': ['TOP'],
+    },
+
     "all": {
         "Composite": True,
         "Name": "All",
@@ -364,3 +410,23 @@ info ={
         ],
     }
 }
+
+def expand_composite(group):
+    output = []
+    if group not in info:
+        output.append(group)
+    elif 'DataDriven' in info[group]:
+        output.append(group)
+    else:
+        is_composite = 'Composite' in info[group]
+        for subgroup in info[group]['Members']:
+            if is_composite and subgroup in info:
+                output += expand_composite(subgroup)
+            else:
+                output.append(subgroup)
+    return output
+
+for group, subinfo in info.items():
+    if 'Composite' in subinfo:
+        subinfo['Members'] = expand_composite(group)
+

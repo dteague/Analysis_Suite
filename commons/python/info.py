@@ -37,22 +37,16 @@ class GroupInfo:
 
     def get_color(self, group):
         if group not in self.group2color:
-            logging.warning("No color info given, default to black")
+            logging.warning(f"No color info given, for {group} default to black")
             return 'black'
         return self.group2color[group]
 
     def get_memberMap(self, keep_dd_data=False):
         final = dict()
         for key, info in ginfo.items():
+            if key not in self.group2color:
+                continue
             members = info["Members"]
-            if "Composite" in info and info["Composite"]:
-                tmpMembers = list()
-                for mem in members:
-                    if mem in ginfo:
-                        tmpMembers += ginfo[mem]["Members"]
-                    else:
-                        tmpMembers.append(mem)
-                members = tmpMembers
             if not keep_dd_data and "DataDriven" in info and info['DataDriven']:
                 members = [key]
             final[key] = members
@@ -64,13 +58,19 @@ class GroupInfo:
     def setup_groups(self, groups=None):
         if groups is None:
             groups = self.group2color.keys()
-        return {group : self.group2MemberMap[group] for group in groups}
+        return {group : self.group2MemberMap[group] for group in groups if group in self.group2MemberMap}
 
     def setup_members(self, groups=None):
         groups = self.setup_groups(groups)
         if not groups.values():
             return list()
         return np.concatenate(list(groups.values()))
+
+    def get_group(self, member):
+        for group, members in self.group2MemberMap.items():
+            if member in members:
+                return group
+        return None
 
     def is_data_driven(self, group):
         if "DataDriven" not in ginfo[group]:
@@ -79,9 +79,12 @@ class GroupInfo:
     
 class FileInfo:
     def __init__(self):
-        self.dasNames = {key: info["DAS"] for key, info in finfo.items()}
+        self.dasNames = None
 
     def get_group(self, splitname):
+        if self.dasNames is None:
+            self.dasNames = {key: info["DAS"] for key, info in finfo.items()}
+
         if isinstance(splitname, str) and splitname in self.dasNames:
             return self.dasNames[splitname]
         elif self.is_data(splitname):
@@ -122,7 +125,7 @@ class NtupleInfo:
     filename: str
     trees: list
     color_by_group: dict
-    chan: str
+    chan: str = ""
     cut : Callable[[object], bool] = None
     branches: list = None
     changes: dict = field(default_factory=dict)
@@ -130,6 +133,9 @@ class NtupleInfo:
     part_cut: list = None
     tree_groups: dict = field(default_factory=dict)
     group_trees: dict = field(default_factory=dict)
+
+    def remove_group(self, group):
+        self.color_by_group.pop(group, None)
 
     def get_info(self, remove=None, add=None, **kwargs):
         color_by_group = self.color_by_group
@@ -141,15 +147,32 @@ class NtupleInfo:
             color_by_group = {**color_by_group, **add}
         return GroupInfo(color_by_group, **kwargs)
 
+    def get_group_name(self, member, tree, keep_dd=True):
+        info = self.get_info(keep_dd_data=keep_dd)
+        for group, members in info.group2MemberMap.items():
+            if member in members and self.pass_group(tree, group):
+                return group
+        return None
+
     def get_file(self, **kwargs):
         return Path(str(self.filename).format(**kwargs))
 
-    def get_filename(self, year, workdir=None):
-        if workdir is None:
+    def get_filename(self, year, inputdir=None, **kwargs):
+        if inputdir is None:
             path = Path(str(self.filename).format(year=year, workdir=""))
-            workdir = max([int(d.name) for d in path.glob("*") if d.name.isnumeric()], default="")
-            logging.info(f"Getting from workdir {workdir}")
-        return Path(str(self.filename).format(year=year, workdir=workdir))
+            inputdir = max([int(d.name) for d in path.glob("*") if d.name.isnumeric()], default="")
+            logging.info(f"Getting from workdir {inputdir}")
+        outpath = Path(str(self.filename).format(year=year, workdir=inputdir))
+        if not outpath.exists():
+            dirs = Path(str(self.filename).format(year=year, workdir="")).glob("*")
+            mindiff, mindate = 100000, inputdir
+            for d in dirs:
+                d = int(d.name)
+                if d> inputdir and d - inputdir < mindiff:
+                    mindiff = d-inputdir
+                    mindate = d
+            outpath = Path(str(self.filename).format(year=year, workdir=mindate))
+        return outpath
 
     def set_groups_trees(self, trees, groups):
         if isinstance(trees, str):
@@ -162,7 +185,9 @@ class NtupleInfo:
             self.group_trees[group] = trees
 
     def pass_group(self, tree, group):
-        if tree in self.tree_groups:
+        if tree is None:
+            return group
+        elif tree in self.tree_groups:
             return group in self.tree_groups[tree]
         elif group in self.group_trees:
             return tree in self.group_trees[group]
@@ -176,7 +201,7 @@ class NtupleInfo:
             vg[cut[0]].mask_part(cut[1], cut[2])
 
 
-    def apply_cut(self, vg, *args):
+    def set_cut(self, vg, *args):
         def cut_vg(vg, cut):
             vg.cut(cut)
             for name, part in vg.parts.items():

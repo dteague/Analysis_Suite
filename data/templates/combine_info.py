@@ -9,13 +9,8 @@ multi_graph = GraphInfo('sig_3top', '', axis.Variable(multi_bins), '3top_sig')
 top4_graph = GraphInfo('sig_4top', '', axis.Regular(1, 0, 1), '4top_sig')
 ttz_graph = GraphInfo('HT', '', axis.Regular(20, 250, 750), "HT")
 
-met_graph = GraphInfo('met', 'MET', axis.Regular(15, 50, 400), "Met")
-njet_graph = GraphInfo('njet', '$N_{j}$', axis.Regular(7, 2, 9), "NJets")
-jetpt_graph = GraphInfo('jetpt', '$p_{T}(j_{1})$', axis.Regular(15, 40, 500), "j1Pt")
-nelec_graph = GraphInfo('nElectrons', '$N_{e}$', axis.Regular(3, 0, 3), "NElectrons")
-
 rate_params = ['ttz']
-# rate_params = []
+
 regions = {
     "Dilepton": {
         'dir': 'second_train',
@@ -41,28 +36,4 @@ regions = {
         'graph': top4_graph,
         'mask': lambda vg : vg['4top_sig'] > cut,
     },
-    # 'nelecTest': {
-    #     'dir': "",
-    #     'glob': 'processed*signal.root',
-    #     'graph': nelec_graph,
-    #     'mask': None
-    # },
-    # 'jetTest': {
-    #     'dir': "",
-    #     'glob': 'processed*signal.root',
-    #     'graph': njet_graph,
-    #     'mask': None
-    # },
-    # 'metTest': {
-    #     'dir': "",
-    #     'glob': 'processed*signal.root',
-    #     'graph': met_graph,
-    #     'mask': None
-    # },
-    # "jetptTest": {
-    #     'dir': "",
-    #     'glob': 'processed*signal.root',
-    #     'graph': jetpt_graph,
-    #     'mask': None
-    # },
 }

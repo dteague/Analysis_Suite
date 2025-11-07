@@ -35,7 +35,7 @@ info = {
 
     # TTTT
     "tttt" : {
-        "cross_section" : 11.97e-3,
+        "cross_section" : 13.37e-3,
         "Level": "NLO",
         "Source of cross section" : "arXiv:1711.02116",
         "DAS": 'TTTT_Tune.*',
@@ -62,7 +62,7 @@ info = {
         "DAS": 'TTWH_Tune.*',
     },
     "ttwz" : {
-        "cross_section" : 0.003884,
+        "cross_section" : 0.002453,
         "Level": "NLO",
         "Source of cross section" : "arXiv:1610.07922",
         "DAS": 'TTWZ_Tune.*',
@@ -82,29 +82,37 @@ info = {
 
     # TTX
     "ttw" : {
-        "cross_section" : 0.1792,
+        "cross_section" : 0.2316,
+        "Level": "NLO+NNLL",
         "Source of cross section" : "arXiv:1812.08622",
         "DAS": 'TTWJetsToLNu_Tune.*'
     },
+    "ttw_ewk" : {
+        "cross_section" : 0.01127,
+        "Source of cross section" : "arXiv:1812.08622",
+        "DAS": 'ttWJetsToLNu_5f_EWK_Tune.*',
+    },
     "ttz": {
-        "cross_section" : 0.2589,
+        "cross_section" : 0.281,
+        "Level": "NLO+NNLL",
         "Source of cross section" : "arXiv:1812.08622",
         "DAS": 'TTZToLLNuNu_M-10_Tune.*',
     },
     "ttz_m1-10": {
         "cross_section" : 0.0532,
+        "Level": "NLO",
         "Source of cross section" : "arXiv:1812.08622",
         "DAS": "TTZToLL_M-1to10_Tune.*",
     },
     "tth" : {
-        "cross_section" : 0.2151,
-        "Level": "NLO",
+        "cross_section" : 0.209,
+        "Level": "NLO+NNLL",
         "Source of cross section" : "LHCHXSWG",
         "DAS" : "ttHToNonbb_M125_Tune.*",
     },
     "tth_bb" : {
-        "cross_section" : 0.2934,
-        "Level": "NLO",
+        "cross_section" : 0.291,
+        "Level": "NLO+NNLL",
         "Source of cross section" : "LHCHXSWG",
         "DAS" : "ttHTobb_M125_Tune.*",
     },
@@ -112,76 +120,82 @@ info = {
 
     # VVV
     "www": {
-        "cross_section" : 0.2086,
+        "cross_section" : 0.2109,
         "Level": "NLO",
         "Source of cross section" : "arXiv:1405.0301",
         "DAS": 'WWW_4F_Tune.*',
     },
     "wwz" : {
-        "cross_section" : 0.1651,
+        "cross_section" : 0.1679,
         "Level": "NLO",
         "Source of cross section" : "arXiv:1405.0301",
         "DAS": 'WWZ_4F_Tune.*',
     },
     "wzz": {
-        "cross_section" : 0.05565,
+        "cross_section" : 0.05550,
         "Level": "NLO",
         "Source of cross section" : "arXiv:1405.0301",
         "DAS": 'WZZ_Tune.*'
     },
     "zzz" : {
-        "cross_section" : 0.01476,
+        "cross_section" : 0.01417,
         "Level": "NLO",
         "Source of cross section" : "arXiv:1405.0301",
         "DAS": 'ZZZ_Tune.*',
     },
     "wwg" : {
-        "cross_section" : 0.2147,
-        "Source of cross section" : "AN2018-062",
+        "cross_section" : 0.3369,
+        "Level": "NLO",
+        "Source of cross section" : "XSDB",
         "DAS": 'WWG_Tune.*',
     },
     "wzg" : {
-        "cross_section" : 0.04123,
-        "Source of cross section" : "AN2018-062",
+        "cross_section" : 0.07876,
+        "Level": "NLO",
+        "Source of cross section" : "XSDB",
         "DAS": 'WZG_Tune.*',
     },
 
     # VV
     "wzTo3lnu" : {
         "cross_section" : 4.9173,
-        "Source of cross section" : "AN2021-182",
+        "Level": "NNLO",
+        "Source of cross section" : "https://indico.cern.ch/event/963958/contributions/4058869/attachments/2119607/3566972/2020_10_09_WZ_cross_section.pdf",
         "DAS": 'WZTo3LNu_Tune.*',
-    },
-    "ww_doubleScatter" : {
-        "cross_section" : 0.16975,
-        "Source of cross section" : "AN2018-062",
-        "DAS": 'WWTo2L2Nu_.*DoubleScattering_.*',
-    },
-    "vh2nonbb" : {
-        "cross_section" : 0.9561,
-        "Source of cross section" : "AN2018-062",
-        "DAS": 'VHToNonbb_M125.*',
     },
     "zz4l": {
         "cross_section" : 1.256,
-        # "cross_section": 16.523,
-        "Source of cross section" : "AN2018-062",
+        "Level": "NNLO",
+        "Source of cross section" : "arxiv:1405.2219",
         "DAS": 'ZZTo4L_Tune.*',
+    },
+    "ssww" : {
+        "cross_section" : 0.02794,
+        "Level": "NLO",
+        "Source of cross section" : "arxiv:2005.01173",
+        "DAS": 'SSWW_Tune.*',
+    },
+    "vh2nonbb" : {
+        "cross_section" : 0.9561,
+        "Level": "NLO",
+        "Source of cross section" : "AN2023-082",
+        "DAS": 'VHToNonbb_M125.*',
+    },
+
+    "ww_doubleScatter" : {
+        "cross_section" : 0.2094,
+        "Source of cross section" : "AN2018-062",
+        "DAS": 'WWTo2L2Nu_.*DoubleScattering_.*',
     },
     "wpwpjj_ewk" : {
         "cross_section" : 0.03711,
         "Source of cross section" : "AN2018-062",
         "DAS": 'WpWpJJ_EWK-QCD_Tune.*',
     },
-    "ssww" : {
-        "cross_section" : 0.02794,
-        "Source of cross section" : "AN2018-062",
-        "DAS": 'SSWW_Tune.*',
-    },
 
     ## VV Inclusive
     "zz" : {
-        "cross_section": 16.91,
+        "cross_section": 16.19,
         "Level": "NNLO",
         "Source of cross section": "arXiv:1405.2219",
         "DAS": "ZZ_TuneC.*",
@@ -201,78 +215,94 @@ info = {
 
     # X+g
     "wg" : {
-        "cross_section" : 405.271,
+        "cross_section" : 412.7,
         "Source of cross section" : "AN2018-062",
         "DAS": 'WGToLNuG_Tune.*',
     },
     "zg" : {
-        "cross_section" : 0.166,
-        "Source of cross section" : "MCM",
+        "cross_section" : 51.53,
+        'Level': 'NLO',
+        "Source of cross section" : "XSDB",
         "DAS": 'ZGToLLG_01J_5f_Tune.*',
     },
     "tg" : {
-        "cross_section" : 2.967,
-        "Source of cross section" : "AN2018-062",
+        "cross_section" : 2.997,
+        'Level': 'NLO',
+        "Source of cross section" : "XSDB",
         "DAS": 'TGJets_Tune.*',
     },
+
     "ttg_dilep" : {
-        "cross_section" : 1.502,
-        "Source of cross section" : "XSDB",
+        "cross_section" : 2.22,
+        "Level": 'NLO',
+        'kfactor': 1.4852,
+        "Source of cross section" : "AN2019_227",
         "DAS": 'TTGamma_Dilept_Tune.*',
     },
     "ttg_hadronic" : {
         "cross_section" : 4.178,
-        "Source of cross section" : "XSDB",
+        "Level": 'NLO',
+        'kfactor': 1.4852,
+        "Source of cross section" : "AN2019_227",
         "DAS": 'TTGamma_Hadronic_Tune.*',
     },
     "ttg_singleLept" : {
         "cross_section" : 5.095,
-        "Source of cross section" : "XSDB",
+        "Level": 'NLO',
+        'kfactor': 1.4852,
+        "Source of cross section" : "AN2019_227",
         "DAS": 'TTGamma_SingleLept_Tune.*',
     },
 
     # other
     "tzq" : {
-        "cross_section" : 0.07358,
-        "Source of cross section" : "MCM",
+        "cross_section" : 0.07561,
+        "Level": 'NLO',
+        "Source of cross section" : "XSDB",
         "DAS": 'tZq_ll_4f_ckm_NLO_Tune.*',
     },
     "twz_wl" : {
         "cross_section" : 0.003004 ,
-        "Source of cross section" : "MCM",
+        "Level": 'NLO',
+        "Source of cross section" : "XSDB",
         "DAS": 'TWZToLL_thad_Wlept_5f_DR_Tune.*',
     },
     "twz_tl" : {
         "cross_section" : 0.003004 ,
-        "Source of cross section" : "MCM",
+        "Level": 'NLO',
+        "Source of cross section" : "XSDB",
         "DAS": 'TWZToLL_tlept_Whad_5f_DR_Tune.*',
     },
     "twz_twl" : {
         "cross_section" : 0.0015,
-        "Source of cross section" : "MCM",
+        "Level": 'NLO',
+        "Source of cross section" : "XSDB",
         "DAS": 'TWZToLL_tlept_Wlept_5f_DR_Tune.*',
     },
     "thq" : {
-        "cross_section" : 0.07096,
-        "Source of cross section" : "MCM",
+        "cross_section" : 0.0743,
+        "Level": "QCD NLO",
+        "Source of cross section" : "arXiv:1610.07922",
         "DAS": 'THQ_ctcvcp_4f_Hincl_Tune.*',
     },
 
 
     "wjets" : {
         # "cross_section" : 61334.9,
-        "cross_section" : 66680.0,
-        "Source of cross section" : "AN2018-062",
+        "cross_section" : 61526.7,
+        "Source of cross section" : "FEWZ",
         "DAS": 'WJetsToLNu_Tune.*',
     },
     "ggh2zz" : {
         "cross_section" : 0.01212,
-        "Source of cross section" : "AN2018-062",
+        "Level": "NLO",
+        "Source of cross section" : "XSDB",
         "DAS": 'GluGluHToZZTo4L_M125_Tune.*',
     },
     "st_twll" : {
         "cross_section" : 0.01123,
-        "Source of cross section" : "AN2018-062",
+        "Level": 'NLO',
+        "Source of cross section" : "XSDB",
         "DAS": 'ST_tW_Dilept_5f.*',
     },
 
@@ -283,26 +313,26 @@ info = {
 
     # TTBar samples
     "ttbar" : {
-        "cross_section" : 831.762,
-        "Level": "NNLO",
+        "cross_section" : 833.9,
+        "Level": "NNLO+NLL",
         "Source of cross section": "XSDB",
         "DAS": 'TT_Tune.*',
     },
     "ttbar_2l2n": {
-        "cross_section" : 88.29,
-        "Level": "NNLO",
+        "cross_section" : 87.56,
+        "Level": "NNLO+NLL",
         "Source of cross section": "XSDB",
         "DAS" : "TTTo2L2Nu_Tune.*",
     },
     "ttbar_semilep": {
-        "cross_section" : 365.34,
-        "Level": "NNLO",
+        "cross_section" : 362.99,
+        "Level": "NNLO+NLL",
         "Source of cross section": "XSDB",
         "DAS" : "TTToSemiLeptonic_Tune.*",
     },
     "ttbar_hadronic": {
-        "cross_section" : 377.96,
-        "Level": "NNLO",
+        "cross_section" : 381.09,
+        "Level": "NNLO+NLL",
         "Source of cross section": "XSDB",
         "DAS" : "TTToHadronic_Tune.*",
     },
@@ -311,22 +341,19 @@ info = {
     'DYm10-50': {
         "cross_section" : 15810.0,
         "Source of cross section" : "1G25ns",
-        "Level": "NLO",
+        "Level": "NNLO",
         "DAS": 'DYJetsToLL_M-10to50_Tune.*',
     },
     'DYm50': {
         "cross_section" : 6077.22,
-        "Source of cross section" : "1G25ns",
+        "Source of cross section" : "FEWZ",
         "Level": "NNLO",
         "DAS": 'DYJetsToLL_M-50_Tune.*madgraphMLM-pythia8',
     },
     'DYm50_amc': {
-        # "cross_section" : 6404.,
         "cross_section" : 6077.22,
-        # "cross_section" : 5941.,
-        "Source of cross section" : "1G25ns",
+        "Source of cross section" : "FEWZ",
         "Level": "NNLO",
-        # 'kfactor': 0.88,
         "DAS": 'DYJetsToLL_M-50_Tune.*amcatnloFXFX-pythia8',
     },
     "DYm50_ht40-70" : {
@@ -388,121 +415,138 @@ info = {
         "kfactor": 1.23,
         "DAS" : "DYJetsToLL_2J_Tune.*",
     },
+    "DY_tautau" : {
+        "cross_section": 353.6,
+        "DAS" : "DYJetsToTauTau_.*",
+    },
 
 
     # W + Jets
     "wjets_ht70-100" : {
-        "cross_section": 1264.0,
-        # "cross_section": 1292.0,
-        # "kfactor": 1.21,
+        "cross_section": 1563,
+        "Level": 'NLO',
+        "Source of cross section": "1G25ns",
         "DAS" : "WJetsToLNu_HT-70To100_TuneC*",
     },
     "wjets_ht100-200": {
-        "cross_section": 1256.0,
-        # "cross_section": 1345,
-        # "kfactor": 1.21,
+        "cross_section": 1627,
+        "Level": 'NLO',
+        "Source of cross section": "1G25ns",
         "DAS" : "WJetsToLNu_HT-100To200_TuneC*",
     },
     "wjets_ht200-400": {
-        "cross_section": 335.5,
-        # "cross_section": 359.7,
-        # "kfactor": 1.21,
+        "cross_section": 435.237,
+        "Level": 'NLO',
+        "Source of cross section": "1G25ns",
         "DAS" : "WJetsToLNu_HT-200To400_TuneC*",
     },
     "wjets_ht400-600": {
-        "cross_section": 45.25,
-        # "cross_section": 48.91,
-        # "kfactor": 1.21,
+        "cross_section": 59.181,
+        "Level": 'NLO',
+        "Source of cross section": "1G25ns",
         "DAS" : "WJetsToLNu_HT-400To600_TuneC*",
     },
     "wjets_ht600-800": {
-        "cross_section": 10.97,
-        # "cross_section": 12.05,
-        # "kfactor": 1.21,
+        "cross_section": 14.581,
+        "Level": 'NLO',
+        "Source of cross section": "1G25ns",
         "DAS" : "WJetsToLNu_HT-600To800_TuneC*",
     },
     "wjets_ht800-1200": {
-        "cross_section": 4.933,
-        # "cross_section": 5.501,
-        # "kfactor": 1.21,
+        "cross_section": 6.656,
+        "Level": 'NLO',
+        "Source of cross section": "1G25ns",
         "DAS" : "WJetsToLNu_HT-800To1200_TuneC*",
     },
     "wjets_ht1200-2500": {
-        "cross_section": 1.16,
-        # "cross_section": 1.329,
-        # "kfactor": 1.21,
+        "cross_section": 1.681,
+        "Level": 'NLO',
+        "Source of cross section": "1G25ns",
         "DAS" : "WJetsToLNu_HT-1200To2500_TuneC*",
     },
     "wjets_ht2500-Inf": {
-        # "cross_section": 0.008001,
-        "cross_section": 0.03216,
-        "kfactor": 1.21,
+        "cross_section": 0.039,
+        "Level": 'NLO',
+        "Source of cross section": "1G25ns",
         "DAS" : "WJetsToLNu_HT-2500ToInf_TuneC*",
     },
 
     # QCD Mu enriched
     "qcd_mu15_pt20-Inf" : {
         "cross_section" : 239000,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-20_MuEnrichedPt15_Tune.*',
     },
     "qcd_mu_pt15-20" : {
         "cross_section" : 2797000,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-15To20_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt20-30" : {
         "cross_section" : 2518000,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-20To30_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt30-50" : {
         "cross_section" : 1361000,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-30To50_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt50-80" : {
         "cross_section" : 377800,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-50To80_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt80-120" : {
         "cross_section" : 88620,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-80To120_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt120-170" : {
         "cross_section" : 21070,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-120To170_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt170-300" : {
         "cross_section" : 7019,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-170To300_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt300-470" : {
         "cross_section" : 622.4,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-300To470_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt470-600" : {
         "cross_section" : 58.86,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-470To600_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt600-800" : {
         "cross_section" : 18.22,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-600To800_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt800-1000" : {
         "cross_section" : 3.25,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-800To1000_MuEnrichedPt5_Tune.*',
     },
     "qcd_mu_pt1000-Inf" : {
         "cross_section" : 1.078,
+        "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS": 'QCD_Pt-1000_MuEnrichedPt5_Tune.*',
     },
@@ -559,39 +603,45 @@ info = {
 
     # QCD bc
     "qcd_bcToE_pt15-20" : {
-        "cross_section" : 186200,
+        "cross_section" : 186500,
         "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS" : "QCD_Pt_15to20_bcToE_Tune.*",
     },
     "qcd_bcToE_pt20-30" : {
-        "cross_section" : 303800,
+        "cross_section" : 308900,
         "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS" : "QCD_Pt_20to30_bcToE_Tune.*",
     },
     "qcd_bcToE_pt30-80" : {
-        "cross_section" : 362300,
+        "cross_section" : 361800,
         "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS" : "QCD_Pt_30to80_bcToE_Tune.*",
     },
     "qcd_bcToE_pt80-170" : {
-        "cross_section" : 33700.0,
+        "cross_section" : 34180.0,
         "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS" : "QCD_Pt_80to170_bcToE_Tune.*",
     },
     "qcd_bcToE_pt170-250" : {
-        "cross_section" : 2125.0,
+        "cross_section" : 2109.0,
         "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS" : "QCD_Pt_170to250_bcToE_Tune.*",
     },
     "qcd_bcToE_pt250-Inf" : {
-        "cross_section" : 562.5,
+        "cross_section" : 568.2,
         "Level": "LO",
         "Source of cross section" : "XSDB",
         "DAS" : "QCD_Pt_250toInf_bcToE_Tune.*",
     },
+
+    # Daniel stuff
+    "ABCDNN" : {"cross_section" : 1,},
+    "TOP" : {"cross_section" : 1,},
+    "TTH" : {"cross_section" : 1,},
+    "TTTT" : {"cross_section" : 1,},
 }

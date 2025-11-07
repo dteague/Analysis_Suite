@@ -8,12 +8,6 @@ from .user import analysis_area
 if str(analysis_area) not in sys.path:
     sys.path.append(str(analysis_area))
 
-def get_graph(name, graphs):
-    for graph in graphs:
-        if graph.name == name:
-            return graph
-    raise Exception(f"Graph ({name}) has not been found")
-    
 def get_inputs(workdir, filename='inputs'):
     return import_module(f'.{filename}', f'workspace.{workdir.stem}')
 
@@ -47,13 +41,3 @@ def get_list_systs(infile, tool, systs=["all"], **kwargs):
                 finalSysts.append("Nominal")
         allSysts = finalSysts
     return allSysts
-
-def sig_fig(x, p=3):
-    x_positive = np.where(np.isfinite(x) & (x != 0), np.abs(x), 10**(p-1))
-    mags = 10 ** (p - 1 - np.floor(np.log10(x_positive)))
-    return np.round(x * mags) / mags
-
-@np.vectorize
-def asymptotic_sig(s, b):
-    return s/np.sqrt(b+1e-5)
-

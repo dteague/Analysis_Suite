@@ -30,7 +30,15 @@ parser.add_argument('-d', '--workdir', default=datetime.now().strftime("%y%m%d")
                     help="Output file to store/label the root files (default is date)")
 parser.add_argument('-j', '--cores', default=1,
                     help="Number of Cores to run with")
+parser.add_argument('--era', default=None)
 args = parser.parse_args()
+
+if args.era is not None:
+    if "data" not in args.types:
+        print("Running over MC but adding a particular era")
+        print("Eras only exist in data. Try to rerun on data")
+        exit()
+    args.types = ['data']
 
 base_dir = user.hdfs_workspace / args.filename
 base_dir.mkdir(exist_ok=True)
@@ -39,7 +47,16 @@ for typ in args.types:
     for year in args.years:
         output_dir = base_dir / year / args.workdir
         output_dir.mkdir(parents=True, exist_ok=True)
-        if year == "2016":
+        if args.era is not None:
+            files = ""
+            info_dir = user.submit_area/f"{args.analysis}_{year}_{args.filename}-analyze"
+            for file_dir in info_dir.glob("analyze-*"):
+                input_file = file_dir / f'{file_dir.name}.inputs'
+                root_file = output_dir / f"{file_dir.name}.root"
+                with open(input_file) as f:
+                    if args.era in f.read() and root_file.exists():
+                        files += str(root_file) + " "
+        elif year == "2016":
             files = get_files(args.analysis, "2016pre", args.filename, typ)
             files += get_files(args.analysis, "2016post", args.filename, typ)
         else:

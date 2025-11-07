@@ -98,6 +98,7 @@ dataset_dict = {
             'TTZToLL_M-1to10_TuneCP5*',
             'ttHToNonbb_M125_TuneCP5*',
             'ttHTobb_M125_TuneCP5*',
+            "ttWJetsToLNu_5f_EWK_Tune*"
         ],
         'ttXY' : [
             'TTHH_TuneCP5*',
@@ -176,6 +177,9 @@ dataset_dict = {
             'WpWpJJ_EWK-QCD_Tune*',
             "SSWW_Tune*",
         ],
+        'ttw_ewk': [
+            "ttWJetsToLNu_5f_EWK_Tune*"
+        ]
         # VV
         # To be done
     },

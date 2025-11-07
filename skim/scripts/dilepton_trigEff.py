@@ -16,7 +16,6 @@ from analysis_suite.commons.histogram import Histogram
 from analysis_suite.commons.plot_utils import cms_label, plot, plot_colorbar, nonratio_plot, ratio_plot
 from analysis_suite.commons.constants import lumi, all_eras
 from analysis_suite.commons.info import GroupInfo
-import analysis_suite.data.plotInfo.nonprompt_fakerate as pinfo
 from analysis_suite.plotting.plotter import Plotter
 
 

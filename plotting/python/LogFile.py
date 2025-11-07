@@ -4,15 +4,21 @@ import math
 import numpy as np
 from copy import copy
 
-from analysis_suite.commons.configs import asymptotic_sig, sig_fig
-
 pp.install_extras()
-
 
 BKG = 0
 SIGNAL = 1
 DATA = 2
 TOTAL = 3
+
+@np.vectorize
+def asymptotic_sig(s, b):
+    return s/np.sqrt(b+1e-5)
+
+def sig_fig(x, p=3):
+    x_positive = np.where(np.isfinite(x) & (x != 0), np.abs(x), 10**(p-1))
+    mags = 10 ** (p - 1 - np.floor(np.log10(x_positive)))
+    return np.round(x * mags) / mags
 
 class LogFile:
     """Wrapper for Logfile for a plot
@@ -44,14 +50,13 @@ class LogFile:
     command = ""
     def __init__(self, name, lumi, graph_obj=None):
         self.plotTable = PrettyTable(["Plot Group", "Weighted Events", "Error"])
-        self.breakTable = PrettyTable(["Plot Group", "Sample", "Weighted Events", "Error"])
-        self.output_name = f'{name}_info.log'
+        self.breakTable = PrettyTable(["Plot Group", "Sample", "Weighted Events", "Error", "Raw Events"])
         self.lumi = lumi
         self.hists = [np.array([0., 0.]) for i in range(4)] 
         self.graph_obj = graph_obj
         self.name = name
 
-    def add_mc(self, stacker):
+    def add_mc(self, group, hist, type):
         """Add background data to this class
 
         Parameters
@@ -59,13 +64,12 @@ class LogFile:
         drawOrder : list of tuples (string, GenericHist)
             List of all background hists with their names
         """
-        for hist in stacker.stack:
-            integral, error = hist.get_int_err(True)
-            self.plotTable.add_row([hist.name, integral, error])
-            self.hists[BKG] += hist.get_int_err()
-        self.hists[TOTAL] += self.hists[BKG]
+        mc_type = SIGNAL if type == "signal" else BKG
+        self.plotTable.add_row([group, *hist.get_int_err(True)])
+        self.hists[mc_type] += hist.get_int_err()
+        self.hists[TOTAL] += hist.get_int_err()
 
-    def add_signal(self, signal):
+    def add_data(self, data):
         """Add signal data to this class
 
         Parameters
@@ -75,10 +79,8 @@ class LogFile:
         groupName : string
             Name used to label the singal
         """
-        self.hists[SIGNAL] += signal.get_int_err()
-        integral, error = signal.get_int_err(True)
-        self.plotTable.add_row([signal.name, integral, error])
-        self.hists[TOTAL] += self.hists[SIGNAL]
+        self.hists[DATA] += data.get_int_err()
+        self.plotTable.add_row(['Data', *data.get_int_err(True)])
 
     @staticmethod
     def add_metainfo(callTime, command):
@@ -107,7 +109,7 @@ class LogFile:
         hist[1] = np.sqrt(hist[1])
         return hist
 
-    def write_out(self, path, isLatex=False):
+    def write_out(self, path, output_name, isLatex=False):
         """Write out all current information to the objects output file
 
         Parameters
@@ -115,7 +117,7 @@ class LogFile:
         isLatex : bool, optional
             Whether table should be written out in latex or org style table
         """
-        with open(f'{path}/{self.output_name}', 'w') as out:
+        with open(f'{path}/{output_name}.log', 'w') as out:
             out.write("<html><pre><code>\n")
             out.write('-' * 80 + '\n')
             out.write(f'Script called at {LogFile.callTime} \n')
@@ -183,10 +185,12 @@ class LogFile:
         return (s_sqrtb, s_sqrtb_err)
 
 
-    def add_breakdown(self, group, break_dict, roundDigit=2):
-        sorted_keys = sorted(break_dict.keys(), key=lambda key: break_dict[key].value, reverse=True)
+    def add_breakdown(self, group, hist, roundDigit=2):
+        break_dict = hist.breakdown
+        sorted_keys = sorted(break_dict.keys(), key=lambda key: break_dict[key][0].value, reverse=True)
         for sample in sorted_keys:
-            events = round(break_dict[sample].value, roundDigit)
-            err = round(math.sqrt(break_dict[sample].variance), roundDigit)
-            self.breakTable.add_row([group, sample, events, err])
+            wgt_sum, raw_sum = break_dict[sample]
+            events = round(wgt_sum.value, roundDigit)
+            err = round(math.sqrt(wgt_sum.variance), roundDigit)
+            self.breakTable.add_row([group, sample, events, err, raw_sum])
             group = "" # So the group only shows up once in the table

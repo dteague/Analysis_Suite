@@ -17,6 +17,13 @@ class Stack(Histogram):
             self.stack.append(right)
         return super().__iadd__(right)
 
+    def normalize(self):
+        norm = self.integral()
+        for hist in self.stack:
+            hist /= norm
+        self /= norm
+        return self
+
     def _get_index(self, integral):
         if not self.stack:
             return 0
@@ -39,12 +46,12 @@ class Stack(Histogram):
         self.hist.view().variance = sumw2
 
 
-    def plot_stack(self, pad, **kwargs):
+    def plot_stack(self, pad, normed=False, **kwargs):
         if not self.stack:
             return
-        norms = np.ones(len(self.axis.centers))
+        width = self.axis.widths if normed else 1.
         n, bins, patches = pad.hist(
-            weights=np.array([h.vals/norms for h in self.stack]).T, bins=self.axis.edges,
+            weights=np.array([h.vals/width for h in self.stack]).T, bins=self.axis.edges,
             x=np.tile(self.axis.centers, (len(self.stack), 1)).T,
             color=[h.color for h in self.stack],
             label=[h.get_name() for h in self.stack],

@@ -9,7 +9,12 @@ year_convert = {
     "2018": "18",
 }
 
-
+def use_lowess(name):
+    templates = ['JER', "JEC", 'FSR', 'alpha', 'Pileup']
+    for temp in templates:
+        if temp in name:
+            return True
+    return False
 
 @dataclass
 class Systematic:
@@ -43,7 +48,8 @@ class Systematic:
     def output(self, group_list, year, chan):
         syst_val = self.get_syst(year, chan)
 
-        line = [self.get_name(year), self.syst_type]
+        add_lowess =  "JE" in self.dan_name
+        line = [self.get_name(year, add_lowess), self.syst_type]
         for group in group_list:
             if any([g in self.systs[year]['groups'] for g in [group, 'all']]):
                 line.append(syst_val)
@@ -55,6 +61,8 @@ class Systematic:
         if isinstance(group_list, str):
             group_list = [group_list]
         if year not in self.systs:
+            return False
+        if 'all' not in self.systs[year] and chan not in self.systs[year]:
             return False
         systs = self.systs[year]['groups']
         for group in group_list:
@@ -76,7 +84,7 @@ class Systematic:
 
     def get_name(self, year, with_lowess=True):
         name = self.dan_name
-        if ("JEC" in name or "JER" in name) and with_lowess:
+        if use_lowess(self.name) and with_lowess:
             if not self.corr:
                 name += year[:4]
             name += "LOWESS"

@@ -7,8 +7,9 @@ from copy import copy
 import pandas as pd
 import uproot
 
-from analysis_suite.commons.configs import get_list_systs, get_inputs, get_ntuple_info
+from analysis_suite.commons.configs import get_list_systs, get_inputs, get_ntuple_info, get_ntuple
 import analysis_suite.commons.user as user
+from analysis_suite.plotting.plotter import Plotter
 
 def setup(cli_args):
     inputs = get_inputs(cli_args.workdir)
@@ -19,7 +20,7 @@ def setup(cli_args):
         exit()
 
     # Setup splitting (if needed)
-    if cli_args.setup_files and cli_args.train:
+    if cli_args.setup_files:
         print("Reproducing training files split")
         setup_split_files(cli_args.workdir, cli_args.model, cli_args.years,
                           inputs.usevars)
@@ -50,90 +51,110 @@ def setup_split_files(workdir, model, years, variables):
     model.output_files()
 
 
-def training(model, years):
-    model.train()
+def plot(model, plotter, years):
+    # Plots
     model.plot_training_progress()
+    plotter.set_year('all')
+    hists = plotter.fill_hist_groups(model.get_hist(25, useTrain=True))
+    plotter.plot_hist('BDT_train', hists, plot_type='stack_shape',
+                      plot_sigs=["4top", 'ttt_nlo'])
     for year in years:
-        model.apply_model(year)
+        plotter.set_year(year)
+        hists = plotter.fill_hist_groups(model.get_hist(25, year))
+        plotter.plot_hist('BDT_train', hists, plot_type='stack_shape',
+                          plot_sigs=["4top", 'ttt_nlo'])
+        model.plot_roc(year)
+        model.plot_overtrain(year)
     print('auc', model.get_auc())
     print('fom', model.get_fom())
-    #     model.roc_curve(year)
-    #     model.plot_overtrain(year=year)
-    #     model.plot_train_breakdown(year)
-    #     model.plot_train_breakdown(year, bins=np.linspace(0.8, 1, 41))
-    #     model.plot_train_breakdown(year, use_test=False)
-    # model.plot_overtrain()
 
 def run(usevars, workdir, model_type, train, years, region, systName):
+    params = get_inputs(workdir, 'params')
+    ginfo = get_ntuple_info(region)
+    samples = ginfo.setup_members()
+
     isNom = systName == "Nominal"
     isSignal = region == "signal"
+    out_syst = systName
     if not train and isNom and isSignal:
+        # samples = ['data']
+        # print("Only train data in Nominal")
+        # out_syst = "data"
         print("Can only Train Nominal, not apply model: skipping")
         return
     elif train and not isSignal:
         print("No training for non signal region")
         return
-    elif not isNom and not isSignal:
-        print("Can only apply model Nominal for non-signal region")
-        return
-
-    input_files = workdir/'split_files'
+    # elif not isNom and not isSignal:
+    #     print("Can only apply model Nominal for non-signal region")
+    #     return
 
     module = import_module(f'.{model_type}', "analysis_suite.machine_learning")
     maker = getattr(module, next(filter(lambda x : "Maker" in x, dir(module))))
-    params = get_inputs(workdir, 'params')
-    ginfo = get_ntuple_info(region)
-    samples = ginfo.setup_members()
 
     # First Training
     output_first = workdir/'first_train'
     bdt_var = params.signal_first
-    bdt_file = input_files/f'bdt_{bdt_var}.root'
+    bdt_dir = workdir/'split_files'
+    bdt_file = bdt_dir/f'bdt_{bdt_var}_{out_syst}_{region}.root'
+    plotter = Plotter(get_ntuple('bdt'), 'all', bkg='all', outdir=output_first)
+    if train or (isNom and isSignal):
+        in_type = 'test'
+        input_files = workdir/'split_files'
+    else:
+        in_type = 'processed'
+        input_files = workdir
 
     signal = ginfo.get_members('4top')
-    background = ginfo.get_members('ttt_nlo')
-    nontrain = [s for s in samples if s not in signal+background]
-    model = maker(usevars, signal, samples, region=region, nonTrained=nontrain,
+    model = maker(usevars, signal, samples, region=region,
                   systName=systName)
     model.update_params(params.params_first)
     model.set_outdir(output_first)
     for year in years:
-        model.read_in_files(input_files, year)
+        model.read_in_files(input_files, year, typ=in_type)
 
     if train:
         model.read_in_train_files(input_files)
-        training(model, years)
-    for year in years:
-        if not train:
-            model.apply_model(year, skip_train=True)
+        model.train()
+    model.apply_model(years, skip_train=not train)
+
+    if train:
+        plot(model, plotter, years)
+    # model.output_all(workdir/f'all_{bdt_var}_Nominal_{region}.root')
     model.output_bdt(bdt_file, bdt_var)
 
     print(f"Training for syst {systName}")
-    if params.cut > 1:
-        return
 
     # Second Training
     output_second= workdir/'second_train'
     bdt_var2 = params.signal_second
     nontrained = ['nonprompt', 'charge_flip', 'data', '4top']
+    plotter.sig = 'ttt_nlo'
+    plotter.outdir = output_second
+
     model = maker(usevars, ginfo.get_members('ttt_nlo'), samples, region=region,
                   systName=systName, nonTrained=nontrained)
     model.update_params(params.params_second)
     model.set_outdir(output_second)
 
     for year in years:
-        model.read_in_files(input_files, year)
+        model.read_in_files(input_files, year, typ=in_type)
     if train:
         model.read_in_train_files(input_files)
-    model.read_in_bdt(bdt_file, bdt_var, onlyTest=not train)
-    model.mask(lambda df: df[bdt_var] < params.cut)
+    if region == 'signal':
+        model.read_in_bdt(bdt_file, bdt_var, onlyTest=not train)
+        model.mask(lambda df, year: df[bdt_var] < params.cut[year])
 
     if train:
-        training(model, years)
-    for year in years:
-        if not train:
-            model.apply_model(year, skip_train=True)
-    model.output_bdt(input_files/f'bdt_{bdt_var2}.root', bdt_var2)
+        model.read_in_train_files(input_files)
+        model.train()
+    model.apply_model(years, skip_train=not train)
+
+    # Plots
+    if train:
+        plot(model, plotter, years)
+    # model.output_all(workdir/f'all_{bdt_var2}_Nominal_{region}.root', bdt_var2)
+    model.output_bdt(bdt_dir/f'bdt_{bdt_var2}_{out_syst}_{region}.root', bdt_var2)
 
 
 def cleanup(cli_args):

@@ -8,23 +8,17 @@
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
-from pathlib import Path
-from random import randint
 import uproot
-import operator
 import logging
-from matplotlib import colors as clr
+from copy import copy
 
-from sklearn.metrics import roc_auc_score, confusion_matrix
 from sklearn.model_selection import train_test_split
+from analysis_suite.data.PlotGroups import info as ginfo
 
-from analysis_suite.plotting.utils import likelihood_sig
-from analysis_suite.commons.constants import lumi
-from analysis_suite.commons.plot_utils import plot, plot_colorbar, cms_label
+from analysis_suite.commons.histogram import Histogram
+from analysis_suite.commons.plot_utils import plot, cms_label
 
 pd.options.mode.chained_assignment = None
-
-formatter = {'extra_format': 'pdf',}
 
 def generic_plot_setup(ax, year, bins=None):
     if bins is None:
@@ -69,7 +63,7 @@ class MLHolder:
         # Group information
         self.signal = sig
         self.nonTrained = kwargs.get("nonTrained", ['nonprompt', 'charge_flip', 'data'])
-        self.onlyTrained = kwargs.get("onlyTrained", ['nonprompt_mc'])
+        self.onlyTrained = kwargs.get("onlyTrained", ginfo['nonprompt_mc']['Members'])
         self.samples = sorted(all_samples)
         self.sample_map = {val: i for i, val in enumerate(self.samples)}
 
@@ -101,16 +95,6 @@ class MLHolder:
         self.minmax = [1, 0]
         self.outdir = None
 
-        # self.group_names = {
-        #     'ttt': ['tttw_nlo', 'tttj_nlo', 'tttw_m', 'tttw_p', 'tttj_m', 'tttj_p'],
-        #     'ttX': ['ttz', 'ttw', 'tth', 'ttz_m1-10'],
-        #     'dd': ['nonprompt', 'charge_flip']+list(self.group_dict["OnlyTrain"]),
-        #     'tttt': ['tttt']
-        # }
-        # used_groups = [i for sub in self.group_names.values() for i in sub]
-        # if 'Background' in self.group_dict:
-        #     self.group_names['other'] =  [key for key in self.group_dict['Background'] if key not in used_groups]
-
 
     def __bool__(self):
         return bool(self.test_sets)
@@ -141,6 +125,7 @@ class MLHolder:
         with uproot.open(indir/f'train_{self.outfile_info}.root') as f:
             for df, sample, _ in self.read_in_dataframe(f):
                 self.train_set = pd.concat([df, self.train_set], ignore_index=True)
+
         # Validation Files
         with uproot.open(indir/f'validation_{self.outfile_info}.root') as f:
             for df, sample, _ in self.read_in_dataframe(f):
@@ -153,11 +138,9 @@ class MLHolder:
         with uproot.open(infile) as f:
             for year, test in self.test_sets.items():
                 test_bdt = np.array([])
-                sample_id = np.array([])
                 for sample in self.samples:
                     if sample in f[year]:
                         test_bdt = np.concatenate([f[f'{year}/{sample}']['BDT'].array(), test_bdt])
-                        sample_id = np.concatenate([np.full(len(f[f'{year}/{sample}']['BDT'].array()), self.sample_map[sample]), sample_id])
                 test.insert(0, variable, test_bdt)
 
             if onlyTest:
@@ -175,9 +158,15 @@ class MLHolder:
 
     def mask(self, func):
         for year, test in self.test_sets.items():
-            self.test_sets[year] = test[func(test)]
-        self.train_set = self.train_set[func(self.train_set)]
-        self.validation_set = self.validation_set[func(self.validation_set)]
+            pass_mask = func(test, year).to_numpy()
+            for sample, df in self.test_weights[year].items():
+                sample_mask = pass_mask[test.sampleName == self.sample_map[sample]]
+                weight = self.test_weights[year][sample]
+                self.test_weights[year][sample] = weight[sample_mask]
+            self.test_sets[year] = test[pass_mask]
+        if not self.train_set.empty:
+            self.train_set = self.train_set[func(self.train_set, '2018')]
+            self.validation_set = self.validation_set[func(self.validation_set, '2018')]
 
 
     def read_in_dataframe(self, root_file, create=False):
@@ -189,14 +178,10 @@ class MLHolder:
             # print(sample, "loaded")
             df = root_file[sample].arrays(library="pd")
             if create:
-                df = df[self._file_vars]
-            else:
-                df = df[self.all_vars]
-            logging.debug(f'{sample}, {len(df)}, {sum(df.scale_factor)}, {sum(df.scale_factor)/len(df)}')
+                df.loc[:, "split_weight"] = np.ones(len(df))
             df.loc[:, "classID"] = classID
             df.loc[:, "sampleName"] = self.sample_map[sample]
             df.loc[:, "train_weight"] = sum(df.scale_factor) / len(df)
-            df.loc[:, "split_weight"] = np.ones(len(df))
             if "weights" not in root_file:
                 all_weights = None
             else:
@@ -239,8 +224,8 @@ class MLHolder:
                 test, train, validation = self.setup_split(df, sample, split)
                 total_scale = np.sum(df.scale_factor)
                 exp_train_evt = self.total_trained_evt*(total_scale/self.total_yield)
-                print(sample, len(df), total_scale, f'{int(exp_train_evt)}')
-                print("    ", len(test), len(train), len(validation), f'{1.-len(test)/(len(df)+1e-5):0.3f}')
+                # print(sample, len(df), total_scale, f'{int(exp_train_evt)}')
+                # print("    ", len(test), len(train), len(validation), f'{1.-len(test)/(len(df)+1e-5):0.3f}')
                 if not test.empty:
                     self.test_weights[year][sample] = pd.DataFrame()
                     for key, col in weights.items():
@@ -253,27 +238,35 @@ class MLHolder:
                     self.train_set = pd.concat([train, self.train_set], ignore_index=True)
                 if not validation.empty:
                     self.validation_set = pd.concat([validation, self.validation_set], ignore_index=True)
-        print()
+        # print()
 
     def setup_split(self, df, sample, split=True):
         train = setup_pandas(self.all_vars)
         test = setup_pandas(self.all_vars)
         validation = setup_pandas(self.all_vars)
+
         total_scale = np.sum(df.scale_factor)
-
-        if not split or not self.should_train(df, sample):
-            return df, train, validation
-
         exp_train_evt = self.total_trained_evt*(total_scale/self.total_yield)
         split_ratio = self.split_ratio
 
         # 3top and 4top
-        if "ttt" in sample:
+        # Kinda hacky solution, but ok for now
+        if sample == 'tttt':
             exp_train_evt = split_ratio*len(df)
+        elif "ttt" in sample:
+            exp_train_evt = split_ratio*len(df)
+            # roughly 3x tttw_p/tttw_m than tttj_m and 6x for tttj_p
+            # doesn't have to be perfect, just to get roughly alright
+            if sample == 'tttj_m':
+                df.loc[:, "split_weight"] *= 8./15
+            elif sample == 'tttj_p':
+                df.loc[:, "split_weight"] *= 4./15
+            else:
+                df.loc[:, "split_weight"] *= 8./5
+
 
         # Only train, i.e. use all the events possible
         if sample in self.onlyTrained:
-            print(exp_train_evt)
             if exp_train_evt <= self.min_train_events:
                 pass
             elif exp_train_evt > len(df):
@@ -281,8 +274,13 @@ class MLHolder:
                 train = df
             else:
                 _, train = self.split(df, exp_train_evt/len(df), total_scale)
-        # Do Train
-        else:
+        elif sample in self.nonTrained:
+            print("not trained", sample)
+            return df, train, validation
+        elif len(df)*self.split_ratio < self.min_train_events:
+            print("not enough", sample)
+            return df, train, validation
+        else:    # Do Train
             if exp_train_evt <= len(df)*split_ratio and exp_train_evt > self.min_train_events:
                 split_ratio = exp_train_evt/len(df)
             elif exp_train_evt <= self.min_train_events:
@@ -292,6 +290,7 @@ class MLHolder:
                 df.loc[:, "split_weight"] *= exp_train_evt/(split_ratio*len(df))
             test, train = self.split(df, split_ratio, total_scale)
 
+        # Setup validation set
         if self.validation_ratio > 0. and len(train)*self.validation_ratio > 1:
             train, validation = self.split(train, self.validation_ratio, total_scale)
 
@@ -305,56 +304,171 @@ class MLHolder:
         return test, train
 
 
-    def apply_model(self, year, skip_train=False):
+    def apply_model(self, years, skip_train=False):
         def get_pred(use_set, directory):
             return self.predict(use_set, directory).T[1]
-
-        self.pred_test[year] = get_pred(self.test_sets[year], self.outdir)
+        for year in years:
+            self.pred_test[year] = get_pred(self.test_sets[year], self.outdir)
         if not skip_train:
             self.pred_train = get_pred(self.train_set, self.outdir)
             self.pred_validation = get_pred(self.validation_set, self.outdir)
 
 
-    def get_auc(self):
+    def get_hist(self, nbins, year=None, useTrain=False):
+        output = {}
+        if useTrain:
+            workset = self.train_set
+            pred = self.pred_train
+        else:
+            workset = self.test_sets[year]
+            pred = self.pred_test[year]
+        for sample, value in self.sample_map.items():
+            mask = workset.sampleName == value
+            if np.count_nonzero(mask) == 0:
+                continue
+            output[sample] = Histogram(*(nbins, 0, 1), axis_name="BDT")
+            output[sample].fill(pred[mask], weight=workset[mask].scale_factor)
+        return output
+
+    def get_test_hist(self, bins, hist_year=None):
         is_sig = np.array([], dtype='bool')
         pred = np.array([])
         scale = np.array([])
         for year, df in self.test_sets.items():
+            if hist_year is not None and year != hist_year:
+                continue
             is_sig= np.concatenate([is_sig, df.classID == 1], dtype='bool')
             scale = np.concatenate([scale, df.scale_factor])
             pred = np.concatenate([pred, self.pred_test[year]])
+        s_hist = np.histogram(pred[is_sig], bins, weights=scale[is_sig])[0]
+        b_hist = np.histogram(pred[~is_sig], bins, weights=scale[~is_sig])[0]
+        return s_hist, b_hist
 
+    def get_train_hist(self, bins):
+        is_sig = self.train_set.classID == 1
+        pred = self.pred_train
+        scale = self.train_set.scale_factor
+        s_hist = np.histogram(pred[is_sig], bins, weights=scale[is_sig])[0]
+        b_hist = np.histogram(pred[~is_sig], bins, weights=scale[~is_sig])[0]
+        return s_hist, b_hist
+
+    def get_auc(self, auc_year=None, get_train=False, return_roc=False):
         nbins = 100
         bins = np.linspace(0, 1+1/nbins, nbins+2)
 
-        s_hist = np.histogram(pred[is_sig], bins, weights=scale[is_sig])[0]
-        b_hist = np.histogram(pred[~is_sig], bins, weights=scale[~is_sig])[0]
+        if get_train:
+            s_hist, b_hist = self.get_train_hist(bins)
+        else:
+            s_hist, b_hist = self.get_test_hist(bins, auc_year)
         tp = np.cumsum(s_hist[::-1])/(np.sum(s_hist)+1e-5)
         fp = np.cumsum(b_hist[::-1])/(np.sum(b_hist)+1e-5)
 
         delta = fp[1:]-fp[:-1]
         trap = (tp[1:]+tp[:-1])/2
         auc = np.sum(delta*trap)
-        return auc
+        if return_roc:
+            return fp, tp, auc
+        else:
+            return auc
 
-    def get_fom(self):
-        is_sig = np.array([], dtype='bool')
-        pred = np.array([])
-        scale = np.array([])
-        for year, df in self.test_sets.items():
-            is_sig= np.concatenate([is_sig, df.classID == 1], dtype='bool')
-            scale = np.concatenate([scale, df.scale_factor])
-            pred = np.concatenate([pred, self.pred_test[year]])
-
+    def get_fom(self, get_train=False, fom_year=None):
         nbins = 20
         bins = np.linspace(0, 1, nbins+1)
-
-        s = np.histogram(pred[is_sig], bins, weights=scale[is_sig])[0]
-        b = np.histogram(pred[~is_sig], bins, weights=scale[~is_sig])[0]
+        if get_train:
+            s, b= self.get_train_hist(bins)
+        else:
+            s, b= self.get_test_hist(bins, fom_year)
 
         with np.errstate(invalid='ignore'):
+            s = abs(s)
+            b = abs(b)
             fom = np.sqrt(2*np.sum((s + b)*np.log(1 + s/(b+1e-5)) - s))
         return fom
+
+    def plot_overtrain(self, plot_year=None):
+        nbins = 15
+        bins = np.linspace(0, 1, nbins+1)
+
+        test_s, test_b= self.get_train_hist(bins)
+        train_s, train_b= self.get_test_hist(bins, plot_year)
+
+        year = 'all' if plot_year is None else plot_year
+
+        kw_hist = {"alpha": 0.3, "hatch": '///', "histtype": "stepfilled"}
+        kw_err = {"markersize": 4, "fmt": "o"}
+        with plot(self.outdir/f"overtrain_{year}.pdf") as ax:
+            ax.hist(x=bins[:-1], bins=bins, weights=test_s/np.sum(test_s), color='r',
+                    label="Signal (test)", **kw_hist)
+            ax.hist(x=bins[:-1], bins=bins, weights=test_b/np.sum(test_b), color='b',
+                    label="Background (test)", **kw_hist)
+            ax.errorbar(x=bins[:-1]+1/(2*nbins), xerr=1/(2*nbins), color='r',
+                        y=train_s/np.sum(train_s), label="Signal (train)", **kw_err)
+            ax.errorbar(x=bins[:-1]+1/(2*nbins), xerr=1/(2*nbins), color='b',
+                        y=train_b/np.sum(train_b), label="Background (train)", **kw_err)
+            ax.set_xlim(0., 1.)
+            ax.set_xlabel("$disc_{BDT}$")
+            ax.set_ylabel("A.U.")
+            ax.legend()
+            cms_label(ax, year=year)
+
+    def plot_roc(self, year):
+        fp_test, tp_test, auc_test = self.get_auc(year, return_roc=True)
+        fp_train, tp_train, auc_train= self.get_auc(year, get_train=True, return_roc=True)
+
+        with plot(self.outdir/f"roc_{year}.pdf") as ax:
+            ax.plot(fp_test, tp_test, linewidth=3, label=f"Test set: AUC={auc_test:0.3f}")
+            ax.plot(fp_train, tp_train, linewidth=3, label=f"Train set: AUC={auc_train:0.3f}")
+            ax.plot([0, 1], [0, 1], linestyle='dashed')
+            ax.legend()
+            ax.set_xlim(0., 1.)
+            ax.set_ylim(0., 1.)
+            ax.set_xlabel("False Positive Rate")
+            ax.set_ylabel("True Positive Rate")
+            cms_label(ax, year=year)
+            print(auc_train, auc_test)
+
+    def plot_train_breakdown(self, year, signal='Signal', use_test=True, bins=None):
+        name = 'test' if use_test else 'train'
+        if use_test:
+            pred = self.pred_test[year][signal]
+            df = self.test_sets[year]
+        else:
+            pred = self.pred_train[signal]
+            df = self.train_set
+
+
+        nbins = 50
+        if bins is None:
+            bins = np.linspace(0, 1, nbins+1)
+            plotname = f'{name}_breakdown_{year}.pdf'
+        else:
+            plotname = f'{name}_breakdown_{year}_{bins[0]}-{bins[-1]}.png'
+        # bins = np.concatenate([[0], np.linspace(self.minmax[0], self.minmax[1], nbins+1), [1]])
+        def get_hist(pred, df, group):
+            mask = self.get_mask(df, self.group_names[group])
+            return np.histogram(pred[mask], bins, weights=df.scale_factor[mask])[0]
+
+        with plot(self.outdir/plotname) as ax:
+            ttt_hist = get_hist(pred, df, 'ttt')
+            tttt_hist = get_hist(pred, df, 'tttt')
+            ttX_hist = get_hist(pred, df, 'ttX')
+            dd_hist = get_hist(pred, df, 'dd')
+            other_hist = get_hist(pred, df, 'other')
+            stack = np.array([other_hist, dd_hist, ttX_hist])
+            colors = ['blueviolet', 'cornflowerblue', 'olivedrab']
+
+            ax.hist(x=bins[:-1], bins=bins, weights=ttt_hist/np.sum(ttt_hist), color='r', label="ttt", linewidth=3, histtype='step')
+            ax.hist(x=bins[:-1], bins=bins, weights=tttt_hist/np.sum(tttt_hist), color='orange', label="4top", linewidth=3, histtype='step')
+            if np.sum(stack) != 0:
+                n, bins, patches = ax.hist(
+                    weights=stack.T/np.sum(stack), bins=bins, x=np.tile(bins[:-1], (len(stack), 1)).T,
+                    label=['Other', "Data-Driven", "ttX"], histtype='stepfilled', stacked=True,
+                    color=colors
+                )
+                for p in patches:
+                    p.set(ec='#000000')
+
+            generic_plot_setup(ax, year, bins=bins)
 
 
     def output_files(self):
@@ -387,14 +501,40 @@ class MLHolder:
             for sample, value in self.sample_map.items():
                 # Test set
                 for year, pred in self.pred_test.items():
-                    mask = self.test_sets[year].sampleName == value
+                    test = self.test_sets[year]
+                    mask = test.sampleName == value
                     if np.count_nonzero(mask) > 0:
-                        f[f'{year}/{sample}'] = {"BDT": pred[mask]}
+                        f[f'{year}/{sample}'] = {
+                            "BDT": pred[mask],
+                            'scale_factor': self.test_sets[year].scale_factor[mask],
+                            'NLeps': test['NMuons'][mask] + test['NElectrons'][mask],
+                            'NJets': test['NJets'][mask],
+                        }
+                        f[f'{year}/weights/{sample}'] = self.test_weights[year][sample]
                 # Training set
                 mask = self.train_set.sampleName == value
                 if np.count_nonzero(mask) > 0:
-                    f[f'train/{sample}'] = {"BDT": self.pred_train[mask]}
+                    f[f'train/{sample}'] = {
+                        "BDT": self.pred_train[mask],
+                        'scale_factor': self.train_set.scale_factor[mask]
+                    }
                 # Validation set
                 mask = self.validation_set.sampleName == value
                 if np.count_nonzero(mask) > 0:
-                    f[f'validation/{sample}'] = {"BDT": self.pred_validation[mask]}
+                    f[f'validation/{sample}'] = {
+                        "BDT": self.pred_validation[mask],
+                        'scale_factor': self.validation_set.scale_factor[mask]
+                    }
+
+    def output_all(self, outfile, sig_out='Signal'):
+        with uproot.recreate(outfile) as f:
+            for year, pred in self.pred_test.items():
+                test = copy(self.test_sets[year])
+                test.insert(0, 'BDT', pred)
+                for sample, value in self.sample_map.items():
+                    if sample != 'data':
+                        continue
+                    mask = test.sampleName == value
+                    if np.count_nonzero(mask) > 0:
+                        f[f'{year}/{sample}'] = test[mask]
+                        f[f'{year}/weights/{sample}'] = self.test_weights[year][sample]

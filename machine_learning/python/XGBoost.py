@@ -89,6 +89,16 @@ class XGBoostMaker(MLHolder):
                           feval=fom_metric)
         print(cv_train.to_string())
 
+    def get_sets(self, workset):
+        for sample, value in self.sample_map.items():
+            if sample in self.nonTrained:
+                workset = workset[workset.sampleName != value]
+        x = workset[self.use_vars]
+        y = workset.classID
+        split_wgt = workset.split_weight.copy()
+        scale = abs(workset.scale_factor.to_numpy())
+        return x, y, split_wgt, scale
+
     def train(self, verbose=20):
         """**Train for multiclass BDT**
 
@@ -100,17 +110,15 @@ class XGBoostMaker(MLHolder):
           xgboost.XGBClassifer: XGBoost model that was just trained
 
         """
-        x_train = self.train_set[self.use_vars]
-        w_train = self.train_set.split_weight.copy()
-        w_train2 = abs(self.train_set.scale_factor.to_numpy())
-        y_train = self.train_set.classID
+        x_train, y_train, split_train, scale_train = self.get_sets(self.train_set)
+        x_test, y_test, split_test, scale_test = self.get_sets(self.validation_set)
 
-        x_test = self.validation_set[self.use_vars]
-        y_test = self.validation_set.classID
-        w_test = abs(self.validation_set.scale_factor.to_numpy())
-
-        _, group_tot = np.unique(y_train, return_counts=True)
-        w_train[y_train==1] *= np.sum(w_train[y_train!=1])/np.sum(w_train[y_train==1])
+        sig_total = np.sum(split_train[y_train == 1])
+        bkg_total = np.sum(split_train[y_train != 1])
+        if sig_total > bkg_total:
+            split_train[y_train == 1] *= bkg_total/sig_total
+        else:
+            split_train[y_train != 1] *= sig_total/bkg_total
 
         if len(np.unique(y_test)) > 2:
             self.param.objective = 'multi:softprob'
@@ -118,9 +126,9 @@ class XGBoostMaker(MLHolder):
             self.param.eval_metric = 'mlogloss'
 
         fit_model = xgb.XGBClassifier(**asdict(self.param))
-        fit_model.fit(x_train, y_train, sample_weight=w_train,
+        fit_model.fit(x_train, y_train, sample_weight=split_train,
                       eval_set=[(x_train, y_train), (x_test, y_test)],
-                      sample_weight_eval_set=[w_train2, w_test],
+                      sample_weight_eval_set=[scale_train, scale_test],
                       early_stopping_rounds=1500, verbose=verbose)
         self.results = fit_model.evals_result()
         self.best_iter = fit_model.get_booster().best_iteration
@@ -159,4 +167,4 @@ class XGBoostMaker(MLHolder):
                 ax.set_xlabel("Training Epoch")
                 ax.set_ylabel(typ)
                 ax.legend()
-                cms_label(ax)
+                cms_label(ax, year='all')

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 import subprocess
 
-def runCombine(command, output=True, error=subprocess.STDOUT):
+def runCombine(command, output=True, error=subprocess.STDOUT, workdir=None):
     cwd = getattr(runCombine, 'work_dir', ".")
+    if workdir is not None:
+        cwd = workdir
     was_output = False
     was_error = False
     with subprocess.Popen([command], shell=True, stderr=error,
                           cwd=cwd, stdout=subprocess.PIPE) as process:
-        process.wait()
+        # process.wait()
         was_error = process.returncode
 
         if output or was_error:

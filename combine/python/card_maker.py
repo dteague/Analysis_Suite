@@ -69,7 +69,7 @@ class Card_Maker:
         all_groups = np.concatenate((self.signals, self.plot_groups))
         for i in range(len(all_groups)):
             all_groups[i] = ginfo.get_group_from_combine(all_groups[i])
-        syst_list = list(filter(lambda x: x.good_syst(all_groups, self.year), syst_list))
+        syst_list = list(filter(lambda x: x.good_syst(all_groups, self.year, self.cr), syst_list))
 
         table = prettytable.PrettyTable()
         table.header=False
@@ -83,10 +83,10 @@ class Card_Maker:
                 table.add_row(syst_row)
         table.align='l'
         self.write(table.get_string(align='l'))
-        self.write("syst_error group = " + " ".join([syst.get_name(self.year) for syst in syst_list]))
+        # self.write("syst_error group = " + " ".join([syst.get_name(self.year) for syst in syst_list]))
 
     def add_rateParam(self, group):
-        self.write(f'rate_{group} rateParam * {group} 1.0')
+        self.write(f'rate_{group}_{self.year} rateParam * {group} 1. [0.01,3]')
 
-    def add_stats(self, autoStats=0):
+    def add_stats(self, autoStats=100):
         self.write(f"* autoMCStats {autoStats}")

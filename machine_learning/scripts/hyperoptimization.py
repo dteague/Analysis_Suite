@@ -36,9 +36,7 @@ def objective(space):
     space['n_estimators'] = int(space['n_estimators'])
     model.update_params(space)
     model.train(None)
-
-    for year in all_eras:
-        model.apply_model(year)
+    model.apply_model(all_eras)
 
     space['fom'] = model.get_fom()
     space['auc'] = model.get_auc()
@@ -65,17 +63,19 @@ if __name__ == "__main__":
 
     ginfo = get_ntuple_info('signal')
     samples = ginfo.setup_members()
+    nontrain = ['nonprompt', "charge_flip", 'data']
     if args.signal == 'ttt':
         signal = ginfo.get_members('ttt_nlo')
+        nontrain.append('4top')
         outdir = args.workdir / 'hyperopt_ttt'
     else:
+        signal = ginfo.get_members('4top')
         outdir = args.workdir / 'hyperopt_4top'
     outdir.mkdir(exist_ok=True, parents=True)
     logfile = outdir/"trials.pkl"
     hyper_file = outdir/"hyperParams.py"
 
-    model = XGBoostMaker(inputs.usevars, ginfo.get_members('ttt_nlo'),
-                         samples)
+    model = XGBoostMaker(inputs.usevars, signal, samples, nonTrained=nontrain)
     model.set_outdir(outdir)
     for year in all_eras:
         model.read_in_files(input_files, year)

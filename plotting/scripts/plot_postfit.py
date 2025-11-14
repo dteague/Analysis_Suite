@@ -83,7 +83,8 @@ def plot(workdir, year, graph_info, extra='wisc', prefit=True, combined=False):
 
     command = 'combineTool.py -M FitDiagnostics --saveToys --rMax 150 --rMin -150 --saveShapes --saveWithUncertainties --cminDefaultMinimizerStrategy 0 -v 1'
     # May need to change based on needs
-    datacard = f'final_{year}_card.root'
+    # datacard = f'final_{year}_card.root'
+    datacard = f"3top_Run2_card.root"
     fitFile = f'fitDiagnostics.{year}.{extra}.root'
     if not (workdir/fitFile).exists():
         runCombine(f"{command} -d {datacard} -n .{year}.{extra}", output=True)

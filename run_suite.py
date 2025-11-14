@@ -87,9 +87,6 @@ def setup(workdir):
     combine = 'combine_info.py'
     if not (workdir/combine).exists():
         shutil.copy(user.analysis_area/'data/templates'/combine, workdir/combine)
-    scales = 'scales.py'
-    if not (workdir/scales).exists():
-        shutil.copy(user.analysis_area/'data/templates'/scales, workdir/scales)
 
 
 if __name__ == "__main__":

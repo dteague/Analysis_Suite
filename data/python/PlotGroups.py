@@ -386,12 +386,12 @@ info ={
     },
 ###### Daniel stuff
     'abcdnn': {
-         "Name": r'ABCDNN',
+         "Name": r'ABCDnn',
          'Combine': "ABCDNN",
          'Members': ['ABCDNN'],
     },
     'top': {
-         "Name": r'TOP',
+         "Name": r'ttW+ttZ+tt+VV',
          'Combine': "TOP",
          'Members': ['TOP'],
     },

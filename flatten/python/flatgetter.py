@@ -11,21 +11,27 @@ class FlatGetter(BaseGetter):
 
     def __init__(self, upfile, member):
         super().__init__()
-        if member not in upfile:
+        if member not in upfile or "TTree" not in repr(upfile[member]):
             return
         self.arr = upfile[member].arrays()
-        self.syst_weights = upfile[f'weights/{member}'].arrays()
         self._base_mask = np.ones(len(self.arr), dtype=bool)
         self._mask = copy(self._base_mask)
         self._scale = ak.to_numpy(self.arr["scale_factor"])
         self.branches = self.arr.fields
+        self.syst_name = "Nominal"
+        self.correct_syst = True
+        if "weights" in upfile:
+            self.syst_weights = upfile[f'weights/{member}'].arrays()
+            systs = self.list_systs()
+            if len(systs) == 1:
+                self.syst_name = systs[0]
 
     def __getitem__(self, key):
         if key not in self.branches:
             raise AttributeError(f"{key} not found")
         return np.nan_to_num(self.arr[key][self.mask], nan=-10000)
 
-    def includes_systs(self, syst):
+    def includes_syst(self, syst):
         return syst in self.syst_weights.fields
 
     def list_systs(self, input_systs=None):
@@ -36,9 +42,14 @@ class FlatGetter(BaseGetter):
         else:
             return np.array(input_systs)[np.in1d(input_systs, vals)]
 
-    def set_syst(self, syst):
+    def set_systematic(self, syst):
         if syst in self.syst_weights.fields:
             self._scale = ak.to_numpy(self.syst_weights[syst])
+            self.syst_name = syst
+            self.correct_syst = True
+        else:
+            self.correct_syst = False
+            self.syst_name = None
 
     @BaseGetter.mask.setter
     def mask(self, mask):

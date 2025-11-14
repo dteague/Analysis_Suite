@@ -3,51 +3,24 @@ from analysis_suite.commons.info import NtupleInfo
 import analysis_suite.commons.user as user
 
 color_by_group = {
-    "data": "black",
-    "qcd": "grey",
-    "qcd_em": "lightgrey",
-    "qcd_mu": "darkgrey",
-    "ewk": "orange",
-    "wjet_ht": "olive",
-    "wjets": "olive",
-    "ttbar_lep": "royalblue",
-    "ttbar": "royalblue",
-    'nonprompt': 'grey',
-    'nonprompt_mc': 'grey',
-    "DY_ht": "goldenrod",
-    "DY": "goldenrod",
-    "DY_J": "goldenrod",
-    "vv_inc": 'mediumorchid',
-    "wz": 'mediumorchid',
+    "data": geParticles("AllLepton", "FakeMuon", "FakeElectron", "TightMuon", "TightElectron",),
+    ],
+    color_by_group = {
+        'qcd': 'grey',
+        'ewk': 'orange',
+        'data': 'black',
+    },
+)
 
-    "ttbar_2l2n": 'blue',
-    "ttbar_semilep": 'mediumblue',
-    "ttbar_hadronic": 'cornflowerblue',
-}
-
-ptratio = 0.0
-btag = 0.25
-
-# pt_correction = NtupleInfo(
-#     filename = user.hdfs_workspace / 'singleLep/{year}/{workdir}/',
-#     trees = ["Measurement"],
-#     branches = [
-#         lambda vg : vg.mergeParticles("Electron", "FakeElectron", "TightElectron"),
-#         lambda vg : vg.mergeParticles("Muon", "FakeMuon", "TightMuon"),
-#         lambda vg : vg.mergeParticles("FakeLepton", "FakeMuon", "FakeElectron"),
-#     ],
-#     color_by_group = color_by_group,
-# )
-
-sideband = NtupleInfo(
-    filename = user.hdfs_workspace / 'fake_rate_mcm/{year}/{workdir}/',
-    trees = ['SideBand'],
+pt_correction = NtupleInfo(
+    filename = user.hdfs_workspace / 'singleLep/{year}/{workdir}/',
+    trees = ['Measurement'],
     branches = [
-        lambda vg : vg.mergeParticles("TightLepton", "TightMuon", "TightElectron"),
-        lambda vg : vg.mergeParticles("FakeLepton", "FakeMuon", "FakeElectron"),
         lambda vg : vg.mergeParticles("Electron", "FakeElectron", "TightElectron"),
         lambda vg : vg.mergeParticles("Muon", "FakeMuon", "TightMuon"),
-        lambda vg : vg.mergeParticles("AllLepton", "FakeMuon", "FakeElectron", "TightMuon", "TightElectron",),
+        lambda vg : vg.mergeParticles("FakeLepton", "FakeMuon", "FakeElectron"),
+        lambda vg : vg.mergeParticles("TightLepton", "TightMuon", "TightElectron"),
+        lambda vg : vg.mergeParticles("AllLepton", "FakeMuon", "FakeElectron", "TightMuon", "TightElectron"),
     ],
     color_by_group = {
         'qcd': 'grey',

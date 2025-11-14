@@ -176,11 +176,6 @@ class HistGetter:
         axis_name = graph.get_axis_name(**kwargs)
         for group, member, df in self.df_iter(members):
             vals, weight = df.get_graph(graph, *args)
-            # if "wjet" in group and member != "wjets_ht100-200":
-            #     continue
-            # if "wjet" in group or 'ttbar' in group:
-            #     print(group, member)
-            #     print(np.histogram(vals, weights=weight, bins=np.linspace(0,750,21))[0])
             if len(vals) == 0:
                 continue
             if group not in hists:

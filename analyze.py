@@ -18,7 +18,10 @@ ROOT.gROOT.ProcessLine( "gErrorIgnoreLevel = 1001;")
 def rOpen(filename, option=""):
     rootfile = ROOT.TFile(filename, option)
     yield rootfile
-    rootfile.Close()
+    try:
+        rootfile.Close()
+    except:
+        print("problem closing file, will ignore, but double check!")
 
 
 def get_shape_systs():
@@ -106,7 +109,7 @@ def run_ntuple(analysis, infiles, outfile, inputs):
         selector.SetInputList(rInputs)
         selector.setOutputFile(rOutput)
         fChain.Process(selector, "")
-        ## Output
+        # Output
         anaFolder = selector.getOutdir()
         anaFolder.WriteObject(getSumW(files), 'sumweight')
         for tree in [tree.tree for tree in selector.getTrees()]:

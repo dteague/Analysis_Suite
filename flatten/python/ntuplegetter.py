@@ -7,19 +7,23 @@ import multiprocessing as mp
 
 from .basegetter import BaseGetter
 
+single_branch = ["run", "event", "luminosityBlock", "bjet_scale",
+                 'dilepton_masses', "hasVetoJet", 'os_masses']
+
 class NtupleGetter(BaseGetter):
-    """ """
-
-    single_branch = ["run", "event", "luminosityBlock", "bjet_scale"]
-
     def __init__(self, root_file, treename, group, xsec, systName="", **kwargs):
         super().__init__()
         self.part_name = []
         self.arr = dict()
+        self.syst_arr = dict()
         self.parts = dict()
         self.branches = []
         self.xsec = xsec
         self.isData = (group == "data")
+        self.correct_syst = True
+        self.syst_name = systName
+        self.cuts = kwargs.get('cuts', None)
+        self.tree = None
 
         if group not in root_file or treename not in root_file[group]:
             return
@@ -43,13 +47,14 @@ class NtupleGetter(BaseGetter):
         self.sumw_hist, _ = root_file[group]["sumweight"].to_numpy()
         self.tree = root_file[group][treename]
         self.branches = [key for key, arr in self.tree.items() if len(arr.keys()) == 0]
-        self.part_name = np.unique(
-            [br.split("/")[0] for br in self.branches if "/" in br]
-        )
-        self.set_systematic(systName)
+        self.part_name = [name for name, typ in self.tree.typenames().items() if "Out" in typ]
+        for name in self.part_name:
+            self.parts[name] = Particle(name, self)
+        # self.set_systematic(systName)
 
     def _get_var(self, name):
-        return self.tree[name].array()[:, self.syst]
+        # return self.tree[name].array()[:, self.syst]
+        return self.tree[name].array()
 
     def _get_var_nosyst(self, name):
         return self.tree[name].array()
@@ -59,6 +64,9 @@ class NtupleGetter(BaseGetter):
             self[name]
         return self.arr[name]
 
+    def no_var(self, key):
+        return "/" in key or 'vector' not in self.tree[key].typename or key in single_branch
+
     def __getitem__(self, key):
         if key in self.part_name:
             if key not in self.parts:
@@ -66,12 +74,36 @@ class NtupleGetter(BaseGetter):
             return self.parts[key]
         elif not self.exists(key):
             raise AttributeError(f"{key} not found")
-        elif key not in self.arr:
-            if "/" in key or 'vector' not in self.tree[key].typename:
-                self.arr[key] = self._get_var_nosyst(key)
+        elif key not in self.syst_arr:
+            if self.no_var(key):
+                self.syst_arr[key] = self._get_var_nosyst(key)
             else:
-                self.arr[key] = self._get_var(key)
-        return self.arr[key][self.mask]
+                if key not in self.arr:
+                    self.arr[key] = self._get_var(key)
+                self.syst_arr[key] = self.arr[key][:, self.syst]
+        return self.syst_arr[key][self.mask]
+
+        # elif key not in self.arr:
+        #     if self.no_var(key):
+        #         self.arr[key] = self._get_var_nosyst(key)
+        #     else:
+        #         self.arr[key] = self._get_var(key)
+        # if self.no_var(key):
+        #     return self.arr[key][self.mask]
+        # else:
+        #     return self.arr[key][self.mask][:, self.syst]
+        # return self.arr[key][self.mask]
+
+    def get_nom(self):
+        return self.get_sf("Nominal")*ak.to_numpy(self.tree['weight'].array()[:, 0])[self.mask]
+
+    def apply_cuts(self):
+        if self.cuts is None:
+            return
+        for cut in self.cuts:
+            self.cut(cut)
+        # for part, cut in self.part_cuts:
+        #     self.mask_part
 
     def get_sf(self, systName):
         if self.xsec == 1:
@@ -82,10 +114,13 @@ class NtupleGetter(BaseGetter):
         sumw = self.sumw_hist[sw_idx] if self.sumw_hist[sw_idx]/self.sumw_hist[0] > 0.1 else self.sumw_hist[0]
         return self.xsec/sumw
 
-    def set_systematic(self, systname):
+    def set_systematic(self, systname="Nominal"):
         if systname not in self.all_systs:
-            print("HERE, setting nominal")
             systname = "Nominal"
+            self.correct_syst = False
+        else:
+            self.correct_syst = True
+        self.syst_name = systname
 
         self.syst_unique = self.all_systs.index(systname)
         if self.syst_indices:
@@ -97,20 +132,23 @@ class NtupleGetter(BaseGetter):
         self.syst_bit = 2**self.syst
 
         # Redo scales and masks
-        self._base_mask = ak.to_numpy(self._get_var("PassEvent"))
-        self._mask = copy(self._base_mask)
-        self._scale = ak.to_numpy(self.tree['weight'].array()[:, self.syst_unique])
         self.is_jec_unc = "JER" in systname or "JEC" in systname
+        self._base_mask = ak.to_numpy(self._get_var("PassEvent")[:, self.syst])
+        for key in list(self.syst_arr.keys()):
+            if "/" not in key and 'vector' in self.tree[key].typename:
+                del self.syst_arr[key]
+        self.reset()
+        for part in self.parts:
+            if f'{part}/pt_fix' in self.syst_arr:
+                self.syst_arr.pop(f'{part}/pt_fix')
+            if f'{part}/mas_fix' in self.syst_arr:
+                self.syst_arr.pop(f'{part}/mass_fix')
+        self.apply_cuts()
+        self._scale = ak.to_numpy(self.tree['weight'].array()[:, self.syst_unique])
 
         if not self.isData:
             self._scale = self.get_sf(systname) * self._scale
 
-        for part in self.parts:
-            self[part].reset_mask()
-
-        for key in list(self.arr.keys()):
-            if "/" not in key and 'vector' in self.tree[key].typename:
-                del self.arr[key]
 
     def get_all_weights(self):
         all_weights = {}
@@ -123,7 +161,7 @@ class NtupleGetter(BaseGetter):
     def reset(self):
         self.clear_mask()
         for part in self.parts.values():
-            part.reset()
+            part.reset_mask()
 
     def mergeParticles(self, merge, *parts):
         self.part_name = np.append(self.part_name, merge)
@@ -332,7 +370,7 @@ class Particle(ParticleBase):
     def __init__(self, name, vg):
         super().__init__(vg)
         self.name = name
-        self.reset_mask()
+        # self.reset_mask()
 
     def __getattr__(self, var):
         return self.vg[f"{self.name}/{var}"][self.mask]
@@ -392,8 +430,15 @@ class Particle(ParticleBase):
     def pt(self, *args):
         if self.vg.is_jec_unc and "Jet" in self.name:
             if f'{self.name}/pt_fix' not in  self.vg.arr:
-                self.vg.arr[f'{self.name}/pt_fix'] = self.vg.tree[f"{self.name}/pt_shift"].array()[:, :, self.vg.syst-1]
-                self.vg.branches.append(f'{self.name}/pt_fix')
+                if f'{self.name}/pt_shift' in self.vg.tree:
+                    self.vg.syst_arr[f'{self.name}/pt_fix'] = self.vg.tree[f"{self.name}/pt_shift"].array()[:, :, self.vg.syst-1]
+                    self.vg.branches.append(f'{self.name}/pt_fix')
+                else:
+                    sname = self.vg.syst_name
+                    syst = sname[:sname.rindex('_')]
+                    var = "pt"+sname[sname.rindex('_'):].lower()
+                    self.vg.syst_arr[f'{self.name}/pt_fix'] = self.vg.tree[f"{self.name}_{syst}"][var].array()
+                    self.vg.branches.append(f'{self.name}/pt_fix')
             return self._get_val('pt_fix', *args)
         else:
             return self._get_val("pt", *args)
@@ -402,8 +447,15 @@ class Particle(ParticleBase):
     def mass(self, *args):
         if self.vg.is_jec_unc and "Jet" in self.name:
             if f'{self.name}/mass_fix' not in  self.vg.arr:
-                self.vg.arr[f'{self.name}/mass_fix'] = self.vg.tree[f"{self.name}/mass_shift"].array()[:, :, self.vg.syst-1]
-                self.vg.branches.append(f'{self.name}/mass_fix')
+                if f'{self.name}/mass_shift' in self.vg.tree:
+                    self.vg.syst_arr[f'{self.name}/mass_fix'] = self.vg.tree[f"{self.name}/mass_shift"].array()[:, :, self.vg.syst-1]
+                    self.vg.branches.append(f'{self.name}/mass_fix')
+                else:
+                    sname = self.vg.syst_name
+                    syst = sname[:sname.rindex('_')]
+                    var = "mass"+sname[sname.rindex('_'):].lower()
+                    self.vg.syst_arr[f'{self.name}/mass_fix'] = self.vg.tree[f"{self.name}_{syst}"][var].array()
+                    self.vg.branches.append(f'{self.name}/mass_fix')
             return self._get_val('mass_fix', *args)
         else:
             return self._get_val("mass", *args)
@@ -413,12 +465,17 @@ class Particle(ParticleBase):
         return self._mask[self.vg.mask]
 
     def mask_part(self, var, func):
+        if var in ['pt', 'mass'] and "Jets" in self.name:
+            var += '_fix'
         self._mask = func(self.vg._get_arr(f'{self.name}/{var}')) * self._mask
 
     # Functions for a particle
 
     def abseta(self, *args):
         return np.abs(self("eta", *args))
+
+    def ptsum(self):
+        return ak.sum(self("pt", -1), axis=-1)
 
     def num(self):
         return ak.to_numpy(ak.count_nonzero(self.mask, axis=1))
@@ -459,7 +516,7 @@ class MergeParticle(ParticleBase):
     def __init__(self, parts):
         super().__init__(parts[0].vg)
         self.parts = parts
-        self.reset()
+        # self.reset()
 
     def reset_mask(self):
        self.reset()

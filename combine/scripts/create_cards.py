@@ -4,17 +4,13 @@ import boost_histogram.axis as axis
 import uproot
 import numpy as np
 import multiprocessing as mp
-import warnings
-
-warnings.simplefilter("ignore", UserWarning)
-from statsmodels.nonparametric.smoothers_lowess import lowess
 
 import analysis_suite.commons.user as user
 from analysis_suite.commons.constants import all_eras
 from analysis_suite.commons.configs import get_ntuple, get_ntuple_info, get_inputs
 from analysis_suite.combine.card_maker import Card_Maker
 from analysis_suite.combine.hist_writer import HistWriter
-from analysis_suite.combine.combine_wrapper import runCombine
+from analysis_suite.combine.combine_wrapper import runCombine, smooth_hist
 from analysis_suite.plotting.hist_getter import GraphInfo, HistGetter
 from analysis_suite.data.systs import systematics, dummy
 from analysis_suite.combine.systematics import use_lowess
@@ -36,33 +32,6 @@ def deep_update(mapping, *updating_mappings):
 
 signals = ['ttt_nlo']
 
-dilep_bins = [0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.9]
-multi_bins = [0, 0.24, 0.36, 0.48, 0.6, 0.9]
-# multi_bins = [0.0, 0.3, 0.45, 0.6, 0.94]
-# multi_bins = np.linspace(0, 1, 26)
-ht_bins = [250, 275, 300, 350, 400, 450, 550, 700, 850]
-# ht_bins = np.linspace(250, 1000, 31)
-dilep_graph = GraphInfo(r'$BDT_{{3top}}$', axis.Variable(dilep_bins), 'BDT')
-multi_graph = GraphInfo(r'$BDT_{{3top}}$',axis.Variable(multi_bins), 'BDT')
-top4_graph = GraphInfo(r'$BDT_{{4top}}$',axis.Regular(1, 0, 1), 'BDT')
-ttz_graph = GraphInfo(r'$H_{{T}}$ (GeV)', axis.Variable(ht_bins), "HT")
-njet_graph = GraphInfo(r'$N_j$', axis.Regular(6, 2, 8), "NJets")
-ttz_valid_graph = GraphInfo(r'$BDT_{{3top}}$',axis.Regular(15,0,1), 'BDT')
-
-masks = {
-    'Dilepton': lambda vg : (vg['NLeps'] == 2),
-    'Multi': lambda vg : (vg['NLeps'] > 2),
-}
-all_graphs = {
-    # 'Dilepton': {"combine": dilep_graph},
-    # 'Multi': {"combine": multi_graph},
-    # 'ttzCR': {"combine": ttz_graph},
-    # 'ttttCR': {"combine": top4_graph},
-    'ttz4Valid': {"combine": ttz_valid_graph},
-    'ttz3Valid': {"combine": ttz_valid_graph},
-}
-
-
 def split_hists(hists, systname, year, chan):
     if systname != 'Nominal':
         updown_break = systname.rfind('_')
@@ -82,9 +51,10 @@ def get_hists(infile, systs, workdir, ntuple_name, region, year, unblind):
     ntuple.remove_group("nonprompt_mc")
     if not unblind:
         ntuple.remove_group('data')
-    mask = masks.get(region, None)
-    graphs = all_graphs.get(region, None)
-    syst_hists = {name: {} for name in graphs.keys()}
+    combine_info = get_inputs(args.workdir, 'combine_info').regions[region]
+    mask = combine_info.get('mask', None)
+    graph = combine_info['graph']
+    syst_hists = {}
 
     # Hack to get things working
     if region == 'ttttCR':
@@ -100,44 +70,18 @@ def get_hists(infile, systs, workdir, ntuple_name, region, year, unblind):
         if "Nominal" not in infile.name and syst not in infile.name:
             continue
         hist_factory.reset_syst(syst)
-        all_hists = hist_factory.get_hists(graphs, fix_negative=True)
-        for graph_name, hists in all_hists.items():
-            for systname, group, hist in split_hists(hists, syst, year, region):
-                if systname not in syst_hists[graph_name]:
-                    syst_hists[graph_name][systname] = {}
-                syst_hists[graph_name][systname][group] = hist
+        hists = hist_factory.get_hist(graph, fix_negative=True)
+        for systname, group, hist in split_hists(hists, syst, year, region):
+            if systname not in syst_hists:
+                syst_hists[systname] = {}
+            syst_hists[systname][group] = hist
     return {f'{region}-{year}': syst_hists}
 
-def smooth_hist(nom, up, down, frac=0.67, it=5, symm=False):
-    centers = nom.axis.centers
-    if symm:
-        up_ratio = 1+(up.vals-down.vals)/(2*nom.vals+1e-5)
-        down_ratio = 1+(down.vals-up.vals)/(2*nom.vals+1e-5)
-    else:
-        up_ratio = (up.vals+1e-5)/(nom.vals+1e-5)
-        down_ratio = (down.vals+1e-5)/(nom.vals+1e-5)
 
-    if len(centers) > 2:
-        up_ratio_lowess = lowess(up_ratio, centers, frac=frac, it=it).T[1]
-        down_ratio_lowess = lowess(down_ratio, centers, frac=frac, it=it).T[1]
-    else:
-        up_ratio_lowess = up_ratio
-        down_ratio_lowess = down_ratio
-
-    up_lowess = Histogram(nom.axis)
-    up_lowess.set_data(up_ratio_lowess*nom.vals, up.variances())
-    down_lowess = Histogram(nom.axis)
-    down_lowess.set_data(down_ratio_lowess*nom.vals, down.variances())
-
-    if symm:
-        up.set_data(up_ratio*nom.vals)
-        down.set_data(down_ratio*nom.vals)
-    return up_lowess, down_lowess
-
-
-def write_hists(graph_name, syst_hists, region, year, outdir, unblind):
+def write_hists(syst_hists, region, year, outdir, unblind):
     nom_hist = syst_hists.pop('Nominal')
     ginfo = get_ntuple_info('signal')
+    graph_name = 'combine'
 
     for syst in systematics:
         if not use_lowess(syst.name):
@@ -254,22 +198,14 @@ def plot_prefit(ntuple, workdir, datacard, graph):
         plotter.set_extra_text(f'{region}_prefit')
         plotter.plot_hist(graph_name, hists, syst_err=syst_err)
 
-ntuple_infos = {
-    # "Dilepton": ('signal', "dilep_ntuple"),
-    # "Multi": ('signal', "multi_ntuple"),
-    # "ttttCR": ('signal', "info"),
-    # "ttzCR": ('ttzCR', "info"),
-    "ttz4Valid": ('ttzCR', "info"),
-    "ttz3Valid": ('ttzCR', "info"),
-}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-y", "--years", type=lambda x : x.split(','), help="Year to use")
+    parser.add_argument("-y", "--years", required=True, help="Year to use",
+                        type=lambda x : all_eras if x == "all" \
+                                   else [i.strip() for i in x.split(',')],)
     parser.add_argument("-d", "--workdir", required=True, type=lambda x : user.workspace_area / x,
                         help="Working Directory")
-    parser.add_argument("-n", '--ntuple', default="signal")
-    parser.add_argument("-f", '--flat', action='store_true')
     parser.add_argument('-ns', '--no_systs', action='store_true')
     parser.add_argument('-p', '--prefit', action='store_true')
     parser.add_argument("-u", '--unblind', action='store_true')
@@ -292,7 +228,7 @@ if __name__ == "__main__":
         nom_systs = np.unique(np.concatenate((nom_systs.flatten(),  ["Nominal"])))
 
         for region, info in combine_info.regions.items():
-            ntuple_name = ntuple_infos[region]
+            ntuple_name = info['ntuple']
             for year in args.years:
                 file_dir = args.workdir/info['dir']
                 if 'year_split' in info and info['year_split']:
@@ -314,11 +250,9 @@ if __name__ == "__main__":
         for dicts in file_hists:
             all_hists = deep_update(all_hists, dicts)
 
-        print(all_hists)
-        for region, graph_hists in all_hists.items():
+        for region, hists in all_hists.items():
             region, year = region.split("-")
-            for graph_name, hists in graph_hists.items():
-                write_hists(graph_name, hists, region, year, combine_dir, args.unblind)
+            write_hists(hists, region, year, combine_dir, args.unblind)
 
     # Make the cards
     rate_params = combine_info.rate_params
@@ -326,13 +260,13 @@ if __name__ == "__main__":
     for year in args.years:
         combine_cmd = "combineCards.py"
         for region, info in combine_info.regions.items():
-            ntuple = get_ntuple(*ntuple_infos[region])
-            for graph_name, graph in all_graphs[region].items():
-                card = make_card(combine_dir, year, region, graph_name, rate_params, args.no_systs)
-                if args.prefit:
-                    plot_prefit(ntuple, combine_dir/'plots', card, graph)
-                if graph_name == "combine":
-                    combine_cmd += f" {region}={card}"
+            ntuple = get_ntuple(*info['ntuple'])
+            graph_name, graph = 'combine', info['graph']
+            card = make_card(combine_dir, year, region, graph_name, rate_params, args.no_systs)
+            if args.prefit:
+                plot_prefit(ntuple, combine_dir/'plots', card, graph)
+            if graph_name == "combine":
+                combine_cmd += f" {region}={card}"
 
         if '=' in combine_cmd:
             final_card = f"final_{year}{'_nosyst' if args.no_systs else ''}_card.txt"

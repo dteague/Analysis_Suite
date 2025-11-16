@@ -11,15 +11,12 @@ import pickle
 from prettytable import PrettyTable
 import awkward as ak
 
-warnings.simplefilter("ignore", UserWarning)
-from statsmodels.nonparametric.smoothers_lowess import lowess
-
 import analysis_suite.commons.user as user
 from analysis_suite.commons.constants import all_eras
 from analysis_suite.commons.configs import get_ntuple, get_ntuple_info, get_inputs
 from analysis_suite.combine.card_maker import Card_Maker
 from analysis_suite.combine.hist_writer import HistWriter
-from analysis_suite.combine.combine_wrapper import runCombine
+from analysis_suite.combine.combine_wrapper import runCombine, smooth_hist
 from analysis_suite.plotting.hist_getter import GraphInfo, HistGetter
 from analysis_suite.data.systs import systematics
 from analysis_suite.commons.histogram import Histogram
@@ -61,32 +58,6 @@ def write_table(hists, ginfo, outfile):
     # Signal
     with open(outfile, 'w') as output:
         output.write(table.get_latex_string()+'\n')
-
-def smooth_hist(nom, up, down, frac=0.67, it=5, symm=False):
-    centers = nom.axis.centers
-    if symm:
-        up_ratio = 1+(up.vals-down.vals)/(2*nom.vals+1e-5)
-        down_ratio = 1+(down.vals-up.vals)/(2*nom.vals+1e-5)
-    else:
-        up_ratio = (up.vals+1e-5)/(nom.vals+1e-5)
-        down_ratio = (down.vals+1e-5)/(nom.vals+1e-5)
-
-    if len(centers) > 2:
-        up_ratio_lowess = lowess(up_ratio, centers, frac=frac, it=it).T[1]
-        down_ratio_lowess = lowess(down_ratio, centers, frac=frac, it=it).T[1]
-    else:
-        up_ratio_lowess = up_ratio
-        down_ratio_lowess = down_ratio
-
-    up_lowess = Histogram(nom.axis)
-    up_lowess.set_data(up_ratio_lowess*nom.vals, up.variances())
-    down_lowess = Histogram(nom.axis)
-    down_lowess.set_data(down_ratio_lowess*nom.vals, down.variances())
-
-    if symm:
-        up.set_data(up_ratio*nom.vals)
-        down.set_data(down_ratio*nom.vals)
-    return up_lowess, down_lowess
 
 def fix_jec(nom_hists, syst_hists):
     for syst in systematics:

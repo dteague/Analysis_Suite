@@ -40,12 +40,12 @@ def run(workdir, tupleName, year, syst):
     final_ratio = {}
 
     allvars = inputs.allvar
-    # if "CR" in tupleName and syst != 'Nominal':
-    #     allvars = {
-    #         "HT": inputs.allvar['HT'],
-    #         "NJets": inputs.allvar['NJets'],
-    #         "NLeps": lambda vg: vg['TightLepton'].num(),
-    #     }
+    if "CR" in tupleName and syst != 'Nominal':
+        allvars = {
+            "HT": inputs.allvar['HT'],
+            "NJets": inputs.allvar['NJets'],
+            "NLeps": lambda vg: vg['TightLepton'].num(),
+        }
 
     for root_file in filename.glob("*root"):
         f = uproot.open(root_file)

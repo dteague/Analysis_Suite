@@ -47,7 +47,10 @@ class NtupleGetter(BaseGetter):
         self.sumw_hist, _ = root_file[group]["sumweight"].to_numpy()
         self.tree = root_file[group][treename]
         self.branches = [key for key, arr in self.tree.items() if len(arr.keys()) == 0]
-        self.part_name = [name for name, typ in self.tree.typenames().items() if "Out" in typ]
+        self.part_name = []
+        for name, typ in self.tree.typenames().items():
+            if 'Out' in typ and 'Shift' not in typ:
+                self.part_name.append(name)
         for name in self.part_name:
             self.parts[name] = Particle(name, self)
         # self.set_systematic(systName)

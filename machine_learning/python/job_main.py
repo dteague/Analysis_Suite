@@ -15,12 +15,12 @@ def setup(cli_args):
     inputs = get_inputs(cli_args.workdir)
     os.environ["NUMEXPR_MAX_THREADS"] = "8"
 
-    if cli_args.train and cli_args.region != "signal":
+    if cli_args.train and cli_args.ntuple != "signal":
         print("Training not allowed for non signal region")
         exit()
 
     # Setup splitting (if needed)
-    if cli_args.setup_files:
+    if cli_args.setup_files or not (cli_args.workdir/'split_files').exists():
         print("Reproducing training files split")
         setup_split_files(cli_args.workdir, cli_args.model, cli_args.years,
                           inputs.usevars)
@@ -32,7 +32,7 @@ def setup(cli_args):
         allSysts = get_list_systs(cli_args.workdir, cli_args.tool, cli_args.systs)
     for syst in allSysts:
         argList.append((inputs.usevars, cli_args.workdir, cli_args.model, cli_args.train,
-                        cli_args.years, cli_args.region, syst))
+                        cli_args.years, cli_args.ntuple, syst))
     return argList
 
 
@@ -68,18 +68,15 @@ def plot(model, plotter, years):
     print('auc', model.get_auc())
     print('fom', model.get_fom())
 
-def run(usevars, workdir, model_type, train, years, region, systName):
+def run(usevars, workdir, model_type, train, years, ntuple, systName, blind=True):
     params = get_inputs(workdir, 'params')
-    ginfo = get_ntuple_info(region)
+    ginfo = get_ntuple_info(ntuple)
     samples = ginfo.setup_members()
 
     isNom = systName == "Nominal"
-    isSignal = region == "signal"
+    isSignal = ntuple == "signal"
     out_syst = systName
     if not train and isNom and isSignal:
-        # samples = ['data']
-        # print("Only train data in Nominal")
-        # out_syst = "data"
         print("Can only Train Nominal, not apply model: skipping")
         return
     elif train and not isSignal:
@@ -96,7 +93,7 @@ def run(usevars, workdir, model_type, train, years, region, systName):
     output_first = workdir/'first_train'
     bdt_var = params.signal_first
     bdt_dir = workdir/'split_files'
-    bdt_file = bdt_dir/f'bdt_{bdt_var}_{out_syst}_{region}.root'
+    bdt_file = bdt_dir/f'bdt_{bdt_var}_{out_syst}_{ntuple}.root'
     plotter = Plotter(get_ntuple('bdt'), 'all', bkg='all', outdir=output_first)
     if train or (isNom and isSignal):
         in_type = 'test'
@@ -106,7 +103,7 @@ def run(usevars, workdir, model_type, train, years, region, systName):
         input_files = workdir
 
     signal = ginfo.get_members('4top')
-    model = maker(usevars, signal, samples, region=region,
+    model = maker(usevars, signal, samples, region=ntuple,
                   systName=systName)
     model.update_params(params.params_first)
     model.set_outdir(output_first)
@@ -120,7 +117,7 @@ def run(usevars, workdir, model_type, train, years, region, systName):
 
     if train:
         plot(model, plotter, years)
-    # model.output_all(workdir/f'all_{bdt_var}_Nominal_{region}.root')
+    # model.output_all(workdir/f'all_{bdt_var}_Nominal_{ntuple}.root')
     model.output_bdt(bdt_file, bdt_var)
 
     print(f"Training for syst {systName}")
@@ -132,7 +129,7 @@ def run(usevars, workdir, model_type, train, years, region, systName):
     plotter.sig = 'ttt_nlo'
     plotter.outdir = output_second
 
-    model = maker(usevars, ginfo.get_members('ttt_nlo'), samples, region=region,
+    model = maker(usevars, ginfo.get_members('ttt_nlo'), samples, region=ntuple,
                   systName=systName, nonTrained=nontrained)
     model.update_params(params.params_second)
     model.set_outdir(output_second)
@@ -141,8 +138,9 @@ def run(usevars, workdir, model_type, train, years, region, systName):
         model.read_in_files(input_files, year, typ=in_type)
     if train:
         model.read_in_train_files(input_files)
-    if region == 'signal':
+    if ntuple == 'signal':
         model.read_in_bdt(bdt_file, bdt_var, onlyTest=not train)
+        print(bdt_var, params.cut[year])
         model.mask(lambda df, year: df[bdt_var] < params.cut[year])
 
     if train:
@@ -153,8 +151,8 @@ def run(usevars, workdir, model_type, train, years, region, systName):
     # Plots
     if train:
         plot(model, plotter, years)
-    # model.output_all(workdir/f'all_{bdt_var2}_Nominal_{region}.root', bdt_var2)
-    model.output_bdt(bdt_dir/f'bdt_{bdt_var2}_{out_syst}_{region}.root', bdt_var2)
+    # model.output_all(workdir/f'all_{bdt_var2}_Nominal_{ntuple}.root', bdt_var2)
+    model.output_bdt(bdt_dir/f'bdt_{bdt_var2}_{out_syst}_{ntuple}.root', bdt_var2)
 
 
 def cleanup(cli_args):

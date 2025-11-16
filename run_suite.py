@@ -43,11 +43,11 @@ def get_cli():
         parser.add_argument('-i', '--inputs')
     elif sys.argv[1] == "mva":
         parser.add_argument('-t', '--train', action="store_true")
-        parser.add_argument('-m', '--model', required=True, choices=['DNN', 'TMVA', 'XGBoost', "CutBased"],
+        parser.add_argument('-m', '--model', default='XGBoost', choices=['DNN', 'TMVA', 'XGBoost', "CutBased"],
                             help="Run the training")
         parser.add_argument("--setup_files", action='store_true', help="Save training set")
         parser.add_argument("--plot", action='store_true')
-        parser.add_argument('-r', '--region', default="signal",)
+        parser.add_argument('-n', '--ntuple', default="signal",)
     elif sys.argv[1] == "plot":
         parser.add_argument('-p', '--plots', default="plots")
         parser.add_argument('-n', '--name', default=None,
@@ -77,7 +77,7 @@ def get_cli():
     return parser.parse_args()
 
 def setup(workdir):
-    workdir.mkdir(exist_ok=True)
+    workdir.mkdir(exist_ok=True, parents=True)
     inputs = 'inputs.py'
     if not (workdir/inputs).exists():
         shutil.copy(user.analysis_area/'data/templates'/inputs, workdir/inputs)

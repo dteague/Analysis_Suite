@@ -51,6 +51,9 @@ class Histogram(bh.Histogram):
         self.draw_scale = 1
         self.syst_error = None
 
+    def parent(self):
+        return bh.Histogram(self)
+
     def __bool__(self):
         return not self.empty()
 

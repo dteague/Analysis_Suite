@@ -19,15 +19,15 @@ class HistWriter:
             outgroup = ginfo.get_combine_name(group)
             if group == 'data':
                 if syst == "Nominal" and not blind:
-                    self.f['data_obs'] = hist
+                    self.f['data_obs'] = hist.parent()
             else:
                 outname = outgroup if syst == "Nominal" else f'{syst}/{outgroup}'
-                self.f[outname] = hist
+                self.f[outname] = hist.parent()
 
         if syst == "Nominal" and blind:
             data_obs = self.get_totmc(hists)
             data_obs.variances()[:] = data_obs.values()
-            self.f['data_obs'] = data_obs
+            self.f['data_obs'] = data_obs.parent()
 
     def get_totmc(self, hists):
         first = next(iter(hists.values()))

@@ -36,7 +36,8 @@ class FlatGetter(BaseGetter):
 
     def list_systs(self, input_systs=None):
         vals = self.syst_weights.fields
-        vals.remove("index")
+        if 'index' in vals:
+            vals.remove("index")
         if input_systs is None:
             return vals
         else:

@@ -2,16 +2,6 @@
 from analysis_suite.commons.info import NtupleInfo
 import analysis_suite.commons.user as user
 
-color_by_group = {
-    "data": geParticles("AllLepton", "FakeMuon", "FakeElectron", "TightMuon", "TightElectron",),
-    ],
-    color_by_group = {
-        'qcd': 'grey',
-        'ewk': 'orange',
-        'data': 'black',
-    },
-)
-
 pt_correction = NtupleInfo(
     filename = user.hdfs_workspace / 'singleLep/{year}/{workdir}/',
     trees = ['Measurement'],
@@ -101,15 +91,3 @@ closure_tt = NtupleInfo(
 )
 closure_tt.set_groups_trees(['Closure_FF', "Closure_TF"], ['nonprompt', 'nonprompt_mc'])
 
-
-# dy_tight = NtupleInfo(
-#     filename = user.hdfs_workspace / 'fr_closure/{year}/{workdir}/',
-#     trees = ["DY_Fake", "DY_Tight"],
-#     branches = [
-#         lambda vg : vg.mergeParticles("Muon", "FakeMuon", "TightMuon"),
-#         lambda vg : vg.mergeParticles("AllLepton", "FakeMuon", "TightMuon", "FakeElectron", "TightElectron"),
-#         lambda vg : vg.mergeParticles("Electron", "FakeElectron", "TightElectron"),
-#     ],
-#     color_by_group = color_by_group,
-# )
-# dy_tight.set_groups_trees("DY_Fake", ['nonprompt', 'nonprompt_mc'])
